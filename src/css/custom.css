@@ -26,3 +26,63 @@ button.copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-st
 pre code {
   position: relative;
 }
+
+/* ── Sandbox Banner ─────────────────────────────────────────── */
+.sandbox-banner {
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  background: #fbbf24;
+  color: #1c1917;
+  text-align: center;
+  padding: 0.4rem 1rem;
+  font-size: 0.875rem;
+}
+
+.sandbox-banner code {
+  background: rgba(0 0 0 / 0.1);
+  padding: 0 0.3em;
+  border-radius: 3px;
+}
+
+/* ── Environment Toggle ─────────────────────────────────────── */
+.env-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+  border: 1.5px solid currentColor;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.env-toggle--sandbox {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fbbf24;
+}
+
+.env-toggle--sandbox:hover {
+  background: #fde68a;
+}
+
+.env-toggle--production {
+  background: #d1fae5;
+  color: #065f46;
+  border-color: #34d399;
+}
+
+.env-toggle--production:hover {
+  background: #a7f3d0;
+}
+
+.env-toggle__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
