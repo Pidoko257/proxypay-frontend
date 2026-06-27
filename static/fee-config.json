@@ -1,0 +1,68 @@
+{
+  "providers": [
+    {
+      "id": "mtn",
+      "name": "MTN Mobile Money",
+      "baseFeePercent": 1.2,
+      "fixedFee": 0.15
+    },
+    {
+      "id": "orange",
+      "name": "Orange Money",
+      "baseFeePercent": 1.5,
+      "fixedFee": 0.20
+    },
+    {
+      "id": "mpesa",
+      "name": "M-Pesa",
+      "baseFeePercent": 1.0,
+      "fixedFee": 0.10
+    },
+    {
+      "id": "stellar_usdc",
+      "name": "Stellar USDC",
+      "baseFeePercent": 0.2,
+      "fixedFee": 0.02
+    }
+  ],
+  "destinationCurrencies": [
+    {
+      "id": "USD",
+      "name": "US Dollar (USD)",
+      "exchangeRate": 1.0,
+      "symbol": "$"
+    },
+    {
+      "id": "EUR",
+      "name": "Euro (EUR)",
+      "exchangeRate": 0.92,
+      "symbol": "€"
+    },
+    {
+      "id": "KES",
+      "name": "Kenyan Shilling (KES)",
+      "exchangeRate": 131.5,
+      "symbol": "KES"
+    },
+    {
+      "id": "GHS",
+      "name": "Ghanaian Cedi (GHS)",
+      "exchangeRate": 14.8,
+      "symbol": "GH₵"
+    },
+    {
+      "id": "XAF",
+      "name": "Central African CFA Franc (XAF)",
+      "exchangeRate": 605.2,
+      "symbol": "FCFA"
+    }
+  ],
+  "proxypayFee": {
+    "percent": 0.5,
+    "minimum": 0.25
+  },
+  "stellarFee": {
+    "flatXLM": 0.00001,
+    "xlmPriceUsd": 0.12
+  }
+}
