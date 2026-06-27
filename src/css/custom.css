@@ -173,3 +173,44 @@ pre code {
 .rl-panel__bar--empty {
   background: #ef4444;
 }
+
+/* ── Breadcrumb ─────────────────────────────────────────────── */
+.breadcrumb-nav {
+  padding: 0.6rem 1.5rem;
+  border-bottom: 1px solid var(--ifm-toc-border-color);
+}
+
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
+.breadcrumb__item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.breadcrumb__link {
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+.breadcrumb__link:hover {
+  text-decoration: underline;
+}
+
+.breadcrumb__sep {
+  color: var(--ifm-color-secondary-darkest, #888);
+}
+
+.breadcrumb__current {
+  color: var(--ifm-font-color-base);
+  font-weight: 500;
+}
