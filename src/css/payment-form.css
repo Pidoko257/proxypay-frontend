@@ -1,0 +1,433 @@
+/* ============================================================
+   Payment Initiation Form — Mobile-Responsive Styles
+   Issue #36: Build Mobile Responsive Payment Initiation Form
+   ============================================================ */
+
+/* ---------- Design Tokens ---------- */
+:root {
+  --pay-bg: #0f1117;
+  --pay-card-bg: rgba(255, 255, 255, 0.04);
+  --pay-card-border: rgba(255, 255, 255, 0.08);
+  --pay-accent: #6c5ce7;
+  --pay-accent-hover: #7c6ff7;
+  --pay-accent-glow: rgba(108, 92, 231, 0.35);
+  --pay-success: #00b894;
+  --pay-error: #e17055;
+  --pay-text: #e4e6eb;
+  --pay-text-muted: #8b8fa3;
+  --pay-input-bg: rgba(255, 255, 255, 0.06);
+  --pay-input-border: rgba(255, 255, 255, 0.12);
+  --pay-input-focus: rgba(108, 92, 231, 0.5);
+  --pay-radius: 14px;
+  --pay-radius-sm: 10px;
+  --pay-transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --pay-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ---------- Page Container ---------- */
+.payment-page {
+  min-height: calc(100vh - 60px);
+  background: var(--pay-bg);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 3rem 1.5rem 4rem;
+  font-family: var(--pay-font);
+}
+
+/* ---------- Card ---------- */
+.payment-card {
+  width: 100%;
+  max-width: 520px;
+  background: var(--pay-card-bg);
+  border: 1px solid var(--pay-card-border);
+  border-radius: var(--pay-radius);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 8px 40px rgba(0, 0, 0, 0.45);
+  padding: 2.5rem 2rem 2rem;
+  animation: payCardIn 0.5s var(--pay-transition) both;
+}
+
+@keyframes payCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ---------- Header ---------- */
+.payment-card__header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.payment-card__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--pay-accent), #a29bfe);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  font-size: 1.6rem;
+  box-shadow: 0 4px 20px var(--pay-accent-glow);
+}
+
+.payment-card__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 0.35rem;
+  letter-spacing: -0.02em;
+}
+
+.payment-card__subtitle {
+  font-size: 0.875rem;
+  color: var(--pay-text-muted);
+  margin: 0;
+}
+
+/* ---------- Form Grid ---------- */
+.payment-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.payment-form__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.payment-form__group--full {
+  grid-column: 1 / -1;
+}
+
+/* ---------- Labels ---------- */
+.payment-form__label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--pay-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.payment-form__label--required::after {
+  content: ' *';
+  color: var(--pay-error);
+}
+
+/* ---------- Inputs & Selects ---------- */
+.payment-form__input,
+.payment-form__select,
+.payment-form__textarea {
+  width: 100%;
+  min-height: 48px; /* ≥44px touch target */
+  padding: 0.7rem 1rem;
+  font-size: 1rem;
+  font-family: var(--pay-font);
+  color: var(--pay-text);
+  background: var(--pay-input-bg);
+  border: 1.5px solid var(--pay-input-border);
+  border-radius: var(--pay-radius-sm);
+  outline: none;
+  transition:
+    border-color var(--pay-transition),
+    box-shadow var(--pay-transition),
+    background var(--pay-transition);
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+}
+
+.payment-form__input::placeholder,
+.payment-form__textarea::placeholder {
+  color: rgba(139, 143, 163, 0.6);
+}
+
+.payment-form__input:focus,
+.payment-form__select:focus,
+.payment-form__textarea:focus {
+  border-color: var(--pay-accent);
+  box-shadow: 0 0 0 3px var(--pay-input-focus);
+  background: rgba(255, 255, 255, 0.08);
+  /* Scroll focused input into view on mobile (iOS/Android) */
+  scroll-margin-bottom: 120px;
+}
+
+.payment-form__select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='%238b8fa3'%3E%3Cpath d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
+.payment-form__textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* ---------- Input Error State ---------- */
+.payment-form__input--error,
+.payment-form__select--error {
+  border-color: var(--pay-error);
+  box-shadow: 0 0 0 3px rgba(225, 112, 85, 0.2);
+}
+
+.payment-form__error {
+  font-size: 0.75rem;
+  color: var(--pay-error);
+  margin: 0;
+  min-height: 0;
+  animation: errorSlide 0.25s ease-out;
+}
+
+@keyframes errorSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------- Amount Display ---------- */
+.payment-form__amount-wrapper {
+  position: relative;
+}
+
+.payment-form__currency-tag {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--pay-accent);
+  background: rgba(108, 92, 231, 0.12);
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+/* ---------- Submit Button ---------- */
+.payment-form__submit {
+  grid-column: 1 / -1;
+  min-height: 52px; /* >44px touch target */
+  padding: 0.85rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: var(--pay-font);
+  color: #fff;
+  background: linear-gradient(135deg, var(--pay-accent), #a29bfe);
+  border: none;
+  border-radius: var(--pay-radius-sm);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform var(--pay-transition),
+    box-shadow var(--pay-transition),
+    opacity var(--pay-transition);
+  box-shadow: 0 4px 20px var(--pay-accent-glow);
+}
+
+.payment-form__submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 28px rgba(108, 92, 231, 0.5);
+}
+
+.payment-form__submit:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+.payment-form__submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Ripple on submit */
+.payment-form__submit::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 10%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.payment-form__submit:active::after {
+  opacity: 1;
+}
+
+/* ---------- Loading Spinner ---------- */
+.payment-form__spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+  vertical-align: middle;
+  margin-right: 0.5rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Success Toast ---------- */
+.payment-toast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: var(--pay-success);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.85rem 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 184, 148, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.35s,
+    transform 0.35s;
+  z-index: 1000;
+}
+
+.payment-toast--visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+/* ---------- Divider ---------- */
+.payment-card__divider {
+  border: none;
+  border-top: 1px solid var(--pay-card-border);
+  margin: 1.5rem 0;
+}
+
+/* ---------- Fee Summary ---------- */
+.payment-form__summary {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--pay-radius-sm);
+  border: 1px solid var(--pay-card-border);
+}
+
+.payment-form__summary-label {
+  font-size: 0.85rem;
+  color: var(--pay-text-muted);
+}
+
+.payment-form__summary-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* ============================================================
+   MOBILE RESPONSIVE — Below 640px
+   ============================================================ */
+@media (max-width: 639px) {
+  .payment-page {
+    padding: 1.25rem 1rem 3rem;
+    align-items: flex-start;
+  }
+
+  .payment-card {
+    padding: 1.75rem 1.25rem 1.5rem;
+    border-radius: 12px;
+  }
+
+  /* Single-column layout for mobile */
+  .payment-form {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  /* Ensure all groups span the single column */
+  .payment-form__group {
+    grid-column: 1;
+  }
+
+  /* Bigger touch targets on mobile */
+  .payment-form__input,
+  .payment-form__select,
+  .payment-form__textarea {
+    min-height: 52px;
+    font-size: 1rem;
+    padding: 0.8rem 1rem;
+    /* Prevent iOS zoom on focus */
+    font-size: 16px;
+  }
+
+  .payment-form__submit {
+    min-height: 56px;
+    font-size: 1.05rem;
+  }
+
+  .payment-card__title {
+    font-size: 1.3rem;
+  }
+
+  .payment-card__icon {
+    width: 48px;
+    height: 48px;
+    font-size: 1.4rem;
+  }
+}
+
+/* ============================================================
+   Scroll focused input into view (iOS/Android virtual keyboard)
+   ============================================================ */
+@supports (scroll-margin-bottom: 1px) {
+  .payment-form__input,
+  .payment-form__select,
+  .payment-form__textarea {
+    scroll-margin-bottom: 160px;
+  }
+}
+
+/* Ensure tap target size for all interactive elements (WCAG) */
+.payment-form__input,
+.payment-form__select,
+.payment-form__textarea,
+.payment-form__submit {
+  min-width: 44px;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+/* ---------- Small tweaks for very small screens ---------- */
+@media (max-width: 374px) {
+  .payment-card {
+    padding: 1.25rem 0.85rem 1.25rem;
+  }
+
+  .payment-card__title {
+    font-size: 1.15rem;
+  }
+}
