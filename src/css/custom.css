@@ -86,3 +86,90 @@ pre code {
   border-radius: 50%;
   background: currentColor;
 }
+
+/* ── Rate Limit Panel ───────────────────────────────────────── */
+.rl-panel {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 1000;
+  font-size: 0.8rem;
+  font-family: var(--ifm-font-family-monospace);
+}
+
+.rl-panel__tab {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  background: var(--ifm-navbar-background-color, #1b1b1d);
+  color: var(--ifm-navbar-link-color, #e3e3e3);
+  border: 1px solid rgba(255 255 255 / 0.15);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.rl-panel__tab--exhausted {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.rl-panel__badge {
+  background: rgba(255 255 255 / 0.1);
+  border-radius: 9999px;
+  padding: 0 0.4em;
+  font-size: 0.75rem;
+}
+
+.rl-panel__body {
+  margin-top: 0.35rem;
+  background: var(--ifm-navbar-background-color, #1b1b1d);
+  border: 1px solid rgba(255 255 255 / 0.15);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  min-width: 200px;
+  color: var(--ifm-navbar-link-color, #e3e3e3);
+}
+
+.rl-panel__empty {
+  margin: 0;
+  opacity: 0.6;
+}
+
+.rl-panel__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 0.2rem 0;
+}
+
+.rl-panel__val--warn {
+  color: #ef4444;
+}
+
+.rl-panel__time {
+  opacity: 0.75;
+}
+
+.rl-panel__bar-wrap {
+  height: 6px;
+  background: rgba(255 255 255 / 0.1);
+  border-radius: 3px;
+  margin: 0.4rem 0;
+  overflow: hidden;
+}
+
+.rl-panel__bar {
+  height: 100%;
+  background: #34d399;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.rl-panel__bar--empty {
+  background: #ef4444;
+}
