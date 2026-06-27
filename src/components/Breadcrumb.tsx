@@ -7,6 +7,7 @@ import { useLocation } from '@docusaurus/router';
 const SEGMENT_LABELS: Record<string, string> = {
   api: 'API Reference',
   dashboard: 'Dashboard',
+  transactions: 'Transactions',
   webhooks: 'Webhooks',
   payments: 'Payments',
   settings: 'Settings',

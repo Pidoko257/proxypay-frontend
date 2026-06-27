@@ -44,6 +44,7 @@ const config: Config = {
       items: [
         { to: '/', label: 'Overview', position: 'left' },
         { to: '/api', label: 'Reference', position: 'left' },
+        { to: '/transactions', label: 'Transactions', position: 'left' },
         {
           type: 'custom-environment-toggle',
           position: 'right',
