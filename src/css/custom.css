@@ -163,3 +163,196 @@ pre code {
   color: var(--ifm-color-emphasis-600);
   line-height: 1.4;
 }
+
+/* Home Page Layout */
+.home-page {
+  padding: 4rem 1.5rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.home-page-content {
+  flex: 1;
+  max-width: 650px;
+}
+
+@media (max-width: 768px) {
+  .home-page {
+    flex-direction: column;
+  }
+}
+
+/* Onboarding Checklist Widget */
+.onboarding-checklist {
+  width: 340px;
+  flex-shrink: 0;
+  background: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  animation: checklist-fade-in 0.3s ease-out;
+}
+
+@keyframes checklist-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.onboarding-checklist-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: var(--ifm-font-color-base);
+}
+
+.onboarding-checklist-subtitle {
+  font-size: 13px;
+  color: var(--ifm-color-emphasis-600);
+  margin: 0 0 16px;
+  line-height: 1.4;
+}
+
+.onboarding-checklist-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.onboarding-checklist-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--ifm-color-emphasis-100);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.onboarding-checklist-progress-fill {
+  height: 100%;
+  background: var(--ifm-color-primary);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.onboarding-checklist-progress-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ifm-color-emphasis-500);
+  flex-shrink: 0;
+}
+
+.onboarding-checklist-tasks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.onboarding-checklist-task {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--ifm-color-emphasis-100);
+}
+
+.onboarding-checklist-task:last-child {
+  border-bottom: none;
+}
+
+.onboarding-checklist-task--completed .onboarding-checklist-task-label {
+  text-decoration: line-through;
+  color: var(--ifm-color-emphasis-500);
+}
+
+.onboarding-checklist-task--completed .onboarding-checklist-task-description {
+  color: var(--ifm-color-emphasis-400);
+}
+
+.onboarding-checklist-task-check {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+  color: var(--ifm-color-primary);
+  transition: color 0.15s ease;
+}
+
+.onboarding-checklist-task-check:hover {
+  color: var(--ifm-color-primary-dark);
+}
+
+.onboarding-checklist-task-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--ifm-color-emphasis-300);
+  display: block;
+  transition: border-color 0.15s ease;
+}
+
+.onboarding-checklist-task-check:hover .onboarding-checklist-task-circle {
+  border-color: var(--ifm-color-primary);
+}
+
+.onboarding-checklist-task-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.onboarding-checklist-task-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ifm-font-color-base);
+  transition: color 0.15s ease;
+}
+
+.onboarding-checklist-task-description {
+  font-size: 12px;
+  color: var(--ifm-color-emphasis-600);
+  line-height: 1.4;
+}
+
+.onboarding-checklist-dismiss {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 6px;
+  background: var(--ifm-color-emphasis-50);
+  color: var(--ifm-color-emphasis-700);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.onboarding-checklist-dismiss:hover {
+  background: var(--ifm-color-emphasis-100);
+  border-color: var(--ifm-color-emphasis-300);
+}
+
+@media (max-width: 768px) {
+  .onboarding-checklist {
+    width: 100%;
+  }
+}
