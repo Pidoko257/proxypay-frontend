@@ -26,3 +26,190 @@ button.copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-st
 pre code {
   position: relative;
 }
+
+/* Exchange Rate Widget Styles */
+.exchange-rate-widget {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.exchange-rate-widget:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.widget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.widget-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.status-indicator {
+  font-size: 0.875rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.2);
+  font-weight: 500;
+}
+
+.status-indicator.status-error {
+  background: rgba(239, 68, 68, 0.3);
+}
+
+.status-indicator.status-stale {
+  background: rgba(245, 158, 11, 0.3);
+}
+
+.widget-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.rate-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  transition: background 0.3s ease;
+}
+
+.rate-display:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.rate-label {
+  font-size: 0.875rem;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+.rate-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: 'Monaco', 'Menlo', monospace;
+  transition: color 0.3s ease;
+}
+
+.rate-value.rate-stale {
+  opacity: 0.7;
+}
+
+.rate-trend {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-left: 0.5rem;
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.rate-trend.trend-up {
+  color: #4ade80;
+  animation: pulse-up 0.5s ease;
+}
+
+.rate-trend.trend-down {
+  color: #f87171;
+  animation: pulse-down 0.5s ease;
+}
+
+.rate-trend.trend-neutral {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+@keyframes pulse-up {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+@keyframes pulse-down {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+.widget-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.last-updated {
+  font-family: 'Monaco', 'Menlo', monospace;
+}
+
+.stale-warning {
+  color: #fbbf24;
+  font-weight: 500;
+}
+
+.widget-loading,
+.widget-error {
+  text-align: center;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.widget-error p {
+  margin: 0 0 1rem 0;
+  color: #fca5a5;
+}
+
+.retry-button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.retry-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .exchange-rate-widget {
+    padding: 1rem;
+  }
+  
+  .rate-value {
+    font-size: 1.25rem;
+  }
+  
+  .rate-trend {
+    font-size: 1rem;
+  }
+}
