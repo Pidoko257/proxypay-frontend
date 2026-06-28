@@ -8,21 +8,42 @@
   --ifm-color-primary-lightest: #3cad6e;
 }
 
-/* Code block copy button styling */
-div.codeBlockContainer_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-styles-module:hover .copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-styles-module {
-  opacity: 1;
-}
-
-button.copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-styles-module {
-  transition: opacity 0.2s ease-in-out;
-}
-
 /* Redoc code sample copy button */
 .redoc-wrap .copy-icon-svg {
   fill: var(--ifm-color-primary);
 }
 
-/* Ensure code blocks have visible copy buttons */
-pre code {
+/* Copy-to-clipboard button added by swizzled CodeBlock */
+.proxypay-code-block {
   position: relative;
+}
+
+.proxypay-copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-family: var(--ifm-font-family-base);
+  background: var(--ifm-color-emphasis-200);
+  color: var(--ifm-color-content);
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease-in-out, background 0.15s ease-in-out;
+  z-index: 1;
+}
+
+.proxypay-code-block:hover .proxypay-copy-btn,
+.proxypay-code-block:focus-within .proxypay-copy-btn {
+  opacity: 1;
+}
+
+.proxypay-copy-btn--copied,
+.proxypay-copy-btn--copied:hover {
+  background: var(--ifm-color-primary-lightest);
+  color: var(--ifm-color-primary-darkest);
+  border-color: var(--ifm-color-primary-light);
+  opacity: 1;
 }
