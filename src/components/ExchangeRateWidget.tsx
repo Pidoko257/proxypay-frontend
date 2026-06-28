@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import clsx from 'clsx';
+import Skeleton from './Skeleton';
 
 interface ExchangeRate {
   xlmUsd: number;
@@ -100,7 +101,21 @@ export default function ExchangeRateWidget(): React.JSX.Element {
       </div>
       
       {isLoading && !rate && (
-        <div className="widget-loading">Loading rates...</div>
+        <div className="widget-content">
+          <div className="rate-display">
+            <Skeleton variant="text" width="80px" />
+            <Skeleton variant="text" width="100px" />
+            <Skeleton variant="circular" width="24px" height="24px" />
+          </div>
+          <div className="rate-display">
+            <Skeleton variant="text" width="80px" />
+            <Skeleton variant="text" width="100px" />
+            <Skeleton variant="circular" width="24px" height="24px" />
+          </div>
+          <div className="widget-footer">
+            <Skeleton variant="text" width="150px" />
+          </div>
+        </div>
       )}
       
       {error && !rate && (
