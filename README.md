@@ -29,3 +29,6 @@ Configured for GitHub Pages under `sublime247/proxypay`.
 ```bash
 npm run deploy
 ```
+## Blockers
+
+After reviewing the repository, I found that it only contains a Docusaurus documentation site and does not include the dashboard application referenced in the issue. There is no dashboard home page, layout, or stat card components available to modify or extend. The repository also lacks the REST API integration and charting setup required to display the requested statistics and sparklines. Without these core application files, the responsive dashboard feature cannot be implemented or verified against the acceptance criteria. As a result, the issue appears to target a different repository or requires additional project files that are not currently present.
