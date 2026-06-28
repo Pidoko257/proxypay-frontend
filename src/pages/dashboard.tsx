@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import Layout from '@theme/Layout';
 import StatsCards from '../components/StatsCards';
 import TransactionTable from '../components/TransactionTable';
+import WebhookTable from '../components/WebhookTable';
+import ApiKeysTable from '../components/ApiKeysTable';
+import UsersTable from '../components/UsersTable';
 import ExchangeRateWidget from '../components/ExchangeRateWidget';
 
 export default function Dashboard(): React.JSX.Element {
@@ -21,7 +24,7 @@ export default function Dashboard(): React.JSX.Element {
 
         <StatsCards />
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '2rem', alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '2rem', alignItems: 'start', marginBottom: '2rem' }}>
           <div>
             <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0 }}>Transactions</h2>
@@ -44,6 +47,18 @@ export default function Dashboard(): React.JSX.Element {
 
           <div>
             <ExchangeRateWidget />
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem' }}>
+          <div>
+            <WebhookTable />
+          </div>
+          <div>
+            <ApiKeysTable />
+          </div>
+          <div>
+            <UsersTable />
           </div>
         </div>
       </main>

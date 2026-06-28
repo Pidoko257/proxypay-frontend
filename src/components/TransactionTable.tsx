@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import clsx from 'clsx';
 import Skeleton from './Skeleton';
+import EmptyState from './EmptyState';
+import { TransactionsIllustration } from './EmptyStateIllustrations';
 
 interface Transaction {
   id: string;
@@ -157,9 +159,16 @@ export default function TransactionTable({ filter }: TransactionTableProps): Rea
           </button>
         </div>
       ) : transactions.length === 0 ? (
-        <div className="table-empty">
-          <p>No transactions found</p>
-        </div>
+        <EmptyState
+          illustration={<TransactionsIllustration />}
+          title="No transactions yet"
+          message="Start by sending or receiving your first transaction to see it appear here."
+          action={{
+            label: 'Create Transaction',
+            onClick: () => console.log('Navigate to create transaction'),
+            variant: 'primary',
+          }}
+        />
       ) : (
         <div className="table-wrapper">
           <table className="transaction-table">
