@@ -29,7 +29,9 @@ const config: Config = {
     [
       'classic',
       {
-        docs: false,
+        docs: {
+          sidebarPath: './sidebars.ts',
+        },
         blog: false,
         theme: {
           customCss: './src/css/custom.css',
@@ -43,6 +45,8 @@ const config: Config = {
       title: 'ProxyPay API',
       items: [
         { to: '/', label: 'Overview', position: 'left' },
+        { to: '/dashboard', label: 'Dashboard', position: 'left' },
+        { to: '/docs', label: 'Docs', position: 'left' },
         { to: '/api', label: 'Reference', position: 'left' },
         {
           href: 'https://github.com/sublime247/proxypay',
@@ -64,7 +68,7 @@ const config: Config = {
     prism: {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
-      additionalLanguages: ['bash', 'json', 'yaml', 'typescript', 'python'],
+      additionalLanguages: ['bash', 'json', 'yaml', 'typescript', 'python', 'php'],
     },
   } satisfies Preset.ThemeConfig,
 };
