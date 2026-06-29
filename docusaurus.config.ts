@@ -38,12 +38,30 @@ const config: Config = {
     ],
   ],
 
+  plugins: [
+    () => ({
+      name: 'disable-progress-bar',
+      configureWebpack(config) {
+        return {
+          plugins: (config.plugins || []).filter(
+            (p) => 
+              p.constructor.name !== 'ProgressPlugin' && 
+              p.constructor.name !== 'WebpackBar'
+          ),
+        };
+      },
+    }),
+  ],
+
   themeConfig: {
     navbar: {
       title: 'ProxyPay API',
       items: [
         { to: '/', label: 'Overview', position: 'left' },
         { to: '/api', label: 'Reference', position: 'left' },
+        { to: '/payment-status', label: 'Payment Status', position: 'left' },
+        { to: '/webhooks', label: 'Webhooks', position: 'left' },
+        { to: '/transactions', label: 'Transactions', position: 'left' },
         {
           href: 'https://github.com/sublime247/proxypay',
           label: 'GitHub',
