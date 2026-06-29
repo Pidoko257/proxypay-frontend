@@ -26,3 +26,54 @@ button.copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-st
 pre code {
   position: relative;
 }
+
+/* Product tour beacon */
+.proxypay-tour-beacon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #2e8555;
+  position: relative;
+}
+.proxypay-tour-beacon::after {
+  content: '';
+  display: block;
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 3px solid #2e8555;
+  animation: proxypay-pulse 1.4s ease-out infinite;
+  opacity: 0;
+}
+@keyframes proxypay-pulse {
+  0%   { transform: scale(0.8); opacity: 0.8; }
+  100% { transform: scale(2);   opacity: 0; }
+}
+
+/* Dashboard nav links */
+.proxypay-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  color: #2e8555;
+  border: 1.5px solid #2e8555;
+  transition: background 0.15s;
+}
+.proxypay-nav-link:hover {
+  background: #f0faf4;
+  text-decoration: none;
+}
+.proxypay-nav-link.primary {
+  background: #2e8555;
+  color: #fff;
+}
+.proxypay-nav-link.primary:hover {
+  background: #29784c;
+  color: #fff;
+}
