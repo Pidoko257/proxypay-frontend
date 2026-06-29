@@ -26,3 +26,35 @@ button.copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-st
 pre code {
   position: relative;
 }
+
+/* Image optimisation — all doc images are responsive & content-box sized */
+.optimized-image picture,
+.optimized-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Fade-in once lazy images are loaded */
+img[loading='lazy'] {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+img[loading='lazy'].loaded,
+img[loading='lazy']:not([src='']) {
+  opacity: 1;
+}
+
+/* Mobile sticky CTA bar */
+.mobile-cta-bar {
+  display: none;
+}
+@media (max-width: 768px) {
+  .mobile-cta-bar {
+    display: flex;
+  }
+  /* Push page content above the sticky bar so footer is not obscured */
+  footer.footer {
+    margin-bottom: 60px;
+  }
+}
