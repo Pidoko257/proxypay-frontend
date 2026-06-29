@@ -43,7 +43,17 @@ const config: Config = {
       title: 'ProxyPay API',
       items: [
         { to: '/', label: 'Overview', position: 'left' },
-        { to: '/api', label: 'Reference', position: 'left' },
+        {
+          type: 'dropdown',
+          label: 'API Reference',
+          position: 'left',
+          items: [
+            { label: 'v2-beta (Latest)', to: '/api' },
+            { label: 'v1 (Deprecated)', to: '/api-v1' },
+          ],
+        },
+        { to: '/rate-limits', label: 'Rate Limits', position: 'left' },
+        { to: '/webhooks', label: 'Webhooks', position: 'left' },
         {
           href: 'https://github.com/sublime247/proxypay',
           label: 'GitHub',
