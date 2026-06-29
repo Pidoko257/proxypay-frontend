@@ -25,6 +25,13 @@ const config: Config = {
     locales: ['en'],
   },
 
+  plugins: [
+    ['./plugins/docusaurus-sdk-reference', {
+      sdkSourceDir: './src',
+      outputDir: 'sdk-reference',
+    }],
+  ],
+
   presets: [
     [
       'classic',
@@ -43,7 +50,11 @@ const config: Config = {
       title: 'ProxyPay API',
       items: [
         { to: '/', label: 'Overview', position: 'left' },
-        { to: '/api', label: 'Reference', position: 'left' },
+        { to: '/api', label: 'API Reference', position: 'left' },
+        { to: '/sep24', label: 'SEP-24 Flow', position: 'left' },
+        { to: '/selector', label: 'Currency Selector', position: 'left' },
+        { to: '/hash', label: 'Hash Component', position: 'left' },
+        { to: '/sdk-reference', label: 'SDK Reference', position: 'left' },
         {
           href: 'https://github.com/sublime247/proxypay',
           label: 'GitHub',
