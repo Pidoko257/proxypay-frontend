@@ -8,8 +8,14 @@ export default function ApiPage(): React.JSX.Element {
       <div id="main-content">
         <BrowserOnly fallback={<p style={{ padding: '2rem' }}>Loading API reference...</p>}>
           {() => {
+            const EndpointCopyList = require('../components/EndpointCopyList').default;
             const ApiReference = require('../components/ApiReference').default;
-            return <ApiReference />;
+            return (
+              <>
+                <EndpointCopyList />
+                <ApiReference />
+              </>
+            );
           }}
         </BrowserOnly>
       </div>
