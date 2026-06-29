@@ -68,3 +68,142 @@ pre code {
   color: var(--ifm-color-primary-darkest);
   border-bottom-color: var(--ifm-color-primary);
 }
+
+/* ── Developer Onboarding Stepper (Issue #3) ────────────────────────────── */
+.pp-stepper {
+  margin-top: 2rem;
+}
+
+.pp-stepper--done {
+  padding: 1.5rem;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: var(--ifm-card-border-radius, 8px);
+}
+
+.pp-stepper__steps {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2rem;
+  position: relative;
+}
+
+.pp-stepper__steps::before {
+  content: '';
+  position: absolute;
+  top: 19px;
+  left: 40px;
+  right: 40px;
+  height: 2px;
+  background: var(--ifm-color-emphasis-300);
+  z-index: 0;
+}
+
+.pp-stepper__step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.pp-stepper__step-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+  background: var(--ifm-color-emphasis-200);
+  color: var(--ifm-color-content-secondary);
+  border: 2px solid var(--ifm-color-emphasis-300);
+  margin-bottom: 0.5rem;
+}
+
+.pp-stepper__step--current .pp-stepper__step-icon {
+  background: var(--ifm-color-primary);
+  color: #fff;
+  border-color: var(--ifm-color-primary);
+}
+
+.pp-stepper__step--done .pp-stepper__step-icon {
+  background: #2e8555;
+  color: #fff;
+  border-color: #2e8555;
+}
+
+[data-theme='dark'] .pp-stepper__step--done .pp-stepper__step-icon {
+  background: #3cad6e;
+  border-color: #3cad6e;
+}
+
+.pp-stepper__step-label {
+  font-size: 0.75rem;
+  color: var(--ifm-color-content-secondary);
+  text-align: center;
+}
+
+.pp-stepper__step--current .pp-stepper__step-label {
+  color: var(--ifm-color-primary);
+  font-weight: 600;
+}
+
+.pp-stepper__content {
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: var(--ifm-card-border-radius, 8px);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.pp-stepper__content h3 {
+  margin-top: 0;
+}
+
+.pp-stepper__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.pp-stepper__field:last-child {
+  margin-bottom: 0;
+}
+
+.pp-stepper__field label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ifm-color-content-secondary);
+}
+
+.pp-stepper__field input,
+.pp-stepper__field select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 4px;
+  background: var(--ifm-background-color);
+  color: var(--ifm-font-color-base);
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.pp-stepper__field input:focus,
+.pp-stepper__field select:focus {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: 1px;
+  border-color: var(--ifm-color-primary);
+}
+
+.pp-stepper__nav {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.pp-stepper__nav .button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
