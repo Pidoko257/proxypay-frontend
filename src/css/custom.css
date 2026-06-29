@@ -26,3 +26,35 @@ button.copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-st
 pre code {
   position: relative;
 }
+
+/* ── Sticky in-page section nav (Issue #1) ─────────────────────────────── */
+.pp-sticky-nav {
+  position: sticky;
+  top: var(--ifm-navbar-height, 60px);
+  z-index: 100;
+  background: var(--ifm-background-color);
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+  display: flex;
+  padding: 0 1rem;
+}
+
+.pp-sticky-nav__link {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--ifm-color-content-secondary);
+  text-decoration: none;
+  border-bottom: 3px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.pp-sticky-nav__link:hover {
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+.pp-sticky-nav__link--active {
+  font-weight: 600;
+  color: var(--ifm-color-primary-darkest);
+  border-bottom-color: var(--ifm-color-primary);
+}
