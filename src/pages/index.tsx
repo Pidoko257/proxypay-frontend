@@ -1,8 +1,9 @@
 import React from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
+import type { HomePageProps } from '../types/component-props';
 
-export default function Home(): React.JSX.Element {
+export default function Home(_props: HomePageProps): React.JSX.Element {
   return (
     <Layout title="Developer Portal" description="ProxyPay partner API docs">
       <main style={{ padding: '4rem 1.5rem', maxWidth: 900, margin: '0 auto' }}>
