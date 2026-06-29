@@ -1,6 +1,7 @@
 import React from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
+import DateRangePicker from '../components/DateRangePicker';
 
 export default function Home(): React.JSX.Element {
   return (
@@ -16,6 +17,23 @@ export default function Home(): React.JSX.Element {
             Open API Reference
           </Link>
         </p>
+
+        <section
+          style={{
+            marginTop: '2rem',
+            border: '1px solid var(--ifm-color-emphasis-300)',
+            borderRadius: '12px',
+            padding: '1.5rem',
+            background: 'var(--ifm-background-surface-color)',
+          }}
+        >
+          <h2 style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>Reusable date range picker</h2>
+          <p style={{ marginBottom: '1rem' }}>
+            This picker supports preset ranges and a custom calendar selection for transaction
+            filters, analytics dashboards, and reconciliation reports.
+          </p>
+          <DateRangePicker />
+        </section>
       </main>
     </Layout>
   );
