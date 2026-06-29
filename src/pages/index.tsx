@@ -1,6 +1,7 @@
 import React from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
+import BrowserOnly from '@docusaurus/BrowserOnly';
 
 export default function Home(): React.JSX.Element {
   return (
@@ -17,6 +18,12 @@ export default function Home(): React.JSX.Element {
           </Link>
         </p>
       </main>
+      <BrowserOnly>
+        {() => {
+          const MobileCtaBar = require('../components/MobileCtaBar').default;
+          return <MobileCtaBar />;
+        }}
+      </BrowserOnly>
     </Layout>
   );
 }
