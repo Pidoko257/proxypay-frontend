@@ -26,3 +26,105 @@ button.copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-st
 pre code {
   position: relative;
 }
+
+.date-range-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 34rem;
+}
+
+.date-range-picker__label-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.date-range-picker__label {
+  font-weight: 600;
+}
+
+.date-range-picker__trigger,
+.date-range-picker__preset,
+.date-range-picker__nav-button,
+.date-range-picker__day {
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 0.5rem;
+  background: var(--ifm-background-surface-color);
+  color: var(--ifm-font-color-base);
+}
+
+.date-range-picker__trigger {
+  padding: 0.75rem 0.9rem;
+  text-align: left;
+}
+
+.date-range-picker__preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.date-range-picker__preset {
+  padding: 0.45rem 0.75rem;
+}
+
+.date-range-picker__preset.is-active {
+  background: var(--ifm-color-primary);
+  color: white;
+  border-color: var(--ifm-color-primary);
+}
+
+.date-range-picker__popover {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 0.75rem;
+  background: var(--ifm-background-surface-color);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.date-range-picker__calendar-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.date-range-picker__nav-button {
+  width: 2rem;
+  height: 2rem;
+}
+
+.date-range-picker__weekdays,
+.date-range-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.date-range-picker__weekday {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--ifm-color-emphasis-600);
+}
+
+.date-range-picker__day {
+  min-height: 2.2rem;
+  padding: 0.25rem;
+}
+
+.date-range-picker__day.is-muted {
+  opacity: 0.45;
+}
+
+.date-range-picker__day.is-selected {
+  background: var(--ifm-color-primary-lightest);
+}
+
+.date-range-picker__day.is-start,
+.date-range-picker__day.is-end {
+  background: var(--ifm-color-primary);
+  color: white;
+}
