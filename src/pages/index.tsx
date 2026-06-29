@@ -5,7 +5,7 @@ import Link from '@docusaurus/Link';
 export default function Home(): React.JSX.Element {
   return (
     <Layout title="Developer Portal" description="ProxyPay partner API docs">
-      <main style={{ padding: '4rem 1.5rem', maxWidth: 900, margin: '0 auto' }}>
+      <main id="main-content" style={{ padding: '4rem 1.5rem', maxWidth: 900, margin: '0 auto' }}>
         <h1>ProxyPay API Documentation Portal</h1>
         <p>
           This portal publishes a searchable, first-class API reference for partners using the
