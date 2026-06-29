@@ -1,7 +1,8 @@
 import React from 'react';
 import { RedocStandalone } from 'redoc';
+import type { ApiReferenceProps } from '../types/component-props';
 
-export default function ApiReference(): React.JSX.Element {
+export default function ApiReference(_props: ApiReferenceProps): React.JSX.Element {
   return (
     <RedocStandalone
       specUrl="/openapi.yaml"
