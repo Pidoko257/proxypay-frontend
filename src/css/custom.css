@@ -8,6 +8,16 @@
   --ifm-color-primary-lightest: #3cad6e;
 }
 
+[data-theme='dark'] {
+  --ifm-color-primary: #3cad6e;
+  --ifm-color-primary-dark: #35a064;
+  --ifm-color-primary-darker: #319a5e;
+  --ifm-color-primary-darkest: #287e4d;
+  --ifm-color-primary-light: #43ba78;
+  --ifm-color-primary-lighter: #47c07c;
+  --ifm-color-primary-lightest: #55cb89;
+}
+
 /* Code block copy button styling */
 div.codeBlockContainer_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-styles-module:hover .copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-styles-module {
   opacity: 1;
