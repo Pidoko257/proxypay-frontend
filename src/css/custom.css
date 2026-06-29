@@ -26,3 +26,15 @@ button.copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-st
 pre code {
   position: relative;
 }
+
+/* Status banner dark mode */
+[data-theme='dark'] .status-banner-critical { background-color: #7f1d1d; color: #fecaca; border-color: #dc2626; }
+[data-theme='dark'] .status-banner-major { background-color: #7c2d12; color: #fed7aa; border-color: #ea580c; }
+[data-theme='dark'] .status-banner-minor { background-color: #713f12; color: #fef9c3; border-color: #ca8a04; }
+
+/* Changelog dark mode */
+[data-theme='dark'] .changelog-entry { border-color: #374151; }
+
+/* Team page dark mode */
+[data-theme='dark'] .team-table th,
+[data-theme='dark'] .team-table td { border-color: #374151; }
