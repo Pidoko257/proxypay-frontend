@@ -1,0 +1,42 @@
+[
+  {
+    "version": "1.2.0",
+    "date": "2026-06-15",
+    "changes": [
+      { "type": "Feature", "description": "Added batch payment processing endpoint `POST /v1/payments/batch`" },
+      { "type": "Feature", "description": "New webhook event `payment.settled` for settlement confirmations" },
+      { "type": "Breaking", "description": "Deprecated `account_number` in favor of `wallet_address` in payment payloads" },
+      { "type": "Fix", "description": "Fixed pagination metadata returning incorrect `total_count` for filtered queries" }
+    ],
+    "releaseUrl": "https://github.com/sublime247/proxypay/releases/tag/v1.2.0"
+  },
+  {
+    "version": "1.1.0",
+    "date": "2026-05-01",
+    "changes": [
+      { "type": "Feature", "description": "Introduced `GET /v1/exchange-rates` for real-time currency conversion data" },
+      { "type": "Feature", "description": "Added optional `callback_url` parameter to payment creation" },
+      { "type": "Fix", "description": "Resolved timeout issue on low-balance payment validations" }
+    ],
+    "releaseUrl": "https://github.com/sublime247/proxypay/releases/tag/v1.1.0"
+  },
+  {
+    "version": "1.0.1",
+    "date": "2026-04-10",
+    "changes": [
+      { "type": "Fix", "description": "Fixed HMAC signature mismatch on requests with query parameters" },
+      { "type": "Fix", "description": "Corrected error response schema for insufficient funds" }
+    ],
+    "releaseUrl": "https://github.com/sublime247/proxypay/releases/tag/v1.0.1"
+  },
+  {
+    "version": "1.0.0",
+    "date": "2026-03-20",
+    "changes": [
+      { "type": "Breaking", "description": "Initial v1 API release — existing v0 endpoints moved to `/v0/` prefix" },
+      { "type": "Feature", "description": "OAuth 2.0 client credentials flow for API authentication" },
+      { "type": "Feature", "description": "Rate limiting with `X-RateLimit-*` response headers" }
+    ],
+    "releaseUrl": "https://github.com/sublime247/proxypay/releases/tag/v1.0.0"
+  }
+]

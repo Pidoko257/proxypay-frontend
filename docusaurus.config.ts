@@ -53,6 +53,9 @@ const config: Config = {
         { to: '/api', label: 'API Reference', position: 'left' },
         { to: '/sep24', label: 'SEP-24 Flow', position: 'left' },
         { to: '/selector', label: 'Currency Selector', position: 'left' },
+        { to: '/api-reference', label: 'API Reference (Redoc)', position: 'left' },
+        { to: '/changelog', label: 'Changelog', position: 'left' },
+        { to: '/team', label: 'Team', position: 'left' },
         { to: '/hash', label: 'Hash Component', position: 'left' },
         { to: '/sdk-reference', label: 'SDK Reference', position: 'left' },
         {
@@ -78,6 +81,12 @@ const config: Config = {
       additionalLanguages: ['bash', 'json', 'yaml', 'typescript', 'python'],
     },
   } satisfies Preset.ThemeConfig,
+};
+
+  customFields: {
+    statusPageUrl: 'https://status.proxypay.com',
+    statusApiUrl: 'https://status.proxypay.com/api/v2',
+  },
 };
 
 export default config;
