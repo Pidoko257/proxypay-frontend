@@ -1,0 +1,130 @@
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  min-height: 200px;
+  width: 100%;
+  padding: 2rem;
+  text-align: center;
+  border-radius: var(--ifm-card-border-radius, 8px);
+  border: 1px solid var(--ifm-color-danger-light, #fca5a5);
+  background-color: var(--ifm-color-danger-lightest, #fef2f2);
+}
+
+/* Dark mode override */
+[data-theme="dark"] .container {
+  border-color: var(--ifm-color-danger-dark, #b91c1c);
+  background-color: color-mix(in srgb, var(--ifm-color-danger) 10%, var(--ifm-background-color));
+}
+
+.iconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: color-mix(in srgb, var(--ifm-color-danger) 15%, transparent);
+}
+
+.icon {
+  width: 28px;
+  height: 28px;
+  color: var(--ifm-color-danger);
+}
+
+.heading {
+  font-size: var(--ifm-h3-font-size, 1.25rem);
+  font-weight: 600;
+  color: var(--ifm-color-danger-dark, #b91c1c);
+  margin: 0;
+}
+
+[data-theme="dark"] .heading {
+  color: var(--ifm-color-danger-light, #fca5a5);
+}
+
+.message {
+  font-size: var(--ifm-font-size-base, 1rem);
+  color: var(--ifm-color-content-secondary, #6b7280);
+  max-width: 480px;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.errorCode {
+  font-size: 0.8rem;
+  color: var(--ifm-color-content-secondary);
+  margin: 0;
+}
+
+.errorCodeValue {
+  font-family: var(--ifm-font-family-monospace, monospace);
+  font-weight: 600;
+}
+
+.details {
+  width: 100%;
+  max-width: 540px;
+  text-align: left;
+}
+
+.detailsSummary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--ifm-color-danger);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.detailsSummary:hover {
+  text-decoration: underline;
+}
+
+.stack {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  overflow: auto;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-family: var(--ifm-font-family-monospace, monospace);
+  background-color: color-mix(in srgb, var(--ifm-color-danger) 8%, var(--ifm-background-color));
+  color: var(--ifm-color-danger-dark);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.reloadButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  border: none;
+  border-radius: var(--ifm-button-border-radius, 6px);
+  background-color: var(--ifm-color-danger);
+  color: #fff;
+  font-size: var(--ifm-font-size-base, 1rem);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.reloadButton:hover {
+  background-color: var(--ifm-color-danger-dark);
+  opacity: 0.95;
+}
+
+.reloadButton:focus-visible {
+  outline: 2px solid var(--ifm-color-danger);
+  outline-offset: 3px;
+}
+
+.reloadIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
