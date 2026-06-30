@@ -26,3 +26,338 @@ button.copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-st
 pre code {
   position: relative;
 }
+
+/* ── Webhook Payload Inspector ───────────────────────────── */
+
+.wh-inspector {
+  margin-top: 1.5rem;
+}
+
+/* Controls row */
+.wh-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.wh-selector {
+  flex: 1;
+  min-width: 280px;
+}
+
+.wh-selector-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.wh-select {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: var(--ifm-global-radius);
+  background: var(--ifm-background-color);
+  color: var(--ifm-font-color-base);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.wh-select:focus {
+  border-color: var(--ifm-color-primary);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(46, 133, 85, 0.2);
+}
+
+/* Copy button */
+.wh-copy-btn {
+  padding: 0.55rem 1.2rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: var(--ifm-global-radius);
+  background: var(--ifm-background-color);
+  color: var(--ifm-font-color-base);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.wh-copy-btn:hover {
+  border-color: var(--ifm-color-primary);
+  color: var(--ifm-color-primary);
+}
+
+.wh-copy-btn-copied {
+  border-color: var(--ifm-color-primary);
+  background: var(--ifm-color-primary);
+  color: #fff;
+}
+
+.wh-copy-btn-copied:hover {
+  color: #fff;
+}
+
+/* Event summary */
+.wh-summary {
+  font-size: 0.95rem;
+  color: var(--ifm-color-emphasis-700);
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 1rem;
+  background: var(--ifm-color-emphasis-100);
+  border-radius: var(--ifm-global-radius);
+  border-left: 3px solid var(--ifm-color-primary);
+}
+
+/* Two-column layout */
+.wh-main {
+  display: flex;
+  gap: 1.5rem;
+  min-height: 500px;
+}
+
+.wh-payload-panel,
+.wh-fields-panel {
+  flex: 1;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: var(--ifm-global-radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.wh-panel-header {
+  padding: 0.6rem 1rem;
+  background: var(--ifm-color-emphasis-100);
+  border-bottom: 1px solid var(--ifm-color-emphasis-300);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ifm-color-emphasis-700);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.wh-fields-hint {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 0.8rem;
+  color: var(--ifm-color-primary);
+}
+
+.wh-fields-hint code {
+  font-size: 0.78rem;
+  background: var(--ifm-color-emphasis-200);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+}
+
+/* JSON viewer */
+.wh-json-viewer {
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  flex: 1;
+  overflow: auto;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  padding: 1rem !important;
+  tab-size: 2;
+}
+
+.wh-json-viewer code {
+  background: none !important;
+  padding: 0 !important;
+}
+
+.wh-json-entry {
+  display: block;
+  transition: background 0.1s;
+  border-radius: 2px;
+  cursor: default;
+}
+
+.wh-json-entry-hovered {
+  background: rgba(46, 133, 85, 0.08);
+  outline: 1px solid rgba(46, 133, 85, 0.2);
+}
+
+.wh-json-key {
+  color: #0550ae;
+  user-select: none;
+}
+
+.wh-json-colon {
+  user-select: none;
+}
+
+.wh-json-comma {
+  user-select: none;
+}
+
+.wh-json-string {
+  color: #0a3069;
+}
+
+.wh-json-number {
+  color: #0550ae;
+}
+
+.wh-json-boolean {
+  color: #cf222e;
+}
+
+.wh-json-null {
+  color: #8250df;
+}
+
+.wh-json-bracket,
+.wh-json-brace {
+  user-select: none;
+}
+
+.wh-json-nested {
+  display: block;
+}
+
+.wh-json-row {
+  display: block;
+}
+
+.wh-json-object,
+.wh-json-array {
+  display: inline;
+}
+
+.wh-json-object-hovered {
+  outline: 1px dashed rgba(46, 133, 85, 0.25);
+  border-radius: 2px;
+}
+
+/* Fields panel */
+.wh-fields-list {
+  flex: 1;
+  overflow: auto;
+  padding: 0.5rem;
+}
+
+.wh-field {
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--ifm-global-radius);
+  cursor: default;
+  transition: background 0.1s, box-shadow 0.1s;
+  margin-bottom: 0.25rem;
+}
+
+.wh-field:last-child {
+  margin-bottom: 0;
+}
+
+.wh-field-active {
+  background: rgba(46, 133, 85, 0.08);
+  box-shadow: 0 0 0 1px rgba(46, 133, 85, 0.2);
+}
+
+.wh-field-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.2rem;
+  flex-wrap: wrap;
+}
+
+.wh-field-path {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ifm-color-primary);
+  background: var(--ifm-color-emphasis-100);
+  padding: 0.1em 0.4em;
+  border-radius: 3px;
+}
+
+.wh-field-type {
+  font-size: 0.72rem;
+  color: var(--ifm-color-emphasis-600);
+  background: var(--ifm-color-emphasis-200);
+  padding: 0.1em 0.4em;
+  border-radius: 3px;
+  text-transform: lowercase;
+}
+
+.wh-field-type-active {
+  color: var(--ifm-color-primary-darkest);
+  background: rgba(46, 133, 85, 0.15);
+}
+
+.wh-field-desc {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ifm-color-emphasis-700);
+  line-height: 1.45;
+}
+
+.wh-fields-empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--ifm-color-emphasis-500);
+  font-style: italic;
+}
+
+/* ── Dark mode overrides ────────────────────────────────── */
+
+[data-theme='dark'] .wh-json-key {
+  color: #79c0ff;
+}
+
+[data-theme='dark'] .wh-json-string {
+  color: #a5d6ff;
+}
+
+[data-theme='dark'] .wh-json-number {
+  color: #79c0ff;
+}
+
+[data-theme='dark'] .wh-json-boolean {
+  color: #ff7b72;
+}
+
+[data-theme='dark'] .wh-json-null {
+  color: #d2a8ff;
+}
+
+[data-theme='dark'] .wh-json-entry-hovered {
+  background: rgba(46, 133, 85, 0.15);
+}
+
+[data-theme='dark'] .wh-field-active {
+  background: rgba(46, 133, 85, 0.15);
+}
+
+[data-theme='dark'] .wh-field-path {
+  color: #4cce97;
+}
+
+/* ── Responsive: stack columns on narrow screens ─────────── */
+
+@media (max-width: 768px) {
+  .wh-main {
+    flex-direction: column;
+  }
+
+  .wh-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wh-selector {
+    min-width: unset;
+  }
+}
