@@ -17,6 +17,13 @@
     "prism-react-renderer": "^2.4.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "redoc": "^2.5.1"
+    "redoc": "^2.5.1",
+    "zxcvbn": "^4.4.2"
+  },
+  "devDependencies": {
+    "@types/zxcvbn": "^4.4.5"
+  },
+  "overrides": {
+    "webpack": "5.97.1"
   }
 }
