@@ -1,10 +1,12 @@
 import React from 'react';
 import Layout from '@theme/Layout';
 import BrowserOnly from '@docusaurus/BrowserOnly';
+import ScrollToHash from '../components/ScrollToHash';
 
 export default function ApiPage(): React.JSX.Element {
   return (
     <Layout title="API Reference" description="ProxyPay REST API reference">
+      <ScrollToHash />
       <BrowserOnly fallback={<p style={{ padding: '2rem' }}>Loading API reference...</p>}>
         {() => {
           const ApiReference = require('../components/ApiReference').default;

@@ -6,6 +6,32 @@
   --ifm-color-primary-light: #33925e;
   --ifm-color-primary-lighter: #359962;
   --ifm-color-primary-lightest: #3cad6e;
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+/* Prevent flash of unstyled content */
+html {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Ensure syntax highlighting is always applied */
+code {
+  background-color: transparent;
+  color: inherit;
+}
+
+pre {
+  background-color: var(--ifm-code-background) !important;
+}
+
+pre code {
+  background-color: transparent;
+  color: inherit;
 }
 
 /* Code block copy button styling */
@@ -17,12 +43,41 @@ button.copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-st
   transition: opacity 0.2s ease-in-out;
 }
 
-/* Redoc code sample copy button */
+/* Redoc code sample copy button and highlighting */
 .redoc-wrap .copy-icon-svg {
   fill: var(--ifm-color-primary);
+}
+
+.redoc-wrap pre,
+.redoc-wrap code {
+  background-color: var(--ifm-code-background) !important;
 }
 
 /* Ensure code blocks have visible copy buttons */
 pre code {
   position: relative;
+}
+
+/* Force syntax highlighting in all code blocks */
+.token.class-name,
+.token.constant,
+.token.function,
+.token.keyword,
+.token.operator,
+.token.property,
+.token.punctuation,
+.token.string,
+.token.tag,
+.token.comment {
+  font-family: inherit;
+}
+
+/* Smooth scroll behavior for anchor links */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Ensure anchor links are properly highlighted */
+:target {
+  scroll-margin-top: 60px;
 }
