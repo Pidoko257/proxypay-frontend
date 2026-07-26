@@ -26,3 +26,124 @@ button.copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-st
 pre code {
   position: relative;
 }
+
+/* Copy feedback animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Multi-format copy menu styling */
+.copy-format-menu {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.copy-format-menu button:hover {
+  background-color: var(--ifm-color-emphasis-100);
+}
+
+/* Collapsible TOC styling */
+.redoc-wrap .menu-content {
+  transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+  overflow: hidden;
+}
+
+.redoc-wrap .menu-content.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+.redoc-wrap .menu-content.expanded {
+  max-height: 2000px;
+  opacity: 1;
+}
+
+.redoc-wrap .menu-category-title {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  padding-right: 20px;
+}
+
+.redoc-wrap .menu-category-title::after {
+  content: '▼';
+  position: absolute;
+  right: 0;
+  font-size: 10px;
+  transition: transform 0.3s ease-in-out;
+}
+
+.redoc-wrap .menu-category-title.collapsed::after {
+  transform: rotate(-90deg);
+}
+
+.redoc-wrap .menu-category-title:focus {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: 2px;
+}
+
+/* Smooth collapse animation */
+@keyframes collapse {
+  from {
+    max-height: 2000px;
+    opacity: 1;
+  }
+  to {
+    max-height: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes expand {
+  from {
+    max-height: 0;
+    opacity: 0;
+  }
+  to {
+    max-height: 2000px;
+    opacity: 1;
+  }
+}
+
+/* Error suggestion styling */
+.error-suggestion {
+  margin-top: 12px;
+  padding: 16px;
+  background-color: var(--ifm-color-info-soft-background);
+  border-left: 4px solid var(--ifm-color-info);
+  border-radius: 4px;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.error-suggestion-title {
+  font-weight: 600;
+  color: var(--ifm-color-info);
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.error-suggestion-text {
+  color: var(--ifm-font-color-base);
+  margin-bottom: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.error-suggestion-code {
+  background-color: var(--ifm-code-background);
+  border-radius: 4px;
+  padding: 8px;
+  margin: 0;
+  overflow-x: auto;
+}
+
+.error-suggestion-code code {
+  font-size: 12px;
+  color: var(--ifm-code-color);
+}
