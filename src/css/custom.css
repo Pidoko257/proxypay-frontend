@@ -1,3 +1,15 @@
+/* =============================================================================
+   ProxyPay API Portal — custom.css
+   Covers:
+     - Brand colour tokens
+     - Accessibility / screen-reader utilities   (#259)
+     - Endpoint preview tooltip cards            (#258)
+     - Request history timeline                  (#257)
+   ============================================================================= */
+
+/* ---------------------------------------------------------------------------
+   Brand colour tokens
+   --------------------------------------------------------------------------- */
 :root {
   --ifm-color-primary: #2e8555;
   --ifm-color-primary-dark: #29784c;
@@ -6,10 +18,66 @@
   --ifm-color-primary-light: #33925e;
   --ifm-color-primary-lighter: #359962;
   --ifm-color-primary-lightest: #3cad6e;
+
+  /* HTTP method colour palette */
+  --method-get:    #2196f3;
+  --method-post:   #4caf50;
+  --method-put:    #ff9800;
+  --method-patch:  #9c27b0;
+  --method-delete: #f44336;
+
+  /* Status colours */
+  --status-ok:  #4caf50;
+  --status-err: #f44336;
+
+  /* Timeline & card tokens */
+  --timeline-bg:       #f9f9f9;
+  --timeline-border:   #e0e0e0;
+  --card-hover-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  --tooltip-bg:        #1a1a2e;
+  --tooltip-text:      #ffffff;
+  --tooltip-radius:    8px;
 }
 
-/* Code block copy button styling */
-div.codeBlockContainer_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-styles-module:hover .copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-styles-module {
+/* ---------------------------------------------------------------------------
+   #259 — Accessibility: screen-reader-only utility
+   Use class="sr-only" on elements that should be spoken but not visible.
+   --------------------------------------------------------------------------- */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* #259 — Visible focus ring for keyboard navigation on all interactive elements */
+:focus-visible {
+  outline: 3px solid var(--ifm-color-primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* #259 — High-contrast focus ring override for buttons */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--ifm-color-primary-dark);
+  outline-offset: 3px;
+}
+
+/* ---------------------------------------------------------------------------
+   Code block copy button styling (existing, kept intact)
+   --------------------------------------------------------------------------- */
+div.codeBlockContainer_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-styles-module:hover
+  .copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-styles-module {
   opacity: 1;
 }
 
@@ -25,4 +93,418 @@ button.copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-st
 /* Ensure code blocks have visible copy buttons */
 pre code {
   position: relative;
+}
+
+/* ---------------------------------------------------------------------------
+   API reference wrapper
+   --------------------------------------------------------------------------- */
+.api-reference-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+/* ---------------------------------------------------------------------------
+   #258 — Endpoint cards + preview tooltip
+   --------------------------------------------------------------------------- */
+.endpoint-cards-section {
+  margin-bottom: 2rem;
+}
+
+.endpoint-cards-section__heading {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.endpoint-cards-section__hint {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.75rem;
+}
+
+.endpoint-cards-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* The card itself */
+.endpoint-card {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--timeline-border);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.1s ease;
+  font-family: var(--ifm-font-family-monospace, monospace);
+  font-size: 0.85rem;
+}
+
+.endpoint-card:hover,
+.endpoint-card:focus-visible {
+  box-shadow: var(--card-hover-shadow);
+  transform: translateY(-1px);
+  outline: 3px solid var(--ifm-color-primary);
+  outline-offset: 2px;
+}
+
+/* HTTP method badge inside card */
+.endpoint-card__method {
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.endpoint-card__method--GET    { background: var(--method-get);    }
+.endpoint-card__method--POST   { background: var(--method-post);   }
+.endpoint-card__method--PUT    { background: var(--method-put);    }
+.endpoint-card__method--PATCH  { background: var(--method-patch);  }
+.endpoint-card__method--DELETE { background: var(--method-delete); }
+
+/* Tooltip bubble (shown on hover/focus) */
+.endpoint-preview-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 1000;
+  min-width: 260px;
+  max-width: 340px;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  border-radius: var(--tooltip-radius);
+  padding: 0.75rem 1rem;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+  pointer-events: none;   /* tooltip is purely informational — #259 role=tooltip */
+}
+
+.endpoint-preview-tooltip__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Method badge inside tooltip */
+.endpoint-preview-tooltip__method {
+  padding: 0.15em 0.5em;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #fff;
+}
+
+.endpoint-preview-tooltip__method--GET    { background: var(--method-get);    }
+.endpoint-preview-tooltip__method--POST   { background: var(--method-post);   }
+.endpoint-preview-tooltip__method--PUT    { background: var(--method-put);    }
+.endpoint-preview-tooltip__method--PATCH  { background: var(--method-patch);  }
+.endpoint-preview-tooltip__method--DELETE { background: var(--method-delete); }
+
+.endpoint-preview-tooltip__path {
+  font-size: 0.85rem;
+  color: #e0e0e0;
+  word-break: break-all;
+}
+
+.endpoint-preview-tooltip__description {
+  font-size: 0.8rem;
+  color: #c8c8c8;
+  margin: 0.25rem 0 0.5rem;
+  line-height: 1.4;
+}
+
+.endpoint-preview-tooltip__tags {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.endpoint-preview-tooltip__tag {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 0.1em 0.55em;
+  font-size: 0.72rem;
+  color: #ddd;
+}
+
+.endpoint-preview-tooltip__test-link {
+  display: inline-block;
+  font-size: 0.75rem;
+  color: var(--ifm-color-primary-lightest);
+  text-decoration: underline;
+  margin-top: 0.25rem;
+  /* Keep pointer events on the link even though parent has none */
+  pointer-events: auto;
+}
+
+/* ---------------------------------------------------------------------------
+   #257 — Request history timeline
+   --------------------------------------------------------------------------- */
+.request-history-timeline {
+  background: var(--timeline-bg);
+  border: 1px solid var(--timeline-border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.request-history-timeline__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.request-history-timeline__heading {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+  flex: 1;
+}
+
+/* Zoom / group-by fieldset */
+.request-history-timeline__zoom {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.request-history-timeline__zoom-label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+/* #259 — Clear button with visible aria-label */
+.request-history-timeline__clear-btn {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--ifm-color-primary);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ifm-color-primary-dark);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.request-history-timeline__clear-btn:hover:not(:disabled),
+.request-history-timeline__clear-btn:focus-visible {
+  background: var(--ifm-color-primary);
+  color: #fff;
+}
+
+.request-history-timeline__clear-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.request-history-timeline__empty {
+  color: #888;
+  font-size: 0.9rem;
+  font-style: italic;
+  margin: 0;
+}
+
+/* Timeline ordered list */
+.request-history-timeline__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Day group */
+.request-history-timeline__group {
+  margin-bottom: 1rem;
+}
+
+.request-history-timeline__group-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #888;
+  margin: 0 0 0.4rem;
+  padding-left: 0.5rem;
+  border-left: 3px solid var(--ifm-color-primary);
+}
+
+.request-history-timeline__group-entries {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+/* Individual entry button */
+.request-history-timeline__entry-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.82rem;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+}
+
+.request-history-timeline__entry-btn:hover,
+.request-history-timeline__entry-btn:focus-visible {
+  background: #f0f0f0;
+  border-color: var(--ifm-color-primary-light);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.request-history-timeline__entry-btn--success {
+  border-left: 3px solid var(--status-ok);
+}
+
+.request-history-timeline__entry-btn--error {
+  border-left: 3px solid var(--status-err);
+}
+
+/* Method badge in timeline */
+.request-history-timeline__method {
+  display: inline-block;
+  padding: 0.1em 0.4em;
+  border-radius: 3px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  min-width: 52px;
+  text-align: center;
+}
+
+.request-history-timeline__method--GET    { background: var(--method-get);    }
+.request-history-timeline__method--POST   { background: var(--method-post);   }
+.request-history-timeline__method--PUT    { background: var(--method-put);    }
+.request-history-timeline__method--PATCH  { background: var(--method-patch);  }
+.request-history-timeline__method--DELETE { background: var(--method-delete); }
+
+.request-history-timeline__path {
+  flex: 1;
+  font-family: var(--ifm-font-family-monospace, monospace);
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.request-history-timeline__status {
+  font-weight: 700;
+  min-width: 36px;
+  text-align: right;
+}
+
+.request-history-timeline__status--ok  { color: var(--status-ok);  }
+.request-history-timeline__status--err { color: var(--status-err); }
+
+.request-history-timeline__time {
+  color: #777;
+  font-size: 0.78rem;
+  min-width: 72px;
+  text-align: right;
+}
+
+.request-history-timeline__duration {
+  color: #999;
+  font-size: 0.78rem;
+  min-width: 52px;
+  text-align: right;
+}
+
+/* ---------------------------------------------------------------------------
+   Selected request detail panel  (#259 + #257)
+   --------------------------------------------------------------------------- */
+.selected-entry-detail {
+  background: #fff;
+  border: 1px solid var(--timeline-border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.selected-entry-detail__heading {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.selected-entry-detail__list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.35rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.selected-entry-detail__row {
+  display: contents;
+}
+
+.selected-entry-detail__row dt {
+  font-weight: 600;
+  color: #555;
+  font-size: 0.85rem;
+}
+
+.selected-entry-detail__row dd {
+  margin: 0;
+  font-family: var(--ifm-font-family-monospace, monospace);
+  font-size: 0.85rem;
+}
+
+/* Close button — #259: aria-label="Close selected request detail panel" */
+.selected-entry-detail__close-btn {
+  padding: 0.35rem 0.8rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: transparent;
+  color: #555;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.selected-entry-detail__close-btn:hover,
+.selected-entry-detail__close-btn:focus-visible {
+  background: #f44336;
+  color: #fff;
+  border-color: #f44336;
+}
+
+/* ---------------------------------------------------------------------------
+   Redoc section wrapper  (#259)
+   --------------------------------------------------------------------------- */
+.redoc-section {
+  border-top: 1px solid var(--timeline-border);
+  padding-top: 1.5rem;
 }

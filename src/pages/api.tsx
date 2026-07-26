@@ -5,10 +5,22 @@ import BrowserOnly from '@docusaurus/BrowserOnly';
 export default function ApiPage(): React.JSX.Element {
   return (
     <Layout title="API Reference" description="ProxyPay REST API reference">
-      <BrowserOnly fallback={<p style={{ padding: '2rem' }}>Loading API reference...</p>}>
+      {/* Loading fallback uses role="status" so screen readers announce it */}
+      <BrowserOnly
+        fallback={
+          <p role="status" aria-live="polite" style={{ padding: '2rem' }}>
+            Loading API reference…
+          </p>
+        }
+      >
         {() => {
           const ApiReference = require('../components/ApiReference').default;
-          return <ApiReference />;
+          return (
+            /* Landmark region wrapping the full interactive API reference */
+            <main aria-label="Interactive API Reference">
+              <ApiReference />
+            </main>
+          );
         }}
       </BrowserOnly>
     </Layout>

@@ -4,6 +4,8 @@
   "version": "1.0.0",
   "scripts": {
     "sync:openapi": "node -e \"if(!require('fs').existsSync('./static/openapi.yaml')){console.log('No openapi.yaml found in static/ — place your openapi.yaml in static/ before building.');}\"",
+    "preflight": "node scripts/preflight.js",
+    "prebuild": "node scripts/preflight.js",
     "start": "docusaurus start --port 3001",
     "build": "docusaurus build",
     "serve": "docusaurus serve",
