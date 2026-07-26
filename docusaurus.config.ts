@@ -39,6 +39,7 @@ const config: Config = {
   ],
 
   themeConfig: {
+    breadcrumbs: true,
     navbar: {
       title: 'ProxyPay API',
       items: [
@@ -65,6 +66,11 @@ const config: Config = {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
       additionalLanguages: ['bash', 'json', 'yaml', 'typescript', 'python'],
+    },
+    colorMode: {
+      defaultMode: 'light',
+      disableSwitch: false,
+      respectPrefersColorScheme: true,
     },
   } satisfies Preset.ThemeConfig,
 };

@@ -1,0 +1,21 @@
+<!-- Theme initialization script to prevent flash on page load -->
+<script>
+  (function() {
+    try {
+      const theme = localStorage.getItem('theme');
+      const html = document.documentElement;
+
+      if (theme === 'dark') {
+        html.setAttribute('data-theme', 'dark');
+      } else if (theme === 'light') {
+        html.setAttribute('data-theme', 'light');
+      } else {
+        // Use system preference
+        const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        html.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      }
+    } catch (e) {
+      // Silently fail if localStorage is not available
+    }
+  })();
+</script>
