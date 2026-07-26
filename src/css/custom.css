@@ -26,3 +26,562 @@ button.copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-st
 pre code {
   position: relative;
 }
+
+/* ============================================================
+   Issue #251 — OAuth2 Interactive Flow Diagram
+   ============================================================ */
+
+.oauth2-diagram-section {
+  margin-top: 3rem;
+  padding: 2rem;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 12px;
+  background: var(--ifm-background-surface-color);
+}
+
+.oauth2-diagram-title {
+  font-size: 1.6rem;
+  margin-bottom: 0.4rem;
+  color: var(--ifm-color-primary-darkest);
+}
+
+.oauth2-diagram-subtitle {
+  color: var(--ifm-color-secondary-darkest);
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+/* Flow selector tabs */
+.oauth2-flow-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.oauth2-tab {
+  padding: 0.4rem 1rem;
+  border: 2px solid var(--ifm-color-primary);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ifm-color-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.oauth2-tab:hover {
+  background: var(--ifm-color-primary-lightest);
+  color: #fff;
+}
+
+.oauth2-tab--active {
+  background: var(--ifm-color-primary);
+  color: #fff;
+}
+
+/* Diagram wrapper */
+.oauth2-diagram-wrapper {
+  position: relative;
+}
+
+.oauth2-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Individual step */
+.oauth2-step {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--ifm-background-color);
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  outline: none;
+  position: relative;
+  z-index: 1;
+}
+
+.oauth2-step:focus-visible {
+  box-shadow: 0 0 0 3px var(--ifm-color-primary-lighter);
+}
+
+.oauth2-step:hover {
+  border-color: var(--ifm-color-primary);
+  background: var(--ifm-color-primary-lightest);
+  color: #fff;
+}
+
+.oauth2-step--animated {
+  border-color: var(--ifm-color-primary);
+  background: linear-gradient(90deg, var(--ifm-color-primary-lightest) 0%, var(--ifm-color-primary-light) 100%);
+  color: #fff;
+  animation: oauth2-step-in 0.4s ease forwards;
+}
+
+.oauth2-step--active {
+  border-color: var(--ifm-color-primary-darker);
+  background: var(--ifm-color-primary-darkest);
+  color: #fff;
+}
+
+@keyframes oauth2-step-in {
+  from {
+    opacity: 0.4;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.oauth2-step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--ifm-color-primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.oauth2-step--animated .oauth2-step-number,
+.oauth2-step--active .oauth2-step-number {
+  background: #fff;
+  color: var(--ifm-color-primary-darkest);
+}
+
+.oauth2-step-label {
+  flex: 1;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.oauth2-step-arrow {
+  font-size: 0.8rem;
+  opacity: 0.6;
+  transition: transform 0.2s;
+}
+
+.oauth2-step--active .oauth2-step-arrow {
+  transform: rotate(90deg);
+  opacity: 1;
+}
+
+/* Step detail panel */
+.oauth2-step-detail {
+  padding: 1rem 1.25rem;
+  background: var(--ifm-background-surface-color);
+  border-left: 3px solid var(--ifm-color-primary);
+  border-radius: 0 0 8px 8px;
+  margin-top: -2px;
+  font-size: 0.9rem;
+  animation: oauth2-detail-open 0.2s ease;
+}
+
+@keyframes oauth2-detail-open {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.oauth2-step-actors {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--ifm-color-secondary-darkest);
+}
+
+.oauth2-step-link {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.oauth2-step-link:hover {
+  text-decoration: underline;
+}
+
+/* Connector between steps */
+.oauth2-connector {
+  width: 3px;
+  height: 20px;
+  background: var(--ifm-color-emphasis-300);
+  margin: 0 auto;
+  border-radius: 2px;
+  transition: background 0.4s;
+  position: relative;
+  z-index: 0;
+}
+
+.oauth2-connector--animated {
+  background: var(--ifm-color-primary);
+  animation: oauth2-connector-fill 0.3s ease forwards;
+}
+
+@keyframes oauth2-connector-fill {
+  from {
+    background: var(--ifm-color-emphasis-300);
+  }
+  to {
+    background: var(--ifm-color-primary);
+  }
+}
+
+/* Controls */
+.oauth2-controls {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.oauth2-animate-btn,
+.oauth2-reset-btn {
+  min-width: 140px;
+}
+
+/* Mobile: hide desktop diagram, show list */
+@media (max-width: 600px) {
+  .oauth2-steps {
+    display: none;
+  }
+
+  .oauth2-mobile-summary {
+    display: block;
+  }
+
+  .oauth2-diagram-section {
+    padding: 1rem;
+  }
+}
+
+@media (min-width: 601px) {
+  .oauth2-mobile-summary {
+    display: none;
+  }
+}
+
+/* ============================================================
+   Issue #255 — Response Schema Type Description Tooltips
+   ============================================================ */
+
+/* Auth builder panel */
+.auth-builder-panel {
+  padding: 1.5rem;
+  background: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.auth-builder-panel h3 {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+  color: var(--ifm-color-primary-darkest);
+}
+
+.auth-method-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.auth-method-tab {
+  padding: 0.35rem 0.85rem;
+  border: 2px solid var(--ifm-color-primary);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ifm-color-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.auth-method-tab:hover {
+  background: var(--ifm-color-primary-lightest);
+  color: #fff;
+}
+
+.auth-method-tab--active {
+  background: var(--ifm-color-primary);
+  color: #fff;
+}
+
+.auth-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.auth-field label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ifm-color-secondary-darkest);
+}
+
+.auth-field input,
+.auth-field select {
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: var(--ifm-background-color);
+  color: var(--ifm-font-color-base);
+  transition: border-color 0.2s;
+}
+
+.auth-field input:focus,
+.auth-field select:focus {
+  outline: none;
+  border-color: var(--ifm-color-primary);
+  box-shadow: 0 0 0 2px var(--ifm-color-primary-lightest);
+}
+
+.auth-token-display {
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.9rem;
+  background: var(--ifm-code-background);
+  border-radius: 6px;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.82rem;
+  word-break: break-all;
+  color: var(--ifm-color-primary-darkest);
+  border: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.auth-token-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ifm-color-secondary-darkest);
+  margin-bottom: 0.25rem;
+}
+
+.auth-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.auth-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.auth-status-badge--active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.auth-status-badge--expired {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.auth-status-badge--idle {
+  background: var(--ifm-color-emphasis-100);
+  color: var(--ifm-color-secondary-darkest);
+}
+
+/* Schema type tooltip wrapper */
+.schema-type-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.schema-type-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-family: var(--ifm-font-family-monospace);
+  font-weight: 600;
+  background: var(--ifm-color-emphasis-100);
+  color: var(--ifm-color-primary-darkest);
+  border: 1px solid var(--ifm-color-emphasis-300);
+}
+
+.schema-type-info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: var(--ifm-color-primary);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: background 0.2s;
+}
+
+.schema-type-info-btn:hover {
+  background: var(--ifm-color-primary-darker);
+}
+
+.schema-type-tooltip {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 100;
+  background: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  min-width: 220px;
+  max-width: 320px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  animation: tooltip-in 0.15s ease;
+}
+
+@keyframes tooltip-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.schema-type-tooltip-title {
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--ifm-color-primary-darkest);
+  margin-bottom: 0.35rem;
+}
+
+.schema-type-tooltip-desc {
+  font-size: 0.8rem;
+  color: var(--ifm-font-color-base);
+  margin-bottom: 0.35rem;
+  line-height: 1.4;
+}
+
+.schema-type-tooltip-meta {
+  font-size: 0.75rem;
+  color: var(--ifm-color-secondary-darkest);
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+  padding-top: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.schema-type-tooltip-enum {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.3rem;
+}
+
+.schema-enum-value {
+  background: var(--ifm-code-background);
+  border-radius: 3px;
+  padding: 0.1rem 0.4rem;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.75rem;
+  color: var(--ifm-color-primary-darkest);
+}
+
+.schema-fields-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  font-size: 0.87rem;
+}
+
+.schema-fields-table th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  background: var(--ifm-color-emphasis-100);
+  border-bottom: 2px solid var(--ifm-color-emphasis-300);
+  font-size: 0.8rem;
+  color: var(--ifm-color-secondary-darkest);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.schema-fields-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+  vertical-align: top;
+}
+
+.schema-fields-table tr:last-child td {
+  border-bottom: none;
+}
+
+.schema-fields-table tr:hover td {
+  background: var(--ifm-color-emphasis-50);
+}
+
+.schema-required-badge {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.schema-constraint {
+  font-size: 0.75rem;
+  color: var(--ifm-color-secondary-darkest);
+  margin-top: 0.2rem;
+}
+
+.schema-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 1.5rem 0 0.75rem;
+  color: var(--ifm-color-primary-darkest);
+}
+
+.api-reference-wrapper {
+  padding: 1.5rem;
+  max-width: 960px;
+  margin: 0 auto;
+}
