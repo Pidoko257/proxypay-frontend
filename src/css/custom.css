@@ -26,3 +26,80 @@ button.copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-st
 pre code {
   position: relative;
 }
+
+.api-reference-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.api-reference-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  padding: 1rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 0.75rem;
+  background: var(--ifm-background-surface-color);
+}
+
+.api-reference-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.api-reference-filter-label {
+  font-weight: 600;
+  color: var(--ifm-color-emphasis-800);
+}
+
+.api-reference-method-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.api-reference-method-button,
+.api-reference-clear-button {
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  background: var(--ifm-background-color);
+  color: var(--ifm-color-emphasis-800);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.api-reference-method-button.is-active {
+  background: var(--ifm-color-primary);
+  border-color: var(--ifm-color-primary);
+  color: white;
+}
+
+.api-reference-clear-button:hover,
+.api-reference-method-button:hover {
+  border-color: var(--ifm-color-primary);
+}
+
+.api-reference-tag-select {
+  min-width: 14rem;
+  min-height: 7rem;
+  padding: 0.5rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 0.5rem;
+  background: var(--ifm-background-color);
+}
+
+.api-reference-status {
+  margin: 0;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background: var(--ifm-color-emphasis-100);
+}
+
+.api-reference-status-error {
+  color: var(--ifm-color-danger);
+  background: rgba(255, 0, 0, 0.08);
+}
