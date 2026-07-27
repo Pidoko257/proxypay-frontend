@@ -26,3 +26,7 @@ button.copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-st
 pre code {
   position: relative;
 }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
