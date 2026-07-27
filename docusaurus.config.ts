@@ -48,6 +48,8 @@ const config: Config = {
           href: 'https://github.com/sublime247/proxypay',
           label: 'GitHub',
           position: 'right',
+          target: '_blank',
+          rel: 'noopener noreferrer',
         },
       ],
     },
