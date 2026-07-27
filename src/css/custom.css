@@ -8,6 +8,18 @@
   --ifm-color-primary-lightest: #3cad6e;
 }
 
+/* Navbar active link highlighting (#205) */
+.navbar__item.navbar__link--active {
+  color: var(--ifm-color-primary);
+  font-weight: 600;
+  border-bottom: 2px solid var(--ifm-color-primary);
+  padding-bottom: 0.25rem;
+}
+
+.navbar__item.navbar__link--active:hover {
+  color: var(--ifm-color-primary-dark);
+}
+
 /* Code block copy button styling */
 div.codeBlockContainer_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-styles-module:hover .copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-styles-module {
   opacity: 1;
