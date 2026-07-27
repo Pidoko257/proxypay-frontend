@@ -8,18 +8,123 @@
   --ifm-color-primary-lightest: #3cad6e;
 }
 
-/* Code block copy button styling */
+/* Redoc search input focus fix */
+.redoc-wrap input[type="text"],
+.redoc-wrap input[type="search"] {
+  transition: box-shadow 0.15s ease-in-out !important;
+}
+
+.redoc-wrap input[type="text"]:focus,
+.redoc-wrap input[type="search"]:focus {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(46, 133, 85, 0.1);
+}
+
+/* Prevent focus loss on search input during typing */
+.redoc-wrap .search-input-container input:focus {
+  box-shadow: 0 0 0 3px rgba(46, 133, 85, 0.1) !important;
+}
+
+/* Docusaurus code block copy button - Desktop */
 div.codeBlockContainer_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-styles-module:hover .copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-styles-module {
   opacity: 1;
 }
 
 button.copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-styles-module {
   transition: opacity 0.2s ease-in-out;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px 12px;
 }
 
-/* Redoc code sample copy button */
+/* Mobile: Show copy button always and ensure it's tappable */
+@media (max-width: 768px) {
+  div.codeBlockContainer_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-styles-module .copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-styles-module {
+    opacity: 1 !important;
+    position: relative;
+    z-index: 10;
+    min-width: 48px;
+    min-height: 48px;
+    padding: 10px 14px;
+    font-size: 0.9rem;
+  }
+
+  div.codeBlockContainer_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-styles-module .copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-styles-module:active {
+    transform: scale(0.95);
+  }
+}
+
+/* Redoc code blocks - Ensure copy button is accessible on mobile */
+.redoc-wrap .api-content pre {
+  position: relative;
+  overflow: visible;
+}
+
 .redoc-wrap .copy-icon-svg {
   fill: var(--ifm-color-primary);
+}
+
+/* Redoc code samples copy button styling */
+.redoc-wrap button[aria-label*="copy" i],
+.redoc-wrap button[title*="copy" i],
+.redoc-wrap .copy-button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease-in-out;
+}
+
+.redoc-wrap button[aria-label*="copy" i]:hover,
+.redoc-wrap button[title*="copy" i]:hover,
+.redoc-wrap .copy-button:hover {
+  background-color: rgba(46, 133, 85, 0.1);
+  transform: scale(1.05);
+}
+
+.redoc-wrap button[aria-label*="copy" i]:active,
+.redoc-wrap button[title*="copy" i]:active,
+.redoc-wrap .copy-button:active {
+  transform: scale(0.95);
+  background-color: rgba(46, 133, 85, 0.2);
+}
+
+/* Mobile optimizations for all copy buttons */
+@media (max-width: 768px) {
+  .redoc-wrap button[aria-label*="copy" i],
+  .redoc-wrap button[title*="copy" i],
+  .redoc-wrap .copy-button {
+    min-width: 48px;
+    min-height: 48px;
+    padding: 10px 14px;
+  }
+
+  .redoc-wrap pre {
+    padding-right: 50px;
+  }
+
+  .redoc-wrap pre button[aria-label*="copy" i],
+  .redoc-wrap pre button[title*="copy" i] {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+  }
+}
+
+/* Touch-friendly adjustments */
+@media (hover: none) and (pointer: coarse) {
+  button.copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-styles-module,
+  .redoc-wrap button[aria-label*="copy" i],
+  .redoc-wrap button[title*="copy" i] {
+    opacity: 1 !important;
+    min-width: 48px;
+    min-height: 48px;
+  }
 }
 
 /* Ensure code blocks have visible copy buttons */
