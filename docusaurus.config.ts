@@ -45,6 +45,10 @@ const config: Config = {
         { to: '/', label: 'Overview', position: 'left' },
         { to: '/api', label: 'Reference', position: 'left' },
         {
+          type: 'search',
+          position: 'right',
+        },
+        {
           href: 'https://github.com/sublime247/proxypay',
           label: 'GitHub',
           position: 'right',
@@ -57,6 +61,21 @@ const config: Config = {
         {
           title: 'Docs',
           items: [{ label: 'API Reference', to: '/api' }],
+        },
+        {
+          title: 'Community',
+          items: [
+            { label: 'Discord', href: 'https://discord.gg/proxypay' },
+            { label: 'Twitter', href: 'https://twitter.com/proxypay' },
+          ],
+        },
+        {
+          title: 'Resources',
+          items: [
+            { label: 'Blog', href: 'https://blog.proxypay.com' },
+            { label: 'Status Page', href: 'https://status.proxypay.com' },
+            { label: 'Support', href: 'https://support.proxypay.com' },
+          ],
         },
       ],
       copyright: `Copyright © ${new Date().getFullYear()} ProxyPay`,
