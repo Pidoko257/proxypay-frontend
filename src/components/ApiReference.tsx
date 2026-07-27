@@ -4,7 +4,7 @@ import { RedocStandalone } from 'redoc';
 export default function ApiReference(): React.JSX.Element {
   return (
     <RedocStandalone
-      specUrl="/openapi.yaml"
+      specUrl={`${window.location.origin}/openapi.yaml`}
       options={{
         hideHostname: false,
         disableSearch: false,
