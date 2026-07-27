@@ -2,6 +2,10 @@
 
 Docusaurus-based documentation site for the ProxyPay — Mobile Money ↔ Stellar Bridge API.
 
+## Localization
+
+This documentation site currently supports English only. There is no i18n infrastructure configured. If multi-language support is needed in the future, it can be added through Docusaurus's i18n system.
+
 ## Getting started
 
 ```bash
