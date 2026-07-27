@@ -1,0 +1,124 @@
+.container {
+  position: relative;
+  width: 100%;
+}
+
+.viewToggle {
+  display: flex;
+  gap: 8px;
+  padding: 16px 20px;
+  background: var(--toggle-bg, #f5f5f5);
+  border-bottom: 1px solid var(--toggle-border, #e0e0e0);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.toggleBtn {
+  padding: 10px 16px;
+  border: 1px solid var(--toggle-btn-border, #ddd);
+  background: var(--toggle-btn-bg, #fff);
+  color: var(--toggle-btn-text, #333);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.toggleBtn:hover:not(:disabled) {
+  border-color: var(--focus-color, #0066cc);
+  background: var(--toggle-btn-hover-bg, #f9f9f9);
+}
+
+.toggleBtn.active {
+  background: var(--focus-color, #0066cc);
+  color: #fff;
+  border-color: var(--focus-color, #0066cc);
+}
+
+.toggleBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.toggleBtn:focus {
+  outline: 2px solid var(--focus-color, #0066cc);
+  outline-offset: 2px;
+}
+
+.errorMessage {
+  padding: 16px 20px;
+  margin: 16px 20px;
+  background: var(--error-bg, #fff3cd);
+  border: 1px solid var(--error-border, #ffc107);
+  border-radius: 6px;
+  color: var(--error-text, #856404);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.errorMessage strong {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.errorMessage p {
+  margin: 4px 0;
+  font-size: 13px;
+}
+
+.errorMessage code {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Menlo', monospace;
+}
+
+.loadingMessage {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-secondary, #666);
+  font-size: 16px;
+}
+
+.loadingMessage p {
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .viewToggle {
+    padding: 12px;
+    gap: 6px;
+  }
+
+  .toggleBtn {
+    padding: 8px 12px;
+    font-size: 13px;
+    flex: 1;
+  }
+
+  .errorMessage {
+    margin: 12px;
+    padding: 12px;
+    font-size: 13px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .container {
+    --toggle-bg: #1e1e1e;
+    --toggle-border: #333;
+    --toggle-btn-bg: #2a2a2a;
+    --toggle-btn-border: #3a3a3a;
+    --toggle-btn-text: #e0e0e0;
+    --toggle-btn-hover-bg: #333;
+    --error-bg: #332701;
+    --error-border: #664d03;
+    --error-text: #ffecb5;
+    --text-secondary: #999;
+  }
+}

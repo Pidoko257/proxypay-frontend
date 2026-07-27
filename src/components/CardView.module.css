@@ -1,0 +1,191 @@
+.cardView {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 20px;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--controls-bg, #f9f9f9);
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--controls-border, #e0e0e0);
+}
+
+.searchBox {
+  position: relative;
+  display: flex;
+}
+
+.searchInput {
+  flex: 1;
+  padding: 10px 12px;
+  padding-right: 36px;
+  border: 1px solid var(--input-border, #ddd);
+  border-radius: 6px;
+  font-size: 14px;
+  background: var(--input-bg, #fff);
+  color: var(--input-text, #333);
+  transition: border-color 0.2s ease;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--focus-color, #0066cc);
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.searchInput::placeholder {
+  color: var(--placeholder-color, #999);
+}
+
+.clearBtn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--btn-text, #666);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.clearBtn:hover {
+  background-color: var(--btn-hover-bg, #e0e0e0);
+  color: var(--btn-hover-text, #333);
+}
+
+.clearBtn:focus {
+  outline: 2px solid var(--focus-color, #0066cc);
+}
+
+.methodFilter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.methodBtn {
+  padding: 8px 12px;
+  border: 1px solid var(--method-btn-border, #ddd);
+  background: var(--method-btn-bg, #fff);
+  color: var(--method-btn-text, #333);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.methodBtn:hover {
+  border-color: var(--focus-color, #0066cc);
+  background: var(--method-btn-hover-bg, #f5f5f5);
+}
+
+.methodBtn.active {
+  background: var(--focus-color, #0066cc);
+  color: #fff;
+  border-color: var(--focus-color, #0066cc);
+}
+
+.methodBtn:focus {
+  outline: 2px solid var(--focus-color, #0066cc);
+  outline-offset: 2px;
+}
+
+.resultCount {
+  font-size: 13px;
+  color: var(--text-secondary, #666);
+  padding: 0 4px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.emptyState {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--text-secondary, #666);
+  text-align: center;
+}
+
+.emptyState p {
+  margin: 8px 0;
+}
+
+.emptyState p:first-child {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #333);
+}
+
+.emptyText {
+  font-size: 13px;
+  margin-top: 8px !important;
+}
+
+@media (max-width: 768px) {
+  .cardView {
+    padding: 12px;
+    gap: 16px;
+  }
+
+  .controls {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .methodFilter {
+    gap: 6px;
+  }
+
+  .methodBtn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .cardView {
+    --controls-bg: #2a2a2a;
+    --controls-border: #3a3a3a;
+    --input-bg: #1e1e1e;
+    --input-border: #3a3a3a;
+    --input-text: #e0e0e0;
+    --placeholder-color: #666;
+    --btn-text: #ccc;
+    --btn-hover-bg: #3a3a3a;
+    --method-btn-bg: #1e1e1e;
+    --method-btn-border: #3a3a3a;
+    --method-btn-text: #e0e0e0;
+    --method-btn-hover-bg: #333;
+    --text-secondary: #999;
+    --text-primary: #f5f5f5;
+  }
+}
