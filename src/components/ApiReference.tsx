@@ -8,6 +8,7 @@ export default function ApiReference(): React.JSX.Element {
       options={{
         hideHostname: false,
         disableSearch: false,
+        lazyRendering: true,
         expandResponses: '200,201',
         requiredPropsFirst: true,
         sortPropsAlphabetically: true,

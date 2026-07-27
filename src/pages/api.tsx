@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import Layout from '@theme/Layout';
 import BrowserOnly from '@docusaurus/BrowserOnly';
 import Head from '@docusaurus/Head';
+
+const ApiReference = lazy(() => import('../components/ApiReference'));
 
 export default function ApiPage(): React.JSX.Element {
   return (
@@ -18,10 +20,11 @@ export default function ApiPage(): React.JSX.Element {
         <link rel="canonical" href="https://sublime247.github.io/proxypay/api" />
       </Head>
       <BrowserOnly fallback={<p style={{ padding: '2rem' }}>Loading API reference...</p>}>
-        {() => {
-          const ApiReference = require('../components/ApiReference').default;
-          return <ApiReference />;
-        }}
+        {() => (
+          <Suspense fallback={<p style={{ padding: '2rem', textAlign: 'center' }}>Loading API documentation...</p>}>
+            <ApiReference />
+          </Suspense>
+        )}
       </BrowserOnly>
     </Layout>
   );
