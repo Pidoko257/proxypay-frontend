@@ -11,6 +11,10 @@ export default function ApiReference(): React.JSX.Element {
         expandResponses: '200,201',
         requiredPropsFirst: true,
         sortPropsAlphabetically: true,
+        nativeScrollbars: true,
+        scrollYOffset: 60,
+        hideDownloadButton: false,
+        pathInMiddlePanel: true,
       }}
     />
   );
