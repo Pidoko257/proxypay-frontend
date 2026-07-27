@@ -1,8 +1,8 @@
 # ProxyPay API Docs Portal
 
-Docusaurus-based documentation site for the ProxyPay — Mobile Money ↔ Stellar Bridge API.
+Docusaurus-based documentation site for ProxyPay — Mobile Money ↔ Stellar Bridge API.
 
-## Getting started
+## Getting Started
 
 ```bash
 npm install
@@ -11,7 +11,7 @@ npm run build    # production build → build/
 npm run serve    # serve the production build locally
 ```
 
-## OpenAPI spec
+## OpenAPI Spec
 
 The API reference page (`/api`) is powered by [Redoc](https://redocly.com/redoc/).
 It reads `static/openapi.yaml` at build time.
