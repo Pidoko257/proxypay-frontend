@@ -26,3 +26,90 @@ button.copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-st
 pre code {
   position: relative;
 }
+
+/* ── Issue #227: Fix Modal Dialogs Not Dismissible on Mobile ── */
+
+/* Minimum touch target for all interactive elements */
+@media (max-width: 768px) {
+  .redoc-wrap button,
+  .redoc-wrap [role="button"],
+  .redoc-wrap a,
+  .redoc-wrap summary,
+  .redoc-wrap .menu-content label {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Ensure close / dismiss buttons are large enough to tap */
+  .redoc-wrap button[aria-label="Close"],
+  .redoc-wrap button[aria-label="close"],
+  .redoc-wrap button.close,
+  .redoc-wrap .operation-type button,
+  .redoc-wrap .menu-overlay,
+  .redoc-wrap .menu-content button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 10px;
+    font-size: 16px;
+  }
+}
+
+/* Make Redoc sidebar overlay clickable on mobile */
+@media (max-width: 768px) {
+  .redoc-wrap .menu-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Sidebar close button */
+  .redoc-wrap .menu-content > button:first-child {
+    position: sticky;
+    top: 0;
+    z-index: 101;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 48px;
+    background: var(--ifm-color-primary);
+    color: #fff;
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Server select / dropdown overlay fix */
+@media (max-width: 768px) {
+  .redoc-wrap .dropdown-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 99;
+    cursor: pointer;
+  }
+}
+
+/* Improve "Try it out" request panel on mobile */
+@media (max-width: 768px) {
+  .redoc-wrap .request-editor {
+    padding: 8px;
+  }
+
+  .redoc-wrap .request-editor button {
+    min-height: 44px;
+    font-size: 15px;
+  }
+}
+
+/* General Redoc focus ring for keyboard / screen readers */
+.redoc-wrap button:focus-visible,
+.redoc-wrap a:focus-visible {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: 2px;
+}

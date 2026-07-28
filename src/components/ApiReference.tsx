@@ -40,6 +40,36 @@ export default function ApiReference(): React.JSX.Element {
     };
   }, []);
 
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        const overlay = document.querySelector(
+          '.redoc-wrap .menu-overlay, .redoc-wrap .dropdown-overlay',
+        ) as HTMLElement | null;
+        if (overlay) {
+          overlay.click();
+        }
+      }
+    }
+
+    function handleClickOutside(e: MouseEvent) {
+      const target = e.target as HTMLElement;
+      if (
+        target.classList.contains('menu-overlay') ||
+        target.classList.contains('dropdown-overlay')
+      ) {
+        target.click();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('click', handleClickOutside, true);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('click', handleClickOutside, true);
+    };
+  }, []);
+
   if (error) {
     return (
       <div style={{ padding: '2rem', color: '#d32f2f' }}>
