@@ -26,3 +26,60 @@ button.copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-st
 pre code {
   position: relative;
 }
+
+/* API reference topbar */
+.api-topbar {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1rem 1.25rem;
+  background: rgba(46,133,85,0.04);
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+
+.api-topbar .search-suggestions {
+  flex: 1 1 60%;
+  position: relative;
+}
+
+.search-suggestions input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
+
+.suggestions-list {
+  position: absolute;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  list-style: none;
+  margin: 0.5rem 0 0 0;
+  padding: 0.25rem 0;
+  width: 100%;
+  max-height: 320px;
+  overflow: auto;
+  z-index: 30;
+}
+
+.suggestions-list li { padding: 0.5rem 0.75rem; }
+.suggestions-list li.active { background: rgba(46,133,85,0.06); }
+.suggestions-list .s-title { font-weight: 600; }
+.suggestions-list .s-snippet { font-size: 13px; color: #666; }
+
+.auth-selector {
+  flex: 0 0 360px;
+  background: #fff;
+  border-radius: 6px;
+  padding: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.auth-controls { display:flex; gap:0.5rem; align-items:center; margin-bottom:0.5rem; }
+.auth-label, .lang-label { font-weight:600; margin-right: .25rem; }
+.auth-code { background: #0f1720; color: #fff; padding: 0.75rem; border-radius:4px; overflow:auto; }
+.example-header { display:flex; justify-content:space-between; align-items:center; gap:0.5rem; }
+.auth-qr { display:flex; gap:0.5rem; align-items:center; margin-top:0.5rem; }
+.auth-qr img { width:64px; height:64px; border-radius:4px; }
+
+.api-reference-content { padding-top: 0; }
