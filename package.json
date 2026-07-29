@@ -7,9 +7,30 @@
     "start": "docusaurus start --port 3001",
     "build": "docusaurus build",
     "serve": "docusaurus serve",
-    "deploy": "docusaurus deploy"
+    "deploy": "docusaurus deploy",
+    "load-test": "ts-node src/load-test.ts",
+    "load-test:smoke": "ts-node src/load-test.ts --profile smoke-test",
+    "load-test:normal": "ts-node src/load-test.ts --profile normal-load",
+    "load-test:stress": "ts-node src/load-test.ts --profile stress-test",
+    "load-test:spike": "ts-node src/load-test.ts --profile spike-test",
+    "load-test:endurance": "ts-node src/load-test.ts --profile endurance-test",
+    "load-test:all": "ts-node src/load-test.ts --concurrent",
+    "load-test:baseline:save": "ts-node src/load-test.ts --save-baseline",
+    "load-test:baseline:compare": "ts-node src/load-test.ts --compare-baseline",
+    "load-test:scenario:rate-limit": "ts-node src/load-test.ts --scenarios rate-limit-flow",
+    "load-test:scenario:docs": "ts-node src/load-test.ts --scenarios documentation-flow",
+    "load-test:scenario:rampup": "ts-node src/load-test.ts --scenarios ramp-up-analysis",
+    "load-test:list": "ts-node src/load-test.ts --list-profiles"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.0.0",
+    "axios": "^1.7.7",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
   },
   "dependencies": {
+    "js-yaml": "^4.1.0",
     "@docusaurus/core": "3.9.2",
     "@docusaurus/preset-classic": "3.9.2",
     "@mdx-js/react": "^3.1.1",
