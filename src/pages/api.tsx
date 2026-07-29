@@ -1,6 +1,9 @@
 import React, { Suspense, lazy } from 'react';
 import Layout from '@theme/Layout';
 import BrowserOnly from '@docusaurus/BrowserOnly';
+import Head from '@docusaurus/Head';
+
+const ApiReference = lazy(() => import('../components/ApiReference'));
 
 /**
  * ApiPage
