@@ -103,7 +103,7 @@ const config: Config = {
       items: [
         { to: '/', label: 'Overview', position: 'left' },
         { to: '/api', label: 'Reference', position: 'left' },
-        { to: '/rate-limits', label: 'Rate Limits', position: 'left' },
+        { to: '/faq', label: 'FAQ', position: 'left' },
         {
           // #231: external link — open in new tab
           href: 'https://github.com/sublime247/proxypay',
