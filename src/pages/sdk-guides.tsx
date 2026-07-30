@@ -1,7 +1,8 @@
 import React, {useEffect, useState} from 'react';
 import Layout from '@theme/Layout';
-import Link from '@docusaurus/Link';
 import CodeBlock from '@theme/CodeBlock';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 import * as yaml from 'js-yaml';
 
 type OpenApiInfo = {title?: string; version?: string; description?: string};
@@ -88,45 +89,38 @@ export default function SdkGuides(): React.JSX.Element {
           {info?.version ? `v${info.version}` : ''}
         </p>
 
-        <nav style={{ margin: '1rem 0' }}>
-          {LANGS.map((l) => (
-            <Link key={l} to={`#${l.toLowerCase()}`} className="button button--secondary" style={{ marginRight: 8 }}>
-              {l}
-            </Link>
-          ))}
-        </nav>
+        <Tabs groupId="sdk-language" queryString="lang">
+          {LANGS.map((lang) => {
+            const t = TEMPLATES[lang as string];
+            return (
+              <TabItem key={lang} value={lang.toLowerCase()} label={lang}>
+                <div className="sdk-card">
+                  <h3>Installation</h3>
+                  <CodeBlock language="bash">{t.pkg}</CodeBlock>
 
-        {LANGS.map((lang) => {
-          const t = TEMPLATES[lang as string];
-          return (
-            <section key={lang} id={lang.toLowerCase()} style={{ margin: '2rem 0' }}>
-              <h2>{lang}</h2>
-              <div className="sdk-card">
-                <h3>Installation</h3>
-                <CodeBlock language="bash">{t.pkg}</CodeBlock>
+                  <h3>Quickstart</h3>
+                  <CodeBlock language={lang === 'JavaScript' ? 'js' : lang.toLowerCase()}>
+                    {t.quickstart}
+                  </CodeBlock>
 
-                <h3>Quickstart</h3>
-                <CodeBlock language={lang === 'JavaScript' ? 'js' : lang.toLowerCase()}>
-                  {t.quickstart}
-                </CodeBlock>
+                  <h3>Authentication</h3>
+                  <p>{t.auth}</p>
 
-                <h3>Authentication</h3>
-                <p>{t.auth}</p>
+                  <h3>Common use cases</h3>
+                  <ul>
+                    {t.examples.map((ex: string) => (
+                      <li key={ex}>{ex}</li>
+                    ))}
+                  </ul>
 
-                <h3>Common use cases</h3>
-                <ul>
-                  {t.examples.map((ex: string) => (
-                    <li key={ex}>{ex}</li>
-                  ))}
-                </ul>
-
-                <p>
-                  Full SDK documentation: <a href={t.docs} target="_blank" rel="noreferrer">{t.docs}</a>
-                </p>
-              </div>
-            </section>
-          );
-        })}
+                  <p>
+                    Full SDK documentation: <a href={t.docs} target="_blank" rel="noreferrer">{t.docs}</a>
+                  </p>
+                </div>
+              </TabItem>
+            );
+          })}
+        </Tabs>
       </main>
     </Layout>
   );
