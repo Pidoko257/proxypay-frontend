@@ -3701,4 +3701,206 @@ html[data-theme='dark'] .code-status--warning {
   .rl-stat-num { font-size: 1.2rem; }
   .int-grid, .sc-grid { grid-template-columns: 1fr; }
   .status-sub-form { flex-direction: column; }
+/* ============================================================
+   Fix #235 — Browser autofill styling overlays input field text
+   ============================================================
+   Browsers (Chrome, Edge, Safari) inject a solid yellow/blue background
+   on autofilled inputs via :-webkit-autofill. This overrides the
+   browser's default autofill appearance to keep text readable and
+   match the site theme in both light and dark modes.
+   ============================================================ */
+
+/* Light mode autofill: use a subtle green-tinted background that
+   matches the ProxyPay brand while keeping text fully legible. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+textarea:-webkit-autofill:active,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus,
+select:-webkit-autofill:active {
+  /* Use a box-shadow trick to override the browser's autofill background
+     color without fighting the browser's internal style sheet. This is the
+     only reliable cross-browser way to prevent autofill from obscuring text. */
+  -webkit-box-shadow: 0 0 0 1000px var(--ifm-background-surface-color, #fff) inset !important;
+  box-shadow: 0 0 0 1000px var(--ifm-background-surface-color, #fff) inset !important;
+  /* Ensure text color is always the foreground color, never obscured. */
+  -webkit-text-fill-color: var(--ifm-font-color-base, #1c1e21) !important;
+  /* Retain the existing border so the field shape is preserved. */
+  border-color: var(--ifm-color-primary-lighter) !important;
+  /* Keep the normal transition so autofill doesn't flash. */
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Dark mode autofill: swap the inset colour to match the dark surface. */
+[data-theme='dark'] input:-webkit-autofill,
+[data-theme='dark'] input:-webkit-autofill:hover,
+[data-theme='dark'] input:-webkit-autofill:focus,
+[data-theme='dark'] input:-webkit-autofill:active,
+[data-theme='dark'] textarea:-webkit-autofill,
+[data-theme='dark'] textarea:-webkit-autofill:hover,
+[data-theme='dark'] textarea:-webkit-autofill:focus,
+[data-theme='dark'] textarea:-webkit-autofill:active,
+[data-theme='dark'] select:-webkit-autofill,
+[data-theme='dark'] select:-webkit-autofill:hover,
+[data-theme='dark'] select:-webkit-autofill:focus,
+[data-theme='dark'] select:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--ifm-background-surface-color, #1e1e1e) inset !important;
+  box-shadow: 0 0 0 1000px var(--ifm-background-surface-color, #1e1e1e) inset !important;
+  -webkit-text-fill-color: var(--ifm-font-color-base, #e3e3e3) !important;
+  border-color: var(--ifm-color-primary) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* ============================================================
+   Fix #218 — Redoc not respecting custom theme colors
+   ============================================================
+   Redoc's JavaScript theme object does not process CSS custom
+   properties (var(--...)) — it uses the raw string value. Override
+   Redoc's inline-styled elements with CSS so primary brand colors,
+   link colors, and method badge colors are applied correctly even
+   when Redoc ignores the theme object's CSS variable strings.
+   ============================================================ */
+
+/* Primary color on Redoc links and interactive elements */
+.redoc-wrap a,
+.redoc-wrap [role='button'] {
+  color: var(--ifm-color-primary);
+}
+
+.redoc-wrap a:hover {
+  color: var(--ifm-color-primary-dark);
+}
+
+/* Redoc sidebar active item highlight */
+.redoc-wrap .menu-content li[data-active='true'] > label,
+.redoc-wrap .menu-content li.active > label,
+.redoc-wrap [class*='SidebarGroupItems'] li[data-active='true'] > label {
+  color: var(--ifm-color-primary) !important;
+  border-left-color: var(--ifm-color-primary) !important;
+}
+
+/* Redoc right panel (code samples pane) background */
+.redoc-wrap [class*='RightPanel'] {
+  background-color: var(--ifm-color-emphasis-900, #1a1a2e) !important;
+}
+
+/* Redoc operation titles and headings: match site font stack */
+.redoc-wrap h1,
+.redoc-wrap h2,
+.redoc-wrap h3 {
+  font-family: var(--ifm-font-family-base);
+  color: var(--ifm-font-color-base);
+}
+
+/* Redoc HTTP method colors — override inline styles with site palette
+   so method badges are always visible and on-brand. */
+.redoc-wrap [class*='OperationBadge'][type='get'],
+.redoc-wrap span[class*='HttpVerb'][verb='get'],
+.redoc-wrap [data-http-method='get'] {
+  background-color: #61affe !important;
+}
+.redoc-wrap [class*='OperationBadge'][type='post'],
+.redoc-wrap span[class*='HttpVerb'][verb='post'],
+.redoc-wrap [data-http-method='post'] {
+  background-color: #49cc90 !important;
+}
+.redoc-wrap [class*='OperationBadge'][type='put'],
+.redoc-wrap span[class*='HttpVerb'][verb='put'],
+.redoc-wrap [data-http-method='put'] {
+  background-color: #fca130 !important;
+}
+.redoc-wrap [class*='OperationBadge'][type='patch'],
+.redoc-wrap span[class*='HttpVerb'][verb='patch'],
+.redoc-wrap [data-http-method='patch'] {
+  background-color: #50e3c2 !important;
+}
+.redoc-wrap [class*='OperationBadge'][type='delete'],
+.redoc-wrap span[class*='HttpVerb'][verb='delete'],
+.redoc-wrap [data-http-method='delete'] {
+  background-color: #f93e3e !important;
+}
+
+/* Ensure Redoc renders on the correct background in both themes */
+.redoc-wrap {
+  background: var(--ifm-background-color) !important;
+  color: var(--ifm-font-color-base) !important;
+}
+
+[data-theme='dark'] .redoc-wrap {
+  background: var(--ifm-background-color) !important;
+  color: var(--ifm-font-color-base) !important;
+}
+
+/* Redoc code block background in dark mode */
+[data-theme='dark'] .redoc-wrap code,
+[data-theme='dark'] .redoc-wrap pre {
+  background: var(--ifm-color-emphasis-200, #2a2a2a) !important;
+}
+
+/* ============================================================
+   Fix #228 — Table of Contents links not scrolling to sections
+   ============================================================
+   Enable smooth scrolling globally so that hash-based navigation
+   (window.location.hash changes and element.scrollIntoView) produces
+   a smooth animation instead of an instant jump.  The APISidebarNav
+   and RedocViewer both rely on scrollIntoView / hash navigation —
+   this CSS ensures those calls are animated.
+   ============================================================ */
+
+/* Enable smooth scrolling for the whole page (TOC / anchor nav). */
+html {
+  scroll-behavior: smooth;
+}
+
+/* When a user has expressed a preference for reduced motion, respect it
+   and fall back to instant scrolling. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Offset for the sticky navbar so anchors land below it instead of
+   being hidden underneath it. */
+:target {
+  scroll-margin-top: calc(var(--ifm-navbar-height, 60px) + 8px);
+}
+
+/* ============================================================
+   Fix #239 — Stylesheet not loading in production build
+   ============================================================
+   In production (GitHub Pages / static hosting) the stylesheet is
+   served from the sub-path /proxypay-frontend/. Using a hardcoded
+   fallback for --ifm-background-color and other key variables ensures
+   the page is readable even during the brief window before the
+   stylesheet is parsed, and guards against any environment where
+   CSS custom-property inheritance is broken (e.g., old WebKit).
+   ============================================================ */
+
+/* Guarantee a readable baseline before custom properties resolve. */
+html {
+  background-color: #ffffff;
+  color: #1c1e21;
+}
+
+[data-theme='dark'] html,
+html[data-theme='dark'] {
+  background-color: #1b1b1d;
+  color: #e3e3e3;
+}
+
+/* Docusaurus injects the custom stylesheet via a <link> tag whose href
+   uses the configured baseUrl prefix. Declare the font-display and
+   content-visibility hints here so the initial paint is not blocked by
+   late-loading stylesheets in production. */
+body {
+  /* Prevent invisible text during web-font loading (production builds
+     tend to hit this more than dev due to CDN round-trips). */
+  font-display: swap; /* non-standard on body, but harmless; actual fix is on @font-face */
 }

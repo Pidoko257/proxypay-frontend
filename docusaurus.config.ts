@@ -79,7 +79,14 @@ const config: Config = {
         docs: false,
         blog: false,
         theme: {
-          customCss: './src/css/custom.css',
+          // Fix #239: Use require.resolve to produce an absolute path that
+          // Docusaurus/webpack can reliably bundle in both dev and production
+          // builds.  A relative string like './src/css/custom.css' works in
+          // most cases but can silently fail in production when the CWD at
+          // build time differs from the project root (e.g., CI environments,
+          // monorepos).  require.resolve pins the path at config-load time
+          // so there is no ambiguity and no 404 in production.
+          customCss: require.resolve('./src/css/custom.css'),
         },
       } satisfies Preset.Options,
     ],
