@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
+import CodeBlock from '@theme/CodeBlock';
 import * as yaml from 'js-yaml';
 
 type OpenApiInfo = {title?: string; version?: string; description?: string};
@@ -102,14 +103,12 @@ export default function SdkGuides(): React.JSX.Element {
               <h2>{lang}</h2>
               <div className="sdk-card">
                 <h3>Installation</h3>
-                <pre>
-                  <code className="language-bash">{t.pkg}</code>
-                </pre>
+                <CodeBlock language="bash">{t.pkg}</CodeBlock>
 
                 <h3>Quickstart</h3>
-                <pre>
-                  <code className={`language-${lang === 'JavaScript' ? 'js' : lang.toLowerCase()}`}>{t.quickstart}</code>
-                </pre>
+                <CodeBlock language={lang === 'JavaScript' ? 'js' : lang.toLowerCase()}>
+                  {t.quickstart}
+                </CodeBlock>
 
                 <h3>Authentication</h3>
                 <p>{t.auth}</p>
