@@ -121,8 +121,6 @@ export default function RateLimits(): React.JSX.Element {
       }
     }, Math.max(100, 1000 / requestRate));
 
-    // Return cleanup function — but this runs in a callback context
-    // Store for cleanup on unmount or next run
     return () => {
       clearInterval(interval);
       timerIds.forEach((id) => clearTimeout(id));
