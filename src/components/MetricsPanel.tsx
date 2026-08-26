@@ -329,7 +329,9 @@ export default function MetricsPanel(): React.JSX.Element {
         </p>
       </div>
 
-      {toast && <div className="mock-toast">{toast}</div>}
+      <div className="mock-toast-live" role="status" aria-live="polite">
+        {toast && <div className="mock-toast">{toast}</div>}
+      </div>
 
       {/* Summary Cards */}
       <div className="metrics-summary">
@@ -437,11 +439,18 @@ export default function MetricsPanel(): React.JSX.Element {
                     )}
                   </div>
                   <button
+                    type="button"
                     className={`metrics-fav-btn ${isFav ? 'metrics-fav-active' : ''}`}
                     onClick={() => toggleFavorite(m.id)}
                     title={isFav ? 'Remove from favorites' : 'Add to favorites'}
+                    aria-pressed={isFav}
+                    aria-label={
+                      isFav
+                        ? `Remove ${m.name} from favorites`
+                        : `Add ${m.name} to favorites`
+                    }
                   >
-                    {isFav ? '⭐' : '☆'}
+                    <span aria-hidden="true">{isFav ? '⭐' : '☆'}</span>
                   </button>
                 </div>
                 <h3 className="metrics-card-name">{m.name}</h3>
@@ -499,7 +508,14 @@ export default function MetricsPanel(): React.JSX.Element {
                 <div key={fav.endpointId} className="metrics-fav-chip">
                   <span className={`mock-method-badge method-${m.method.toLowerCase()}`}>{m.method}</span>
                   <code>{m.path}</code>
-                  <button className="metrics-fav-remove" onClick={() => toggleFavorite(m.id)}>×</button>
+                  <button
+                    type="button"
+                    className="metrics-fav-remove"
+                    onClick={() => toggleFavorite(m.id)}
+                    aria-label={`Remove ${m.name} from favorites`}
+                  >
+                    <span aria-hidden="true">×</span>
+                  </button>
                 </div>
               );
             })}

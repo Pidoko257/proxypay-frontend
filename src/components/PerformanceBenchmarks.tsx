@@ -13,6 +13,44 @@ interface EndpointBenchmark {
   slaTarget: number; // ms
   slaStatus: 'ok' | 'warn' | 'breach';
   category: string;
+  p95PrevWeek: number; // ms — p95 one week ago
+  p95PrevMonth: number; // ms — p95 one month ago
+}
+
+type TrendDirection = 'improving' | 'degrading' | 'flat';
+
+interface Trend {
+  deltaPct: number; // signed % change vs the comparison period
+  direction: TrendDirection;
+}
+
+// Lower latency is better, so a drop vs the previous period is "improving".
+function computeTrend(current: number, previous: number): Trend {
+  if (!previous) return { deltaPct: 0, direction: 'flat' };
+  const deltaPct = ((current - previous) / previous) * 100;
+  const direction: TrendDirection =
+    deltaPct <= -2 ? 'improving' : deltaPct >= 2 ? 'degrading' : 'flat';
+  return { deltaPct: Math.round(deltaPct * 10) / 10, direction };
+}
+
+const TREND_META: Record<TrendDirection, { arrow: string; color: string; label: string }> = {
+  improving: { arrow: '▼', color: '#16a34a', label: 'faster' },
+  degrading: { arrow: '▲', color: '#dc2626', label: 'slower' },
+  flat: { arrow: '▬', color: '#94a3b8', label: 'no change' },
+};
+
+function TrendPill({ current, previous, period }: { current: number; previous: number; period: string }) {
+  const t = computeTrend(current, previous);
+  const meta = TREND_META[t.direction];
+  return (
+    <span
+      style={{ color: meta.color, fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}
+      title={`p95 ${meta.label} vs ${period}: ${current}ms now vs ${previous}ms`}
+    >
+      {meta.arrow} {Math.abs(t.deltaPct)}%{' '}
+      <span style={{ fontWeight: 500, color: '#94a3b8' }}>{period}</span>
+    </span>
+  );
 }
 
 interface HistoricalPoint {
@@ -24,7 +62,9 @@ interface HistoricalPoint {
 }
 
 // ── Mock Data ──────────────────────────────────────────────────────
-const BENCHMARK_DATA: EndpointBenchmark[] = [
+type BenchmarkSeed = Omit<EndpointBenchmark, 'p95PrevWeek' | 'p95PrevMonth'>;
+
+const BENCHMARK_SEED: BenchmarkSeed[] = [
   {
     endpoint: 'POST /payments',
     method: 'POST',
@@ -156,6 +196,21 @@ const BENCHMARK_DATA: EndpointBenchmark[] = [
     category: 'Payments',
   },
 ];
+
+// Deterministic per-endpoint pseudo-random factor (stable across renders/tests).
+function seededFactor(key: string, salt: number): number {
+  let h = salt;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+  // Map to roughly 0.80–1.20 so baselines differ meaningfully from current p95.
+  return 0.8 + ((h % 41) / 100);
+}
+
+// Attach deterministic week-ago / month-ago p95 baselines for trend analysis.
+const BENCHMARK_DATA: EndpointBenchmark[] = BENCHMARK_SEED.map((b) => ({
+  ...b,
+  p95PrevWeek: Math.round(b.p95 * seededFactor(b.endpoint, 7)),
+  p95PrevMonth: Math.round(b.p95 * seededFactor(b.endpoint, 30)),
+}));
 
 function generateHistory(base: EndpointBenchmark): HistoricalPoint[] {
   const points: HistoricalPoint[] = [];
@@ -472,12 +527,15 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
 
   const summaries = useMemo(() => {
     const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
+    const wow = BENCHMARK_DATA.map((b) => computeTrend(b.p95, b.p95PrevWeek).direction);
     return {
       avgLatency: Math.round(avg(BENCHMARK_DATA.map((b) => b.p50))),
       avgThroughput: Math.round(avg(BENCHMARK_DATA.map((b) => b.throughput))),
       avgUptime: (avg(BENCHMARK_DATA.map((b) => b.uptime))).toFixed(2),
       slaOk: BENCHMARK_DATA.filter((b) => b.slaStatus === 'ok').length,
       slaWarn: BENCHMARK_DATA.filter((b) => b.slaStatus === 'warn').length,
+      improving: wow.filter((d) => d === 'improving').length,
+      degrading: wow.filter((d) => d === 'degrading').length,
     };
   }, []);
 
@@ -495,6 +553,8 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
           { label: 'Avg Throughput', value: `${summaries.avgThroughput} req/s`, color: '#3b82f6' },
           { label: 'Avg Uptime', value: `${summaries.avgUptime}%`, color: '#8b5cf6' },
           { label: 'SLA OK', value: `${summaries.slaOk} / ${BENCHMARK_DATA.length}`, color: '#22c55e' },
+          { label: 'Improving WoW (p95)', value: `${summaries.improving}`, color: '#16a34a' },
+          { label: 'Degrading WoW (p95)', value: `${summaries.degrading}`, color: '#dc2626' },
         ].map((card) => (
           <div
             key={card.label}
@@ -559,6 +619,7 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
               <th style={styles.th}>Throughput</th>
               <th style={styles.th}>Uptime</th>
               <th style={styles.th}>SLA</th>
+              <th style={styles.th}>Trend (p95)</th>
             </tr>
           </thead>
           <tbody>
@@ -622,6 +683,9 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
                     {b.slaStatus === 'ok' ? '✅ OK' : b.slaStatus === 'warn' ? '⚠ Warn' : '🔴 Breach'}
                   </span>
                 </td>
+                <td style={styles.td}>
+                  <TrendPill current={b.p95} previous={b.p95PrevWeek} period="WoW" />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -639,6 +703,34 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
             <span style={{ fontSize: '0.8rem', color: '#94a3b8', marginLeft: 8 }}>
               (30-day history)
             </span>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', margin: '0.25rem 0 1rem' }}>
+            {(() => {
+              const wow = computeTrend(selectedEndpoint.p95, selectedEndpoint.p95PrevWeek);
+              const mom = computeTrend(selectedEndpoint.p95, selectedEndpoint.p95PrevMonth);
+              const row = (label: string, prev: number, t: Trend) => {
+                const meta = TREND_META[t.direction];
+                return (
+                  <div style={{ fontSize: '0.85rem' }}>
+                    <div style={{ color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.72rem' }}>
+                      {label}
+                    </div>
+                    <div style={{ color: meta.color, fontWeight: 700 }}>
+                      {meta.arrow} {Math.abs(t.deltaPct)}% {meta.label}
+                    </div>
+                    <div style={{ color: '#94a3b8' }}>
+                      {selectedEndpoint.p95}ms now vs {prev}ms
+                    </div>
+                  </div>
+                );
+              };
+              return (
+                <>
+                  {row('Week over week', selectedEndpoint.p95PrevWeek, wow)}
+                  {row('Month over month', selectedEndpoint.p95PrevMonth, mom)}
+                </>
+              );
+            })()}
           </div>
           <div style={styles.chartContainer}>
             <LatencyChart history={history} />
