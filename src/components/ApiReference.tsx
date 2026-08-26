@@ -6,6 +6,12 @@ import React, {
   useState,
 } from 'react';
 import jsYaml from 'js-yaml';
+import {
+  PaginationParams,
+  parsePaginationParams,
+  readPaginationFromLocation,
+  syncPaginationToLocation,
+} from './apiReferencePagination';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -57,7 +63,6 @@ interface Template {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const PAGE_SIZE = 10;
 const DEBOUNCE_MS = 300;
 const METHOD_COLORS: Record<string, string> = {
   get: '#61affe',
@@ -523,7 +528,11 @@ export default function ApiReference(): React.JSX.Element {
   const [specVersion, setSpecVersion] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
-  const [page, setPage] = useState(1);
+  // #361: pagination state is seeded from — and mirrored back to — the URL
+  // query string (?page=2&pageSize=50) so a page is bookmarkable/shareable.
+  const initialPagination = useRef<PaginationParams>(readPaginationFromLocation());
+  const [page, setPage] = useState(initialPagination.current.page);
+  const [pageSize, setPageSize] = useState(initialPagination.current.pageSize);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [customTemplates, setCustomTemplates] = useState<Record<string, Template[]>>({});
 
@@ -566,16 +575,33 @@ export default function ApiReference(): React.JSX.Element {
     setSelectedId(null);
   }, [debouncedQuery]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
 
   // Clamp page to valid range
   const safePage = Math.min(page, totalPages);
 
-  // Correct slice: (page-1)*PAGE_SIZE … page*PAGE_SIZE (no off-by-one)
+  // #361: keep the URL in sync with the effective pagination state.
+  useEffect(() => {
+    syncPaginationToLocation({ page: safePage, pageSize });
+  }, [safePage, pageSize]);
+
+  // #361: respond to browser back/forward navigation between pages.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onPopState = () => {
+      const next = parsePaginationParams(window.location.search);
+      setPage(next.page);
+      setPageSize(next.pageSize);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  // Correct slice: (page-1)*pageSize … page*pageSize (no off-by-one)
   const pageEndpoints = useMemo(() => {
-    const start = (safePage - 1) * PAGE_SIZE;
-    return filtered.slice(start, start + PAGE_SIZE);
-  }, [filtered, safePage]);
+    const start = (safePage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, safePage, pageSize]);
 
   const selectedIndex = selectedId ? filtered.findIndex((e) => e.id === selectedId) : -1;
   const selectedEndpoint = selectedIndex >= 0 ? filtered[selectedIndex] : null;
@@ -584,7 +610,7 @@ export default function ApiReference(): React.JSX.Element {
     setSelectedId(ep.id);
     // Navigate to the correct page for this endpoint
     const idx = filtered.findIndex((e) => e.id === ep.id);
-    if (idx >= 0) setPage(Math.floor(idx / PAGE_SIZE) + 1);
+    if (idx >= 0) setPage(Math.floor(idx / pageSize) + 1);
   }
 
   function navigateEndpoint(delta: number) {

@@ -4,7 +4,7 @@
  * Integrates with Redoc for synchronized navigation
  */
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import Link from '@docusaurus/Link';
 import {
   toEndpointLink,
@@ -13,7 +13,54 @@ import {
   onHashChange,
 } from '../utils/redocDeepLink';
 import type { ParsedEndpoint, TagGroup } from '../utils/apiSpecParser';
+import {
+  VIRTUALIZE_THRESHOLD,
+  VIRTUAL_VIEWPORT_HEIGHT,
+  computeVisibleRange,
+  readExpandedTags,
+  writeExpandedTags,
+} from './apiSidebarNavState';
 import styles from './APISidebarNav.module.css';
+
+/**
+ * Windowed list — only renders the rows visible in the scroll viewport plus a
+ * small overscan (#360). Used for tag groups with more than
+ * VIRTUALIZE_THRESHOLD endpoints so a spec with thousands of endpoints stays
+ * responsive.
+ */
+function VirtualEndpointList({
+  endpoints,
+  renderRow,
+}: {
+  endpoints: ParsedEndpoint[];
+  renderRow: (endpoint: ParsedEndpoint) => React.ReactNode;
+}): React.JSX.Element {
+  const [scrollTop, setScrollTop] = useState(0);
+  const onScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    setScrollTop(e.currentTarget.scrollTop);
+  }, []);
+
+  const { first, last, totalHeight, offsetY } = computeVisibleRange(
+    scrollTop,
+    endpoints.length,
+  );
+  const slice = endpoints.slice(first, last);
+
+  return (
+    <div
+      className={styles.endpointsList}
+      style={{ maxHeight: VIRTUAL_VIEWPORT_HEIGHT, overflowY: 'auto' }}
+      onScroll={onScroll}
+      data-virtualized="true"
+    >
+      <div style={{ height: totalHeight, position: 'relative' }}>
+        <div style={{ transform: `translateY(${offsetY}px)` }}>
+          {slice.map((endpoint) => renderRow(endpoint))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export interface APISidebarNavProps {
   endpoints: ParsedEndpoint[];
@@ -63,12 +110,19 @@ export default function APISidebarNav({
   onTagToggle,
   enableDeepLinking = true,
 }: APISidebarNavProps): React.JSX.Element {
+  // #359: seed from persisted state (localStorage) merged with any caller-provided
+  // expandedTags, then restore on mount.
   const [localExpandedTags, setLocalExpandedTags] = useState<Set<string>>(
-    new Set(expandedTags)
+    () => new Set([...expandedTags, ...readExpandedTags()])
   );
   const [selectedEndpointId, setSelectedEndpointId] = useState<string | undefined>(
     propSelectedEndpointId
   );
+
+  // #359: persist expanded tags whenever they change so favorites survive reload.
+  useEffect(() => {
+    writeExpandedTags(localExpandedTags);
+  }, [localExpandedTags]);
 
   /**
    * Group endpoints by tag if not provided
@@ -247,9 +301,9 @@ export default function APISidebarNav({
             </button>
 
             {/* Endpoints List */}
-            {localExpandedTags.has(group.name) && (
-              <div className={styles.endpointsList}>
-                {group.endpoints.map((endpoint) => (
+            {localExpandedTags.has(group.name) &&
+              (() => {
+                const renderRow = (endpoint: ParsedEndpoint) => (
                   <button
                     key={endpoint.id}
                     className={`${styles.endpointItem} ${
@@ -262,9 +316,21 @@ export default function APISidebarNav({
                     <MethodBadge method={endpoint.method} />
                     <span className={styles.endpointPath}>{endpoint.path}</span>
                   </button>
-                ))}
-              </div>
-            )}
+                );
+
+                // #360: virtualize very large endpoint lists so only the rows
+                // in view are mounted to the DOM.
+                return group.endpoints.length > VIRTUALIZE_THRESHOLD ? (
+                  <VirtualEndpointList
+                    endpoints={group.endpoints}
+                    renderRow={renderRow}
+                  />
+                ) : (
+                  <div className={styles.endpointsList}>
+                    {group.endpoints.map((endpoint) => renderRow(endpoint))}
+                  </div>
+                );
+              })()}
           </div>
         ))}
       </div>
