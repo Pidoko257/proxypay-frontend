@@ -34,7 +34,7 @@ export function parseDeepLink(hash: string): DeepLink | null {
 
   // Parse query parameters
   const queryParams = new URLSearchParams(queryPart || '');
-  const query = queryParams.get('query') || undefined;
+  const query = queryParams.get('query') ?? undefined;
 
   // Parse path: /endpoint, /tag/tagName, /schema/schemaName, etc.
   const pathSegments = pathPart.split('/').filter((s) => s);
@@ -58,7 +58,7 @@ export function parseDeepLink(hash: string): DeepLink | null {
   const target = pathSegments[1] || queryParams.get('id');
   if (!target) return null;
 
-  const subTarget = pathSegments[2] || queryParams.get('subId');
+  const subTarget = pathSegments[2] ?? queryParams.get('subId') ?? undefined;
 
   return { type, target, subTarget, query };
 }
@@ -290,14 +290,6 @@ export class DeepLinkObserver {
     this.callbacks.set(id, callback);
     // Call immediately with current deep-link
     callback(this.lastDeepLink);
-  }
-
-  /**
-   * Unsubscribe from deep-link changes
-   * @param id Subscription ID
-   */
-  unsubscribe(id: string): void {
-    this.callbacks.delete(id);
   }
 
   /**

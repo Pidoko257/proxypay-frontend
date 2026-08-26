@@ -175,7 +175,7 @@ function generateHistory(base: EndpointBenchmark): HistoricalPoint[] {
 }
 
 // ── Styles ─────────────────────────────────────────────────────────
-const styles: Record<string, React.CSSProperties> = {
+const styles = {
   container: {
     maxWidth: 1100,
     margin: '0 auto',
