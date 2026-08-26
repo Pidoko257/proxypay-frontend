@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { SLADrilldown } from './SLADrilldown';
 
 // ── Types ──────────────────────────────────────────────────────────
 interface EndpointBenchmark {
@@ -274,60 +275,36 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#334155',
     borderBottom: '1px solid #f1f5f9',
   },
-  methodBadge: (method: string): React.CSSProperties => {
-    const colors: Record<string, { bg: string; fg: string }> = {
-      GET: { bg: '#dcfce7', fg: '#166534' },
-      POST: { bg: '#dbeafe', fg: '#1e40af' },
-      PUT: { bg: '#fef3c7', fg: '#92400e' },
-      DELETE: { bg: '#fee2e2', fg: '#991b1b' },
-    };
-    const c = colors[method] || { bg: '#f1f5f9', fg: '#475569' };
-    return {
-      display: 'inline-block',
-      padding: '0.15rem 0.5rem',
-      borderRadius: 5,
-      fontSize: '0.72rem',
-      fontWeight: 700,
-      background: c.bg,
-      color: c.fg,
-      marginRight: 6,
-    };
-  },
-  slaBadge: (status: string): React.CSSProperties => {
-    const colors: Record<string, { bg: string; fg: string }> = {
-      ok: { bg: '#dcfce7', fg: '#166534' },
-      warn: { bg: '#fef3c7', fg: '#92400e' },
-      breach: { bg: '#fee2e2', fg: '#991b1b' },
-    };
-    const c = colors[status] || colors.ok;
-    return {
-      display: 'inline-block',
-      padding: '0.2rem 0.6rem',
-      borderRadius: 10,
-      fontSize: '0.75rem',
-      fontWeight: 700,
-      background: c.bg,
-      color: c.fg,
-    };
-  },
+  methodBadge: {
+    display: 'inline-block',
+    padding: '0.15rem 0.5rem',
+    borderRadius: 5,
+    fontSize: '0.72rem',
+    fontWeight: 700,
+    marginRight: 6,
+  } as React.CSSProperties,
+  slaBadge: {
+    display: 'inline-block',
+    padding: '0.2rem 0.6rem',
+    borderRadius: 10,
+    fontSize: '0.75rem',
+    fontWeight: 700,
+  } as React.CSSProperties,
   barCell: {
     position: 'relative' as const,
     height: 24,
   },
-  bar: (value: number, max: number, color: string): React.CSSProperties => ({
+  bar: {
     height: '100%',
-    width: `${(value / max) * 100}%`,
-    background: color,
     borderRadius: 4,
     transition: 'width 0.4s ease',
-    minWidth: value > 0 ? 4 : 0,
     display: 'flex',
     alignItems: 'center',
     paddingLeft: 8,
     fontSize: '0.7rem',
     fontWeight: 600,
     color: '#fff',
-  }),
+  } as React.CSSProperties,
   trendSection: {
     marginTop: '2rem',
     background: '#fff',
@@ -354,6 +331,45 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '1rem',
   },
 };
+
+// ── Style Helpers ─────────────────────────────────────────────────
+function getMethodBadgeStyle(method: string): React.CSSProperties {
+  const colors: Record<string, { bg: string; fg: string }> = {
+    GET: { bg: '#dcfce7', fg: '#166534' },
+    POST: { bg: '#dbeafe', fg: '#1e40af' },
+    PUT: { bg: '#fef3c7', fg: '#92400e' },
+    DELETE: { bg: '#fee2e2', fg: '#991b1b' },
+  };
+  const c = colors[method] || { bg: '#f1f5f9', fg: '#475569' };
+  return {
+    ...styles.methodBadge,
+    background: c.bg,
+    color: c.fg,
+  };
+}
+
+function getSLABadgeStyle(status: string): React.CSSProperties {
+  const colors: Record<string, { bg: string; fg: string }> = {
+    ok: { bg: '#dcfce7', fg: '#166534' },
+    warn: { bg: '#fef3c7', fg: '#92400e' },
+    breach: { bg: '#fee2e2', fg: '#991b1b' },
+  };
+  const c = colors[status] || colors.ok;
+  return {
+    ...styles.slaBadge,
+    background: c.bg,
+    color: c.fg,
+  };
+}
+
+function getBarStyle(value: number, max: number, color: string): React.CSSProperties {
+  return {
+    ...styles.bar,
+    width: `${(value / max) * 100}%`,
+    background: color,
+    minWidth: value > 0 ? 4 : 0,
+  };
+}
 
 // ── Chart Sub-Component ────────────────────────────────────────────
 function LatencyChart({ history }: { history: HistoricalPoint[] }) {
@@ -449,6 +465,7 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [slaFilter, setSlaFilter] = useState('all');
   const [selectedEndpoint, setSelectedEndpoint] = useState<EndpointBenchmark | null>(null);
+  const [drilldownEndpoint, setDrilldownEndpoint] = useState<EndpointBenchmark | null>(null);
 
   const categories = useMemo(
     () => [...new Set(BENCHMARK_DATA.map((b) => b.category))],
@@ -585,22 +602,22 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
                 }}
               >
                 <td style={styles.td}>
-                  <span style={styles.methodBadge(b.method)}>{b.method}</span>
+                  <span style={getMethodBadgeStyle(b.method)}>{b.method}</span>
                   <code style={{ fontSize: '0.85rem', color: '#1e293b' }}>{b.endpoint}</code>
                 </td>
                 <td style={styles.td}>
                   <div style={styles.barCell}>
-                    <div style={styles.bar(b.p50, 500, '#22c55e')}>{b.p50}ms</div>
+                    <div style={getBarStyle(b.p50, 500, '#22c55e')}>{b.p50}ms</div>
                   </div>
                 </td>
                 <td style={styles.td}>
                   <div style={styles.barCell}>
-                    <div style={styles.bar(b.p95, 3000, '#f59e0b')}>{b.p95}ms</div>
+                    <div style={getBarStyle(b.p95, 3000, '#f59e0b')}>{b.p95}ms</div>
                   </div>
                 </td>
                 <td style={styles.td}>
                   <div style={styles.barCell}>
-                    <div style={styles.bar(b.p99, 5000, '#ef4444')}>{b.p99}ms</div>
+                    <div style={getBarStyle(b.p99, 5000, '#ef4444')}>{b.p99}ms</div>
                   </div>
                 </td>
                 <td style={styles.td}>
@@ -618,7 +635,28 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
                   </span>
                 </td>
                 <td style={styles.td}>
-                  <span style={styles.slaBadge(b.slaStatus)}>
+                  <span
+                    style={{
+                      ...getSLABadgeStyle(b.slaStatus),
+                      cursor: b.slaStatus !== 'ok' ? 'pointer' : 'default',
+                      opacity: b.slaStatus !== 'ok' ? 0.9 : 1,
+                      transition: 'opacity 0.2s',
+                    }}
+                    onClick={() => {
+                      if (b.slaStatus !== 'ok') setDrilldownEndpoint(b);
+                    }}
+                    onMouseEnter={(e) => {
+                      if (b.slaStatus !== 'ok') {
+                        (e.currentTarget as HTMLElement).style.opacity = '1';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (b.slaStatus !== 'ok') {
+                        (e.currentTarget as HTMLElement).style.opacity = '0.9';
+                      }
+                    }}
+                    title={b.slaStatus !== 'ok' ? 'Click to drill down' : undefined}
+                  >
                     {b.slaStatus === 'ok' ? '✅ OK' : b.slaStatus === 'warn' ? '⚠ Warn' : '🔴 Breach'}
                   </span>
                 </td>
@@ -671,6 +709,15 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
           <div>Throughput ≥ 100 req/s per endpoint</div>
         </div>
       </div>
+
+      {/* SLA Drill-down Modal */}
+      {drilldownEndpoint && (
+        <SLADrilldown
+          endpoint={drilldownEndpoint}
+          isOpen={!!drilldownEndpoint}
+          onClose={() => setDrilldownEndpoint(null)}
+        />
+      )}
     </div>
   );
 }
