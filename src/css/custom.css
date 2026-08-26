@@ -1813,6 +1813,132 @@ a[target='_blank']::after {
 }
 
 /* =============================================
+   MetricsPanel Comparison View
+   ============================================= */
+
+.mock-input-sm {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  max-width: 140px;
+}
+
+.metrics-comparison-view {
+  margin: 1.5rem 0;
+}
+
+.metrics-comparison-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.metrics-comparison-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.metrics-comparison-ranges {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.metrics-comparison-range {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.metrics-comparison-range label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ifm-color-emphasis-600);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.metrics-comparison-dates {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.metrics-comparison-dates span {
+  font-size: 0.9rem;
+  color: var(--ifm-color-emphasis-500);
+}
+
+.metrics-comparison-name {
+  font-size: 0.8rem;
+  color: var(--ifm-color-emphasis-500);
+  margin-top: 0.15rem;
+}
+
+.metrics-comparison-table-wrapper {
+  overflow-x: auto;
+  margin-top: 1rem;
+  border: 1px solid var(--ifm-color-emphasis-200, #eee);
+  border-radius: 10px;
+  background: var(--ifm-background-surface-color, #fff);
+}
+
+.metrics-comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.metrics-comparison-table th {
+  padding: 0.7rem 0.85rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ifm-color-emphasis-600);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--ifm-color-emphasis-200, #eee);
+  background: var(--ifm-color-emphasis-50, #f8fafc);
+  text-align: center;
+}
+
+.metrics-comparison-table th:first-child {
+  text-align: left;
+}
+
+.metrics-comparison-table td {
+  padding: 0.6rem 0.85rem;
+  color: var(--ifm-font-color-base);
+  border-bottom: 1px solid var(--ifm-color-emphasis-200, #eee);
+}
+
+.metrics-comparison-table td:first-child {
+  font-weight: 600;
+}
+
+.metrics-comparison-table tbody tr:hover {
+  background: var(--ifm-color-emphasis-50, #f8fafc);
+}
+
+.metrics-diff-positive {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.metrics-diff-negative {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.metrics-comparison-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+/* =============================================
    Mock Panel
    ============================================= */
 
