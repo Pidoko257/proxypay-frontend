@@ -119,6 +119,22 @@ function formatDate(date: string | Date): string {
   });
 }
 
+function formatDuration(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0) parts.push(`${minutes}m`);
+  if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
+
+  return parts.join(' ');
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function ProgressBar({
@@ -207,6 +223,13 @@ export default function RateLimitDashboard(): React.JSX.Element {
   const [alerts, setAlerts] = useState<RateLimitAlert[]>([]);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<number>(Date.now());
+  const [previousUsed, setPreviousUsed] = useState<number | null>(null);
+  const [previousTimestamp, setPreviousTimestamp] = useState<number | null>(null);
+  const [projection, setProjection] = useState<{
+    ratePerMs: number;
+    timeToExhaustionMs: number | null;
+    exhaustionTime: string | null;
+  } | null>(null);
 
   // Fetch rate limit status
   const fetchStatus = useCallback(async () => {
@@ -283,6 +306,36 @@ export default function RateLimitDashboard(): React.JSX.Element {
 
     return () => clearInterval(intervalId);
   }, [autoRefresh, fetchStatus]);
+
+  // Calculate projection based on current rate
+  useEffect(() => {
+    if (!status) return;
+
+    const now = Date.now();
+    if (previousUsed !== null && previousTimestamp !== null && previousTimestamp !== now) {
+      const deltaUsed = status.requestsUsed - previousUsed;
+      const deltaTime = now - previousTimestamp;
+      if (deltaTime > 0 && deltaUsed > 0) {
+        const ratePerMs = deltaUsed / deltaTime;
+        const remaining = status.requestsRemaining;
+        const timeToExhaustionMs = ratePerMs > 0 ? remaining / ratePerMs : null;
+        setProjection({
+          ratePerMs,
+          timeToExhaustionMs,
+          exhaustionTime: timeToExhaustionMs !== null ? new Date(now + timeToExhaustionMs).toLocaleString() : null,
+        });
+      } else if (deltaUsed <= 0) {
+        setProjection({
+          ratePerMs: 0,
+          timeToExhaustionMs: null,
+          exhaustionTime: null,
+        });
+      }
+    }
+
+    setPreviousUsed(status.requestsUsed);
+    setPreviousTimestamp(now);
+  }, [status, previousUsed, previousTimestamp]);
 
   // Calculate time remaining for reset
   const timeRemaining = status
@@ -390,6 +443,41 @@ export default function RateLimitDashboard(): React.JSX.Element {
               </div>
             </div>
 
+            {/* Projection Card */}
+            <div className="rate-limit-card">
+              <div className="rate-limit-card-header">
+                <h3>Usage Projection</h3>
+              </div>
+              <div className="rate-limit-card-body">
+                {projection && projection.timeToExhaustionMs !== null ? (
+                  <>
+                    <div className="rate-limit-detail-row">
+                      <span className="rate-limit-detail-label">Current Rate:</span>
+                      <span className="rate-limit-detail-value">
+                        {projection.ratePerMs.toFixed(2)} req/ms ({Math.round(projection.ratePerMs * 1000 * 60)} req/min)
+                      </span>
+                    </div>
+                    <div className="rate-limit-detail-row">
+                      <span className="rate-limit-detail-label">Est. Time to Exhaustion:</span>
+                      <span className="rate-limit-detail-value rate-limit-time-remaining">
+                        {formatDuration(projection.timeToExhaustionMs)}
+                      </span>
+                    </div>
+                    <div className="rate-limit-detail-row">
+                      <span className="rate-limit-detail-label">Projected Exhaustion:</span>
+                      <span className="rate-limit-detail-value">{projection.exhaustionTime}</span>
+                    </div>
+                    <p className="rate-limit-projection-note">
+                      Based on current usage rate. Actual rate may vary.
+                    </p>
+                  </>
+                ) : (
+                  <p className="rate-limit-no-projection">
+                    Waiting for more data to calculate projection...
+                  </p>
+                )}
+              </div>
+            </div>
             {/* Tier & Reset Card */}
             <div className="rate-limit-card">
               <div className="rate-limit-card-header">

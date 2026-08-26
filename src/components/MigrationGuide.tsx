@@ -16,6 +16,7 @@ interface EndpointDiff {
   oldResponse?: string;
   newResponse?: string;
   migrationCode?: string;
+  codeExamples?: Record<string, string>;
   rollbackSteps?: string[];
   deprecationDate?: string;
   sunsetDate?: string;
@@ -71,6 +72,54 @@ const res = await fetch('https://api.proxypay.dev/payments', {
     'Content-Type': 'application/json'
   }
 });`,
+        codeExamples: {
+          javascript: `// BEFORE (v1.x - OAuth2)
+const tokenRes = await fetch('https://api.proxypay.dev/auth/token', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Basic ' + btoa(clientId + ':' + clientSecret),
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ grant_type: 'client_credentials' })
+});
+const { access_token } = await tokenRes.json();
+
+// AFTER (v2.0 - API Key)
+// Simply include your API key in every request:
+const res = await fetch('https://api.proxypay.dev/payments', {
+  headers: {
+    'X-API-Key': 'pp_live_xxxxxxxxxxxxxxxx',
+    'Content-Type': 'application/json'
+  }
+});`,
+          python: `# BEFORE (v1.x - OAuth2)
+import requests
+from requests.auth import HTTPBasicAuth
+
+token_res = requests.post(
+  'https://api.proxypay.dev/auth/token',
+  auth=HTTPBasicAuth(client_id, client_secret),
+  json={'grant_type': 'client_credentials'}
+)
+access_token = token_res.json()['access_token']
+
+# AFTER (v2.0 - API Key)
+# Simply include your API key in every request:
+headers = {'X-API-Key': 'pp_live_xxxxxxxxxxxxxxxx'}
+res = requests.get('https://api.proxypay.dev/payments', headers=headers)`,
+          go: `// BEFORE (v1.x - OAuth2)
+client := &http.Client{}
+req, _ := http.NewRequest("POST", "https://api.proxypay.dev/auth/token", strings.NewReader("grant_type=client_credentials"))
+req.Header.Set("Authorization", "Basic " + base64.StdEncoding.EncodeToString([]byte(clientID+":"+clientSecret)))
+req.Header.Set("Content-Type", "application/json")
+resp, _ := client.Do(req)
+
+// AFTER (v2.0 - API Key)
+// Simply include your API key in every request:
+req, _ := http.NewRequest("GET", "https://api.proxypay.dev/payments", nil)
+req.Header.Set("X-API-Key", "pp_live_xxxxxxxxxxxxxxxx")
+resp, _ := client.Do(req)`,
+        },
         rollbackSteps: ['Switch back to v1.x base URL: https://api-v1.proxypay.dev', 'Re-enable OAuth2 client credentials flow'],
         sunsetDate: '2026-09-01',
         sunsetStatus: 'sunset',
@@ -98,6 +147,53 @@ if (!res.ok) {
   console.log(err.error.message); // "Missing required field: amount"
   console.log(err.error.request_id); // "req_abc123" — use for support
 }`,
+        codeExamples: {
+          javascript: `// BEFORE (v1.x)
+if (res.status !== 200) {
+  const err = await res.json();
+  console.log(err.error); // "bad_request"
+}
+
+// AFTER (v2.0)
+if (!res.ok) {
+  const err = await res.json();
+  console.log(err.error.code);    // "BAD_REQUEST"
+  console.log(err.error.message); // "Missing required field: amount"
+  console.log(err.error.request_id); // "req_abc123" — use for support
+}`,
+          python: `# BEFORE (v1.x)
+res = requests.get(url)
+if res.status_code != 200:
+  err = res.json()
+  print(err["error"])  # "bad_request"
+
+# AFTER (v2.0)
+res = requests.get(url)
+if not res.ok:
+  err = res.json()
+  print(err["error"]["code"])        # "BAD_REQUEST"
+  print(err["error"]["message"])     # "Missing required field: amount"
+  print(err["error"]["request_id"])  # "req_abc123" — use for support`,
+          go: `// BEFORE (v1.x)
+resp, _ := http.Get(url)
+if resp.StatusCode != 200 {
+  body, _ := ioutil.ReadAll(resp.Body)
+  var err map[string]interface{}
+  json.Unmarshal(body, &err)
+  fmt.Println(err["error"]) // "bad_request"
+}
+
+// AFTER (v2.0)
+resp, _ := http.Get(url)
+if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+  body, _ := ioutil.ReadAll(resp.Body)
+  var err map[string]interface{}
+  json.Unmarshal(body, &err)
+  fmt.Println(err["error"].(map[string]interface{})["code"])        // "BAD_REQUEST"
+  fmt.Println(err["error"].(map[string]interface{})["message"])     // "Missing required field: amount"
+  fmt.Println(err["error"].(map[string]interface{})["request_id"])  // "req_abc123" — use for support
+}`,
+        },
         rollbackSteps: [],
         sunsetStatus: 'sunset',
         category: 'Core',
@@ -123,6 +219,33 @@ await fetch('https://api.proxypay.dev/momo/pay', {
   headers: { 'X-API-Key': 'pp_live_...', 'Content-Type': 'application/json' },
   body: JSON.stringify({ provider: 'mtn', phone: '+256...', amount: 5000 })
 });`,
+        codeExamples: {
+          javascript: `// BEFORE (v1.x)
+await fetch('https://api.proxypay.dev/momo/mtn/pay', {
+  method: 'POST',
+  body: JSON.stringify({ phone: '+256...', amount: 5000 })
+});
+
+// AFTER (v2.0)
+await fetch('https://api.proxypay.dev/momo/pay', {
+  method: 'POST',
+  headers: { 'X-API-Key': 'pp_live_...', 'Content-Type': 'application/json' },
+  body: JSON.stringify({ provider: 'mtn', phone: '+256...', amount: 5000 })
+});`,
+          python: `# BEFORE (v1.x)
+requests.post('https://api.proxypay.dev/momo/mtn/pay', json={'phone': '+256...', 'amount': 5000})
+
+# AFTER (v2.0)
+requests.post('https://api.proxypay.dev/momo/pay', headers={'X-API-Key': 'pp_live_...'}, json={'provider': 'mtn', 'phone': '+256...', 'amount': 5000})`,
+          go: `// BEFORE (v1.x)
+http.Post("https://api.proxypay.dev/momo/mtn/pay", "application/json", strings.NewReader("{\"phone\":\"+256...\",\"amount\":5000}"))
+
+// AFTER (v2.0)
+req, _ := http.NewRequest("POST", "https://api.proxypay.dev/momo/pay", strings.NewReader("{\"provider\":\"mtn\",\"phone\":\"+256...\",\"amount\":5000}"))
+req.Header.Set("X-API-Key", "pp_live_...")
+req.Header.Set("Content-Type", "application/json")
+client.Do(req)`,
+        },
         category: 'Mobile Money',
         sunsetStatus: 'sunset',
       },
@@ -155,6 +278,41 @@ const xml = await res.text();
 const res = await fetch('https://api.proxypay.dev/payments/123');
 const data = await res.json();
 console.log(data.amount, data.status);`,
+        codeExamples: {
+          javascript: `// BEFORE (v2.0 - XML)
+const res = await fetch('https://api.proxypay.dev/payments/123', {
+  headers: { 'Accept': 'application/xml' }
+});
+const xml = await res.text();
+// Parse XML manually...
+
+// AFTER (v2.1 - JSON, default)
+const res = await fetch('https://api.proxypay.dev/payments/123');
+const data = await res.json();
+console.log(data.amount, data.status);`,
+          python: `# BEFORE (v2.0 - XML)
+res = requests.get('https://api.proxypay.dev/payments/123', headers={'Accept': 'application/xml'})
+xml = res.text
+# Parse XML manually...
+
+# AFTER (v2.1 - JSON, default)
+res = requests.get('https://api.proxypay.dev/payments/123')
+data = res.json()
+print(data['amount'], data['status'])`,
+          go: `// BEFORE (v2.0 - XML)
+req, _ := http.NewRequest("GET", "https://api.proxypay.dev/payments/123", nil)
+req.Header.Set("Accept", "application/xml")
+resp, _ := client.Do(req)
+xml, _ := ioutil.ReadAll(resp.Body)
+// Parse XML manually...
+
+// AFTER (v2.1 - JSON, default)
+resp, _ := http.Get("https://api.proxypay.dev/payments/123")
+data, _ := ioutil.ReadAll(resp.Body)
+var result map[string]interface{}
+json.Unmarshal(data, &result)
+fmt.Println(result["amount"], result["status"])`,
+        },
         rollbackSteps: ['Add `Accept: application/xml` to request headers (works until 2026-10-02)'],
         deprecationDate: '2026-04-02',
         sunsetDate: '2026-10-02',
@@ -180,6 +338,41 @@ evtSource.addEventListener('error', () => {
   // Auto-reconnects by default
   console.log('SSE connection lost — retrying...');
 });`,
+        codeExamples: {
+          javascript: `// New — subscribe to live payment updates
+const evtSource = new EventSource('https://api.proxypay.dev/payments/stream');
+
+evtSource.onmessage = (event) => {
+  const update = JSON.parse(event.data);
+  console.log(\`Payment \${update.id}: \${update.status}\`);
+};
+
+evtSource.addEventListener('error', () => {
+  // Auto-reconnects by default
+  console.log('SSE connection lost — retrying...');
+});`,
+          python: `# New — subscribe to live payment updates
+import sseclient
+
+stream_url = 'https://api.proxypay.dev/payments/stream'
+client = sseclient.SSEClient(stream_url)
+
+for event in client.events():
+  update = json.loads(event.data)
+  print(f\"Payment {update['id']}: {update['status']}\")`,
+          go: `// New — subscribe to live payment updates
+resp, _ := http.Get("https://api.proxypay.dev/payments/stream")
+defer resp.Body.Close()
+
+scanner := bufio.NewScanner(resp.Body)
+for scanner.Scan() {
+  line := scanner.Text()
+  if strings.HasPrefix(line, "data: ") {
+    update := json.RawMessage(strings.TrimPrefix(line, "data: "))
+    fmt.Printf(\"Payment %s: status update\\n\", update)
+  }
+}`,
+        },
         category: 'Payments',
         sunsetStatus: 'active',
       },
@@ -214,6 +407,42 @@ await fetch('https://api.proxypay.dev/payments/bulk', {
   headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
   body: JSON.stringify({ payments: [...payments] }) // up to 1000
 });`,
+        codeExamples: {
+          javascript: `// BEFORE (v2.3 - individual payments)
+for (const payment of payments) {
+  await fetch('https://api.proxypay.dev/payments', {
+    method: 'POST',
+    headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payment)
+  });
+}
+
+// AFTER (v2.4 - bulk)
+await fetch('https://api.proxypay.dev/payments/bulk', {
+  method: 'POST',
+  headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
+  body: JSON.stringify({ payments: [...payments] }) // up to 1000
+});`,
+          python: `# BEFORE (v2.3 - individual payments)
+for payment in payments:
+  requests.post('https://api.proxypay.dev/payments', headers={'X-API-Key': api_key}, json=payment)
+
+# AFTER (v2.4 - bulk)
+requests.post('https://api.proxypay.dev/payments/bulk', headers={'X-API-Key': api_key}, json={'payments': payments}) # up to 1000`,
+          go: `// BEFORE (v2.3 - individual payments)
+for _, payment := range payments {
+  body, _ := json.Marshal(payment)
+  req, _ := http.NewRequest("POST", "https://api.proxypay.dev/payments", bytes.NewBuffer(body))
+  req.Header.Set("X-API-Key", apiKey)
+  client.Do(req)
+}
+
+// AFTER (v2.4 - bulk)
+bulkBody, _ := json.Marshal(map[string]interface{}{"payments": payments})
+req, _ := http.NewRequest("POST", "https://api.proxypay.dev/payments/bulk", bytes.NewBuffer(bulkBody))
+req.Header.Set("X-API-Key", apiKey)
+client.Do(req)`,
+        },
         category: 'Payments',
         sunsetStatus: 'active',
       },
@@ -240,6 +469,50 @@ function verifyWebhook(req) {
   }
   // Process webhook...
 }`,
+        codeExamples: {
+          javascript: `// Verify webhook signature
+import crypto from 'crypto';
+
+function verifyWebhook(req) {
+  const signature = req.headers['x-proxypay-signature'];
+  const payload = JSON.stringify(req.body);
+  const expected = crypto
+    .createHmac('sha256', process.env.PROXYPAY_WEBHOOK_SECRET)
+    .update(payload)
+    .digest('hex');
+  
+  if (signature !== expected) {
+    throw new Error('Invalid webhook signature');
+  }
+  // Process webhook...
+}`,
+          python: `# Verify webhook signature
+import hmac
+import hashlib
+
+def verify_webhook(payload, signature):
+  secret = os.environ['PROXYPAY_WEBHOOK_SECRET']
+  expected = hmac.new(secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
+  
+  if signature != expected:
+    raise Exception('Invalid webhook signature')
+  # Process webhook...`,
+          go: `// Verify webhook signature
+import "crypto/hmac"
+import "crypto/sha256"
+
+func verifyWebhook(payload []byte, signature string) {
+  secret := []byte(os.Getenv("PROXYPAY_WEBHOOK_SECRET"))
+  h := hmac.New(sha256.New, secret)
+  h.Write(payload)
+  expected := fmt.Sprintf("%x", h.Sum(nil))
+  
+  if signature != expected {
+    panic("Invalid webhook signature")
+  }
+  // Process webhook...
+}`,
+        },
         category: 'Webhooks',
         sunsetStatus: 'active',
       },
@@ -453,6 +726,13 @@ const styles: Record<string, React.CSSProperties> = {
 export default function MigrationGuide(): React.JSX.Element {
   const [expandedMigration, setExpandedMigration] = useState<string | null>(MIGRATION_DATA[0]?.to || null);
   const [expandedDiffs, setExpandedDiffs] = useState<Set<string>>(new Set());
+  const [codeLanguage, setCodeLanguage] = useState<string>('javascript');
+
+  const LANGUAGES = [
+    { value: 'javascript', label: 'JavaScript' },
+    { value: 'python', label: 'Python' },
+    { value: 'go', label: 'Go' },
+  ];
 
   const toggleMigration = (to: string) => {
     setExpandedMigration((prev) => (prev === to ? null : to));
@@ -486,6 +766,28 @@ export default function MigrationGuide(): React.JSX.Element {
           <strong style={{ color: '#92400e' }}>{deprecationCount} deprecations</strong>,{' '}
           <strong style={{ color: '#1e40af' }}>{additionCount} additions</strong>.
         </p>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>Code Example Language:</span>
+          {LANGUAGES.map((lang) => (
+            <button
+              key={lang.value}
+              onClick={() => setCodeLanguage(lang.value)}
+              style={{
+                padding: '0.35rem 0.75rem',
+                borderRadius: 6,
+                border: codeLanguage === lang.value ? '2px solid #1e40af' : '1px solid #d0d5dd',
+                background: codeLanguage === lang.value ? '#dbeafe' : '#fff',
+                color: codeLanguage === lang.value ? '#1e40af' : '#475569',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+            >
+              {lang.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Per-version Migrations */}
@@ -615,7 +917,7 @@ export default function MigrationGuide(): React.JSX.Element {
                         {diff.rollbackSteps && diff.rollbackSteps.length > 0 ? ' & Rollback' : ''}
                       </button>
 
-                      {isDiffExpanded && diff.migrationCode && (
+                      {isDiffExpanded && (diff.codeExamples?.[codeLanguage] || diff.migrationCode) && (
                         <div style={styles.codeBlock}>
                           <span
                             style={{
@@ -629,9 +931,9 @@ export default function MigrationGuide(): React.JSX.Element {
                               borderRadius: 4,
                             }}
                           >
-                            Migration Code
+                            {codeLanguage !== 'javascript' ? codeLanguage.charAt(0).toUpperCase() + codeLanguage.slice(1) : 'Migration Code'}
                           </span>
-                          {diff.migrationCode}
+                          {diff.codeExamples?.[codeLanguage] || diff.migrationCode}
                         </div>
                       )}
 
