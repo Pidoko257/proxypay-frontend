@@ -61,6 +61,13 @@ export default function IntegratedApiReference({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEndpointId, setSelectedEndpointId] = useState<string | undefined>();
   const [expandedTags, setExpandedTags] = useState<Set<string>>(new Set());
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(() => {
+    // Collapse the sidebar by default on mobile; always show it on desktop.
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return true;
+    }
+    return !window.matchMedia('(max-width: 1024px)').matches;
+  });
 
   /**
    * Parse endpoints from spec
@@ -149,10 +156,40 @@ export default function IntegratedApiReference({
     setSelectedEndpointId(elementId);
   }, []);
 
+  /**
+   * Keep the sidebar state in sync with the viewport: collapse it when
+   * crossing onto a small screen, expand it when returning to desktop.
+   */
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
+
+    const mql = window.matchMedia('(max-width: 1024px)');
+    const syncWithViewport = () => {
+      setSidebarOpen(!mql.matches);
+    };
+
+    syncWithViewport();
+    mql.addEventListener('change', syncWithViewport);
+    return () => mql.removeEventListener('change', syncWithViewport);
+  }, []);
+
   return (
     <div className={styles.container}>
       {/* Search bar */}
       <div className={styles.searchBar}>
+        {showSidebar && (
+          <button
+            type="button"
+            className={styles.toggleButton}
+            onClick={() => setSidebarOpen((open) => !open)}
+            aria-expanded={sidebarOpen}
+            aria-controls="api-sidebar"
+          >
+            {sidebarOpen ? 'Hide endpoints' : 'Show endpoints'}
+          </button>
+        )}
         <input
           type="search"
           value={searchQuery}
@@ -169,7 +206,10 @@ export default function IntegratedApiReference({
       <div className={styles.layout}>
         {/* Sidebar */}
         {showSidebar && (
-          <aside className={styles.sidebar}>
+          <aside
+            id="api-sidebar"
+            className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}
+          >
             <APISidebarNav
               endpoints={filteredEndpoints}
               tagGroups={tagGroups}
@@ -187,7 +227,7 @@ export default function IntegratedApiReference({
         <main className={styles.main}>
           <RedocViewer
             specUrl={specUrl}
-            spec={loadedSpec}
+            spec={loadedSpec ?? undefined}
             title={title}
             disableSidebar={!showSidebar}
             expandTagsByDefault={expandTagsByDefault}
