@@ -7,6 +7,11 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { AnalyticsResult, EndpointMetrics } from '../analytics/analytics-engine';
 import { LogAnalyticsEngine } from '../analytics/analytics-engine';
 import { ParsedLogEntry } from '../analytics/log-parser';
+import {
+  filterByResponseTime,
+  coerceResponseTime,
+  formatResponseTimeRange,
+} from './helpers/responseTimeFilter';
 import '../css/logs-dashboard.css';
 
 interface AdvancedDashboardProps {
@@ -72,10 +77,8 @@ export const AdvancedLogsDashboard: React.FC<AdvancedDashboardProps> = ({ logs, 
       }
     }
 
-    // Response time filter
-    result = result.filter(
-      log => log.responseTime >= filters.minResponseTime && log.responseTime <= filters.maxResponseTime
-    );
+    // Response time filter — inclusive on both the min and max bounds.
+    result = filterByResponseTime(result, filters.minResponseTime, filters.maxResponseTime);
 
     return result;
   }, [logs, filters]);
@@ -228,23 +231,36 @@ export const AdvancedLogsDashboard: React.FC<AdvancedDashboardProps> = ({ logs, 
             </div>
 
             <div className="filter-group">
-              <label>Min Response Time (ms)</label>
+              <label>Min Response Time (ms, inclusive)</label>
               <input
                 type="number"
                 min="0"
                 value={filters.minResponseTime}
-                onChange={(e) => handleFilterChange('minResponseTime', parseInt(e.target.value))}
+                onChange={(e) =>
+                  handleFilterChange('minResponseTime', coerceResponseTime(e.target.value, 0))
+                }
               />
             </div>
 
             <div className="filter-group">
-              <label>Max Response Time (ms)</label>
+              <label>Max Response Time (ms, inclusive)</label>
               <input
                 type="number"
                 min="0"
                 value={filters.maxResponseTime}
-                onChange={(e) => handleFilterChange('maxResponseTime', parseInt(e.target.value))}
+                onChange={(e) =>
+                  handleFilterChange('maxResponseTime', coerceResponseTime(e.target.value, 10000))
+                }
               />
+            </div>
+
+            <div className="filter-group filter-group--full">
+              <label>Selected response-time range</label>
+              <span className="filter-range-hint">
+                Keeping requests from{' '}
+                <strong>{formatResponseTimeRange(filters.minResponseTime, filters.maxResponseTime)}</strong>
+                {' '}— both ends are included.
+              </span>
             </div>
           </div>
         )}

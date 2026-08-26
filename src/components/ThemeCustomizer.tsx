@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { buildPreviewTokens, describeSpacing, readableTextColor } from './helpers/themePreview';
 
 type ThemePalette = {
   primary: string;
@@ -267,6 +268,16 @@ export default function ThemeCustomizer(): React.JSX.Element {
     } as React.CSSProperties;
   }, [previewTheme, themeMode]);
 
+  // Scoped custom properties that drive the live component showcase below. These
+  // update on every keystroke / colour-picker drag so the preview reflects the
+  // in-progress palette before it is saved or applied.
+  const previewTokens = useMemo(() => {
+    const palette = getThemePalette(previewTheme, themeMode);
+    return buildPreviewTokens(palette, previewTheme.spacing) as React.CSSProperties;
+  }, [previewTheme, themeMode]);
+
+  const previewPalette = getThemePalette(previewTheme, themeMode);
+
   const handlePresetSelect = (theme: ThemeDefinition) => {
     setPreviewTheme(theme);
     setCustomTheme(theme);
@@ -412,6 +423,125 @@ export default function ThemeCustomizer(): React.JSX.Element {
               <a className="button button--primary button--sm" href="#">Sample action</a>
               <a className="button button--secondary button--sm" href="#">View docs</a>
             </div>
+          </div>
+
+          <div
+            className="theme-preview-showcase"
+            style={{
+              ...previewTokens,
+              background: 'var(--tp-surface)',
+              color: 'var(--tp-text)',
+              border: '1px solid var(--tp-border)',
+              borderRadius: 12,
+              padding: 'var(--tp-spacing)',
+              display: 'grid',
+              gap: 'var(--tp-spacing)',
+              marginTop: 16,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <strong>Live component preview</strong>
+              <span
+                style={{
+                  background: 'var(--tp-secondary)',
+                  color: 'var(--tp-on-secondary)',
+                  borderRadius: 999,
+                  fontSize: 12,
+                  padding: '2px 10px',
+                }}
+              >
+                {describeSpacing(previewTheme.spacing)} spacing
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <button
+                type="button"
+                style={{
+                  background: 'var(--tp-primary)',
+                  color: 'var(--tp-on-primary)',
+                  border: 'none',
+                  borderRadius: 8,
+                  padding: '8px 14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Primary button
+              </button>
+              <button
+                type="button"
+                style={{
+                  background: 'transparent',
+                  color: 'var(--tp-primary)',
+                  border: '1px solid var(--tp-primary)',
+                  borderRadius: 8,
+                  padding: '8px 14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Secondary button
+              </button>
+              <button
+                type="button"
+                disabled
+                style={{
+                  background: 'var(--tp-border)',
+                  color: 'var(--tp-muted)',
+                  border: 'none',
+                  borderRadius: 8,
+                  padding: '8px 14px',
+                  fontWeight: 600,
+                }}
+              >
+                Disabled
+              </button>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                gap: 'var(--tp-spacing)',
+              }}
+            >
+              {['Requests', 'Latency'].map((title) => (
+                <div
+                  key={title}
+                  style={{
+                    background: 'var(--tp-surface-alt)',
+                    border: '1px solid var(--tp-border)',
+                    borderRadius: 10,
+                    padding: 12,
+                  }}
+                >
+                  <div style={{ color: 'var(--tp-muted)', fontSize: 12, textTransform: 'uppercase' }}>{title}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--tp-text)' }}>128k</div>
+                  <div style={{ color: 'var(--tp-primary)', fontSize: 13 }}>▲ 4.2% this week</div>
+                </div>
+              ))}
+            </div>
+
+            <label style={{ display: 'grid', gap: 4, color: 'var(--tp-muted)', fontSize: 13 }}>
+              Sample input
+              <input
+                type="text"
+                readOnly
+                value="api.proxypay.dev/v1/payments"
+                style={{
+                  background: 'var(--tp-surface-alt)',
+                  color: 'var(--tp-text)',
+                  border: '1px solid var(--tp-border)',
+                  borderRadius: 8,
+                  padding: '8px 10px',
+                }}
+              />
+            </label>
+
+            <p style={{ margin: 0, color: 'var(--tp-muted)', fontSize: 12 }}>
+              Text on primary uses <code>{readableTextColor(previewPalette.primary)}</code> for contrast.
+            </p>
           </div>
         </div>
       </div>

@@ -1,4 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  detectVersionConflict,
+  diffSpecLines,
+  type VersionConflict,
+} from './helpers/specConflict';
 
 interface SpecVersion {
   id: string;
@@ -168,8 +173,16 @@ function downloadSpec(content: string, filename: string): void {
 export default function SpecManager(): React.JSX.Element {
   const [versions, setVersions] = useState<SpecVersion[]>([]);
   const [currentSpec, setCurrentSpec] = useState<SpecVersion | null>(null);
-  const [activeView, setActiveView] = useState<'import' | 'versions' | 'preview' | 'merge'>('import');
+  const [activeView, setActiveView] = useState<'import' | 'versions' | 'preview' | 'merge' | 'conflict'>('import');
   const [toast, setToast] = useState('');
+
+  // Version-conflict detection. `syncBaseRef` holds the spec content that the
+  // local active spec and the backend were last known to agree on. When a new
+  // spec is imported we do a three-way comparison against it.
+  const syncBaseRef = useRef<string | null>(null);
+  const [pendingImport, setPendingImport] = useState<
+    { incoming: string; label: string; source: string; conflict: VersionConflict } | null
+  >(null);
 
   // Import state
   const [importUrl, setImportUrl] = useState('');
@@ -198,7 +211,9 @@ export default function SpecManager(): React.JSX.Element {
   useEffect(() => {
     const v = loadVersions();
     setVersions(v);
-    setCurrentSpec(loadCurrentSpec());
+    const loaded = loadCurrentSpec();
+    setCurrentSpec(loaded);
+    syncBaseRef.current = loaded?.spec ?? null;
 
     const autoSync = localStorage.getItem(AUTO_SYNC_KEY);
     if (autoSync) {
@@ -237,6 +252,57 @@ export default function SpecManager(): React.JSX.Element {
     [versions]
   );
 
+  // Import a freshly fetched spec. If it conflicts with the active local spec
+  // (three-way compare against the last synced base) the user is routed to the
+  // conflict view to merge or choose a version instead of silently overwriting.
+  const ingestSpec = useCallback(
+    (label: string, source: string, spec: string) => {
+      if (currentSpec) {
+        const conflict = detectVersionConflict(currentSpec.spec, spec, syncBaseRef.current);
+        if (conflict.hasConflict) {
+          setPendingImport({ incoming: spec, label, source, conflict });
+          setActiveView('conflict');
+          showToast('Version conflict detected — review before applying');
+          return;
+        }
+      }
+      addVersion(label, source, spec);
+      syncBaseRef.current = spec;
+    },
+    [currentSpec, addVersion, showToast]
+  );
+
+  const resolveConflict = useCallback(
+    (choice: 'local' | 'incoming' | 'merge') => {
+      if (!pendingImport) return;
+      const local = currentSpec?.spec ?? '';
+      let resolved = pendingImport.incoming;
+      let label = pendingImport.label;
+
+      if (choice === 'local') {
+        resolved = local;
+        label = `${pendingImport.label} (kept local)`;
+      } else if (choice === 'merge') {
+        resolved = mergeSpecs(local, pendingImport.incoming);
+        label = `${pendingImport.label} (merged)`;
+      }
+
+      addVersion(label, pendingImport.source, resolved);
+      syncBaseRef.current = resolved;
+      setValidationResult(validateSpec(resolved));
+      setPendingImport(null);
+      setActiveView('versions');
+      showToast(
+        choice === 'local'
+          ? 'Kept your local spec'
+          : choice === 'merge'
+          ? 'Merged both versions'
+          : 'Switched to the incoming spec'
+      );
+    },
+    [pendingImport, currentSpec, addVersion, showToast]
+  );
+
   const handleFileUpload = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -247,14 +313,14 @@ export default function SpecManager(): React.JSX.Element {
         const validation = validateSpec(content);
         setValidationResult(validation);
         const label = importLabel || file.name.replace(/\.[^/.]+$/, '');
-        addVersion(label, `File: ${file.name}`, content);
+        ingestSpec(label, `File: ${file.name}`, content);
         showToast(`Imported "${label}" successfully`);
         setImportLabel('');
         setValidationResult(validation);
       };
       reader.readAsText(file);
     },
-    [importLabel, addVersion, showToast]
+    [importLabel, ingestSpec, showToast]
   );
 
   const handleUrlImport = useCallback(async () => {
@@ -271,7 +337,7 @@ export default function SpecManager(): React.JSX.Element {
       const validation = validateSpec(content);
       setValidationResult(validation);
       const label = importLabel || new URL(importUrl).pathname.split('/').pop() || 'Imported Spec';
-      addVersion(label, `URL: ${importUrl}`, content);
+      ingestSpec(label, `URL: ${importUrl}`, content);
       showToast(`Imported from URL successfully`);
       setImportUrl('');
       setImportLabel('');
@@ -280,7 +346,7 @@ export default function SpecManager(): React.JSX.Element {
     } finally {
       setImporting(false);
     }
-  }, [importUrl, importLabel, addVersion, showToast]);
+  }, [importUrl, importLabel, ingestSpec, showToast]);
 
   const handleGitImport = useCallback(() => {
     // Simulated Git import — in production would clone the repo
@@ -297,13 +363,13 @@ export default function SpecManager(): React.JSX.Element {
       const validation = validateSpec(simulatedSpec);
       setValidationResult(validation);
       const label = importLabel || repoUrl.split('/').pop()?.replace('.git', '') || 'Git Import';
-      addVersion(label, `Git: ${repoUrl}`, simulatedSpec);
+      ingestSpec(label, `Git: ${repoUrl}`, simulatedSpec);
       showToast(`Imported from Git repository (simulated)`);
       setImportUrl('');
       setImportLabel('');
       setImporting(false);
     }, 1500);
-  }, [importUrl, importLabel, addVersion, showToast]);
+  }, [importUrl, importLabel, ingestSpec, showToast]);
 
   const handleMerge = useCallback(() => {
     const base = versions.find((v) => v.id === mergeBaseId);
@@ -391,6 +457,14 @@ export default function SpecManager(): React.JSX.Element {
         <button className={`mock-tab ${activeView === 'preview' ? 'active' : ''}`} onClick={() => setActiveView('preview')}>
           👁️ Preview
         </button>
+        {pendingImport && (
+          <button
+            className={`mock-tab ${activeView === 'conflict' ? 'active' : ''}`}
+            onClick={() => setActiveView('conflict')}
+          >
+            ⚠️ Conflict
+          </button>
+        )}
       </div>
 
       {activeView === 'import' && (
@@ -563,6 +637,59 @@ export default function SpecManager(): React.JSX.Element {
               <pre className="mock-preview-code"><code>{mergePreview.substring(0, 5000)}{mergePreview.length > 5000 ? '\n... (truncated)' : ''}</code></pre>
             </div>
           )}
+        </div>
+      )}
+
+      {activeView === 'conflict' && pendingImport && (
+        <div className="spec-conflict-view">
+          <h3>⚠️ Version Conflict</h3>
+          <p className="spec-hint">{pendingImport.conflict.reason}</p>
+          <div className="spec-conflict-hashes">
+            <span>Local <code>{pendingImport.conflict.localHash}</code></span>
+            <span>Incoming <code>{pendingImport.conflict.incomingHash}</code></span>
+            <span>
+              Base{' '}
+              <code>{pendingImport.conflict.baseHash ?? 'unknown'}</code>
+            </span>
+          </div>
+
+          <div className="spec-conflict-actions">
+            <button className="mock-btn mock-btn-secondary" onClick={() => resolveConflict('local')}>
+              ⬅️ Keep local
+            </button>
+            <button className="mock-btn mock-btn-primary" onClick={() => resolveConflict('merge')}>
+              🔀 Merge both
+            </button>
+            <button className="mock-btn mock-btn-secondary" onClick={() => resolveConflict('incoming')}>
+              ➡️ Use incoming
+            </button>
+            <button
+              className="mock-btn mock-btn-ghost"
+              onClick={() => {
+                setPendingImport(null);
+                setActiveView('import');
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+
+          <div className="spec-conflict-diff">
+            <div className="spec-conflict-diff-head">
+              <span>Local (active)</span>
+              <span>Incoming (backend)</span>
+            </div>
+            <div className="spec-conflict-diff-body">
+              {diffSpecLines(currentSpec?.spec ?? '', pendingImport.incoming)
+                .slice(0, 400)
+                .map((row, i) => (
+                  <div key={i} className={`spec-diff-row spec-diff-${row.type}`}>
+                    <code className="spec-diff-cell spec-diff-local">{row.local ?? ''}</code>
+                    <code className="spec-diff-cell spec-diff-incoming">{row.incoming ?? ''}</code>
+                  </div>
+                ))}
+            </div>
+          </div>
         </div>
       )}
 
