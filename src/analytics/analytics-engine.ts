@@ -37,6 +37,13 @@ export interface UsagePattern {
   errorRate: number;
 }
 
+export interface DailyPattern {
+  date: string;
+  count: number;
+  avgResponseTime: number;
+  errorRate: number;
+}
+
 export interface UserAnalysis {
   userId: string;
   requestCount: number;
@@ -69,6 +76,7 @@ export interface AnalyticsResult {
   topEndpoints: EndpointMetrics[];
   topErrors: ErrorAnalysis[];
   usageByHour: UsagePattern[];
+  usageByDay: DailyPattern[];
   statusCodeBreakdown: StatusCodeAnalysis[];
   topUsers: UserAnalysis[];
   topIPs: IPAnalysis[];
@@ -102,6 +110,7 @@ export class LogAnalyticsEngine {
       topEndpoints: this.analyzeEndpoints().slice(0, 10),
       topErrors: this.analyzeErrors().slice(0, 10),
       usageByHour: this.analyzeUsageByHour(),
+      usageByDay: this.analyzeUsageByDay(),
       statusCodeBreakdown: this.analyzeStatusCodes(),
       topUsers: this.analyzeUsers().slice(0, 10),
       topIPs: this.analyzeIPs().slice(0, 10),
@@ -197,6 +206,40 @@ export class LogAnalyticsEngine {
 
       patterns.push({
         hour,
+        count: entries.length,
+        avgResponseTime: this.calculateAverage(responseTimes),
+        errorRate: entries.length > 0 ? (errors.length / entries.length) * 100 : 0,
+      });
+    }
+
+    return patterns;
+  }
+
+  /**
+   * Analyze usage patterns by day
+   * Builds one entry per day in the logs date range, sorted chronologically.
+   */
+  private analyzeUsageByDay(): DailyPattern[] {
+    const byDay = new Map<string, ParsedLogEntry[]>();
+
+    for (const log of this.logs) {
+      const dayKey = log.timestamp.toISOString().slice(0, 10);
+      if (!byDay.has(dayKey)) {
+        byDay.set(dayKey, []);
+      }
+      byDay.get(dayKey)!.push(log);
+    }
+
+    const patterns: DailyPattern[] = [];
+    const sortedDays = Array.from(byDay.keys()).sort();
+
+    for (const day of sortedDays) {
+      const entries = byDay.get(day)!;
+      const errors = entries.filter(e => e.statusCode >= 400);
+      const responseTimes = entries.map(e => e.responseTime);
+
+      patterns.push({
+        date: day,
         count: entries.length,
         avgResponseTime: this.calculateAverage(responseTimes),
         errorRate: entries.length > 0 ? (errors.length / entries.length) * 100 : 0,
