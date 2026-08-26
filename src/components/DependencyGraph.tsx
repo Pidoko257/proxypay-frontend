@@ -189,6 +189,7 @@ export default function DependencyGraphViewer(): React.JSX.Element {
   const [depthFilter, setDepthFilter] = useState(5);
   const [showCriticalOnly, setShowCriticalOnly] = useState(false);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [traceMode, setTraceMode] = useState(false);
 
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
   const [isPanning, setIsPanning] = useState(false);
@@ -266,6 +267,49 @@ export default function DependencyGraphViewer(): React.JSX.Element {
         (e) => e.from === selectedNode || e.to === selectedNode
       )
     : [];
+
+  const tracedPathNodes = useMemo(() => {
+    if (!traceMode || !selectedNode) return new Set<string>();
+    const path = new Set<string>([selectedNode]);
+    const queue: string[] = [selectedNode];
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      DEPENDENCY_GRAPH.edges.forEach((e) => {
+        if (e.from === current && !path.has(e.to)) {
+          path.add(e.to);
+          queue.push(e.to);
+        }
+      });
+    }
+    return path;
+  }, [traceMode, selectedNode]);
+
+  const tracedPathEdges = useMemo(() => {
+    if (!traceMode || !selectedNode || tracedPathNodes.size === 0) return new Set<string>();
+    const edgeKeys = new Set<string>();
+    DEPENDENCY_GRAPH.edges.forEach((e) => {
+      if (tracedPathNodes.has(e.from) && tracedPathNodes.has(e.to)) {
+        edgeKeys.add(`${e.from}->${e.to}`);
+      }
+    });
+    return edgeKeys;
+  }, [traceMode, tracedPathNodes]);
+
+  const orderedPath = useMemo(() => {
+    if (!traceMode || !selectedNode || tracedPathNodes.size === 0) return [];
+    const visited = new Set<string>();
+    const order: string[] = [];
+    const visit = (id: string, depth: number) => {
+      if (visited.has(id) || depth > 20) return;
+      visited.add(id);
+      order.push(id);
+      DEPENDENCY_GRAPH.edges
+        .filter((e) => e.from === id)
+        .forEach((e) => visit(e.to, depth + 1));
+    };
+    visit(selectedNode, 0);
+    return order;
+  }, [traceMode, selectedNode, tracedPathNodes]);
 
   // Zoom/Pan handlers
   const handleWheel = useCallback((e: React.WheelEvent) => {
@@ -377,7 +421,8 @@ export default function DependencyGraphViewer(): React.JSX.Element {
 
       <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '1rem' }}>
         Interactive directed graph showing how endpoints depend on each other.{' '}
-        <strong>Click a node</strong> to see its relationships.{' '}
+        <strong>Click a node</strong> to see its direct relationships.{' '}
+        Enable <strong>Trace Flow Mode</strong> to highlight a complete payment flow path.{' '}
         <strong>Scroll</strong> to zoom; <strong>drag</strong> to pan.
       </p>
 
@@ -408,6 +453,14 @@ export default function DependencyGraphViewer(): React.JSX.Element {
             onChange={(e) => setShowCriticalOnly(e.target.checked)}
           />
           Critical paths only
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={traceMode}
+            onChange={(e) => { setTraceMode(e.target.checked); if (!e.target.checked) setSelectedNode(null); }}
+          />
+          Trace Flow Mode
         </label>
       </div>
 
@@ -464,77 +517,114 @@ export default function DependencyGraphViewer(): React.JSX.Element {
             >
               <polygon points="0 0, 10 3.5, 0 7" fill="#ef4444" />
             </marker>
+            <marker
+              id="arrowhead-traced"
+              viewBox="0 0 10 7"
+              refX={10}
+              refY={3.5}
+              markerWidth={8}
+              markerHeight={6}
+              orient="auto-start-reverse"
+            >
+              <polygon points="0 0, 10 3.5, 0 7" fill="#10b981" />
+            </marker>
           </defs>
 
           <g transform={`translate(${transform.x},${transform.y}) scale(${transform.scale})`}>
             {/* Edges */}
-            {visibleEdges.map((edge) => {
-              const from = nodeById.get(edge.from);
-              const to = nodeById.get(edge.to);
-              if (!from || !to) return null;
-              const isHighlighted =
-                !selectedNode || edge.from === selectedNode || edge.to === selectedNode;
-              const isCritical = edge.critical;
-              return (
-                <g key={`${edge.from}-${edge.to}`}>
-                  {/* Visible hit area */}
-                  <line
-                    x1={from.x}
-                    y1={from.y + 20}
-                    x2={to.x}
-                    y2={to.y - 20}
-                    stroke="transparent"
-                    strokeWidth={12}
-                    style={{ cursor: 'pointer' }}
-                    onMouseEnter={(e) =>
-                      setTooltip({
-                        x: e.nativeEvent.offsetX,
-                        y: e.nativeEvent.offsetY,
-                        text: `${edge.label}: ${edge.from} → ${edge.to}`,
-                      })
-                    }
-                    onMouseLeave={() => setTooltip(null)}
-                  />
-                  <line
-                    x1={from.x}
-                    y1={from.y + 20}
-                    x2={to.x}
-                    y2={to.y - 20}
-                    stroke={
-                      !isHighlighted
-                        ? '#e2e8f0'
-                        : isCritical
-                        ? '#ef4444'
-                        : '#94a3b8'
-                    }
-                    strokeWidth={isCritical ? 2.5 : 1.5}
-                    strokeDasharray={edge.critical ? undefined : '5,3'}
-                    markerEnd={
-                      isCritical ? 'url(#arrowhead-critical)' : 'url(#arrowhead)'
-                    }
-                    opacity={isHighlighted ? 1 : 0.25}
-                  />
-                  {/* Edge label */}
-                  <text
-                    x={(from.x + to.x) / 2}
-                    y={(from.y + to.y) / 2 - 6}
-                    textAnchor="middle"
-                    fontSize={10}
-                    fill={isHighlighted ? '#64748b' : '#cbd5e1'}
-                    fontWeight={500}
-                  >
-                    {edge.label}
-                  </text>
-                </g>
-              );
-            })}
+             {visibleEdges.map((edge) => {
+               const from = nodeById.get(edge.from);
+               const to = nodeById.get(edge.to);
+               if (!from || !to) return null;
+               const isHighlighted =
+                 !selectedNode || edge.from === selectedNode || edge.to === selectedNode;
+               const isCritical = edge.critical;
+               const edgeKey = `${edge.from}->${edge.to}`;
+               const isTraced = tracedPathEdges.has(edgeKey);
+               const isInFlow = traceMode && tracedPathNodes.size > 0;
+               const showEdge = isInFlow ? isTraced : isHighlighted;
+               const edgeColor = isTraced
+                 ? '#10b981'
+                 : isCritical
+                 ? '#ef4444'
+                 : '#94a3b8';
+               return (
+                 <g key={`${edge.from}-${edge.to}`}>
+                   {/* Visible hit area */}
+                   <line
+                     x1={from.x}
+                     y1={from.y + 20}
+                     x2={to.x}
+                     y2={to.y - 20}
+                     stroke="transparent"
+                     strokeWidth={12}
+                     style={{ cursor: 'pointer' }}
+                     onMouseEnter={(e) =>
+                       setTooltip({
+                         x: e.nativeEvent.offsetX,
+                         y: e.nativeEvent.offsetY,
+                         text: `${edge.label}: ${edge.from} → ${edge.to}`,
+                       })
+                     }
+                     onMouseLeave={() => setTooltip(null)}
+                   />
+                   <line
+                     x1={from.x}
+                     y1={from.y + 20}
+                     x2={to.x}
+                     y2={to.y - 20}
+                     stroke={
+                       !showEdge
+                         ? '#e2e8f0'
+                         : edgeColor
+                     }
+                     strokeWidth={isTraced ? 4 : isCritical ? 2.5 : 1.5}
+                     strokeDasharray={isTraced ? undefined : edge.critical ? undefined : '5,3'}
+                     markerEnd={
+                       isTraced
+                         ? 'url(#arrowhead-traced)'
+                         : isCritical
+                         ? 'url(#arrowhead-critical)'
+                         : 'url(#arrowhead)'
+                     }
+                     opacity={showEdge ? 1 : 0.15}
+                   />
+                   {/* Edge label */}
+                   <text
+                     x={(from.x + to.x) / 2}
+                     y={(from.y + to.y) / 2 - 6}
+                     textAnchor="middle"
+                     fontSize={10}
+                     fill={showEdge ? (isTraced ? '#10b981' : '#64748b') : '#cbd5e1'}
+                     fontWeight={isTraced ? 700 : 500}
+                   >
+                     {edge.label}
+                   </text>
+                 </g>
+               );
+             })}
 
             {/* Nodes */}
             {visibleNodes.map((node) => {
-              const isSelected = selectedNode === node.id;
-              const isHighlighted = highlightedNodes.has(node.id);
-              const color = groupColors[node.group] || '#94a3b8';
-              const opacity = selectedNode ? (isHighlighted ? 1 : 0.35) : 1;
+               const isSelected = selectedNode === node.id;
+               const isHighlighted = highlightedNodes.has(node.id);
+               const isTraced = tracedPathNodes.has(node.id);
+               const color = groupColors[node.group] || '#94a3b8';
+               const isInFlow = traceMode && tracedPathNodes.size > 0;
+               const opacity = isInFlow
+                 ? (isTraced ? 1 : 0.1)
+                 : selectedNode
+                 ? (isHighlighted ? 1 : 0.35)
+                 : 1;
+               const nodeStroke = isTraced
+                 ? '#10b981'
+                 : isSelected
+                 ? color
+                 : node.critical
+                 ? color
+                 : color;
+               const nodeStrokeWidth = isTraced ? 3 : isSelected ? 3 : node.critical ? 2 : 1.5;
+               const nodeFill = isTraced ? color : isSelected ? color : '#fff';
 
               return (
                 <g
@@ -575,9 +665,9 @@ export default function DependencyGraphViewer(): React.JSX.Element {
                     height={36}
                     rx={10}
                     ry={10}
-                    fill={isSelected ? color : '#fff'}
-                    stroke={color}
-                    strokeWidth={isSelected ? 3 : node.critical ? 2 : 1.5}
+                     fill={nodeFill}
+                     stroke={nodeStroke}
+                     strokeWidth={nodeStrokeWidth}
                     transition="all 0.2s"
                   />
                   {/* Method badge */}
@@ -649,6 +739,10 @@ export default function DependencyGraphViewer(): React.JSX.Element {
           />
           <span>Non-critical</span>
         </div>
+        <div style={styles.legendItem}>
+          <div style={{ width: 20, height: 2, background: '#10b981' }} />
+          <span>Traced flow path</span>
+        </div>
       </div>
 
       {/* Details Panel */}
@@ -704,10 +798,38 @@ export default function DependencyGraphViewer(): React.JSX.Element {
                   </li>
                 );
               })}
-            </ul>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+             </ul>
+           </div>
+           {traceMode && selectedNode && orderedPath.length > 0 && (
+             <div>
+               <h4
+                 style={{
+                   margin: '0 0 0.35rem',
+                   fontSize: '0.85rem',
+                   fontWeight: 600,
+                   color: '#475569',
+                 }}
+               >
+                 Traced Flow Path ({orderedPath.length} hops)
+               </h4>
+               <ol className="traced-path" style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.82rem', color: '#64748b' }}>
+                 {orderedPath.map((nodeId, idx) => {
+                   const nodeData = DEPENDENCY_GRAPH.nodes.find((n) => n.id === nodeId);
+                   return (
+                     <li key={nodeId}>
+                       {idx === 0 ? '📍 ' : '→ '}
+                       <code style={{ background: '#f1f5f9', padding: '0.05rem 0.35rem', borderRadius: 3 }}>
+                         {nodeData?.label ?? nodeId}
+                       </code>
+                       {nodeData && ` [${nodeData.method}]`}
+                     </li>
+                   );
+                 })}
+               </ol>
+             </div>
+           )}
+         </div>
+       )}
+     </div>
+   );
 }
