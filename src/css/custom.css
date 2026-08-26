@@ -824,6 +824,42 @@ a[target='_blank']::after {
   gap: 0.4rem;
 }
 
+/* Upgrade CTA */
+.rate-limit-upgrade-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 1.5rem 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--ifm-color-warning-dark, #fca130);
+  border-left-width: 4px;
+  border-radius: 8px;
+  background: rgba(252, 161, 48, 0.08);
+}
+
+.rate-limit-upgrade-cta.rate-limit-status-critical {
+  border-color: var(--ifm-color-danger, #f93e3e);
+  background: rgba(249, 62, 62, 0.08);
+}
+
+.rate-limit-upgrade-cta-text {
+  flex: 1 1 240px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.rate-limit-button-upgrade {
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.rate-limit-button-upgrade:hover {
+  text-decoration: none;
+  color: #fff;
+}
+
 .rate-limit-checkbox-label {
   display: flex;
   align-items: center;

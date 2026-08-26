@@ -336,6 +336,26 @@ export default function RateLimitDashboard(): React.JSX.Element {
         </div>
       )}
 
+      {/* Upgrade CTA — shown when the account is approaching its rate limit */}
+      {status && currentStatus !== 'ok' && (
+        <div
+          className={`rate-limit-upgrade-cta rate-limit-status-${currentStatus}`}
+          role="region"
+          aria-label="Upgrade your plan"
+        >
+          <div className="rate-limit-upgrade-cta-text">
+            <strong>Approaching your rate limit.</strong> Upgrade your plan for
+            higher limits and fewer throttled requests.
+          </div>
+          <a
+            href="/pricing"
+            className="rate-limit-button rate-limit-button-upgrade"
+          >
+            Upgrade plan →
+          </a>
+        </div>
+      )}
+
       {/* Error State */}
       {error && (
         <div className="rate-limit-error">
@@ -410,7 +430,7 @@ export default function RateLimitDashboard(): React.JSX.Element {
                     {timeRemaining}
                   </span>
                 </div>
-                <a href="#pricing" className="rate-limit-upgrade-link">
+                <a href="/pricing" className="rate-limit-upgrade-link">
                   View upgrade options →
                 </a>
               </div>

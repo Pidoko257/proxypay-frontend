@@ -180,6 +180,70 @@
   margin-bottom: 40px;
 }
 
+.chart-section figcaption {
+  margin-bottom: 12px;
+}
+
+.chart-subtitle {
+  margin: 4px 0 12px 0;
+  color: #7f8c8d;
+  font-size: 0.9em;
+}
+
+/* Chart legends & axis labels */
+.chart-legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0 0 12px 0;
+  padding: 0;
+}
+
+.chart-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85em;
+  color: #2c3e50;
+}
+
+.chart-legend-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: #95a5a6;
+}
+
+.chart-axis-label {
+  font-size: 0.8em;
+  color: #7f8c8d;
+  font-weight: 600;
+}
+
+.chart-axis-x {
+  text-align: center;
+  margin-top: 8px;
+}
+
+.chart-with-y-axis {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.chart-axis-y {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  text-align: center;
+  padding: 20px 0;
+}
+
+.chart-with-y-axis .hourly-chart {
+  flex: 1;
+}
+
 .chart-section h3 {
   margin: 0 0 20px 0;
   color: #2c3e50;

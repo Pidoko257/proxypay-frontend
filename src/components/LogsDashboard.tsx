@@ -51,6 +51,38 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
     return 'status-unknown';
   };
 
+  // Legend definitions shared across charts
+  const STATUS_LEGEND = [
+    { className: 'status-success', label: '2xx Success' },
+    { className: 'status-redirect', label: '3xx Redirect' },
+    { className: 'status-client-error', label: '4xx Client error' },
+    { className: 'status-server-error', label: '5xx Server error' },
+  ];
+
+  const HOURLY_LEGEND = [
+    { color: '#4ecdc4', label: 'Error rate ≤ 5%' },
+    { color: '#ff6b6b', label: 'Error rate > 5%' },
+  ];
+
+  const ChartLegend = ({
+    items,
+  }: {
+    items: { className?: string; color?: string; label: string }[];
+  }) => (
+    <ul className="chart-legend" aria-label="Chart legend">
+      {items.map((item) => (
+        <li key={item.label} className="chart-legend-item">
+          <span
+            className={`chart-legend-swatch ${item.className ?? ''}`}
+            style={item.color ? { backgroundColor: item.color } : undefined}
+            aria-hidden="true"
+          />
+          {item.label}
+        </li>
+      ))}
+    </ul>
+  );
+
   return (
     <div className="logs-dashboard">
       {/* Header */}
@@ -153,8 +185,17 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
             </div>
 
             {/* Status Code Distribution */}
-            <div className="chart-section">
-              <h3>Status Code Distribution</h3>
+            <figure className="chart-section">
+              <figcaption>
+                <h3>Status Code Distribution</h3>
+                <p className="chart-subtitle">
+                  Share of responses by HTTP status code (% of total requests)
+                </p>
+              </figcaption>
+              <ChartLegend items={STATUS_LEGEND} />
+              <div className="chart-axis-label chart-axis-x">
+                Bar length = share of total requests (%)
+              </div>
               <div className="status-code-bars">
                 {analytics.statusCodeBreakdown.map(status => (
                   <div key={status.code} className="status-bar">
@@ -176,12 +217,20 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
                   </div>
                 ))}
               </div>
-            </div>
+            </figure>
 
             {/* Hourly Usage */}
-            <div className="chart-section">
-              <h3>Hourly Usage Pattern</h3>
-              <div className="hourly-chart">
+            <figure className="chart-section">
+              <figcaption>
+                <h3>Hourly Usage Pattern</h3>
+                <p className="chart-subtitle">
+                  Requests received per hour of day, coloured by error rate
+                </p>
+              </figcaption>
+              <ChartLegend items={HOURLY_LEGEND} />
+              <div className="chart-with-y-axis">
+                <span className="chart-axis-label chart-axis-y">Requests</span>
+                <div className="hourly-chart">
                 {analytics.usageByHour.map(pattern => (
                   <div key={pattern.hour} className="hour-bar" title={`Hour ${pattern.hour}: ${pattern.count} requests`}>
                     <div
@@ -196,8 +245,10 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
                     </div>
                   </div>
                 ))}
+                </div>
               </div>
-            </div>
+              <div className="chart-axis-label chart-axis-x">Hour of day (0–23h)</div>
+            </figure>
           </div>
         )}
 
@@ -293,6 +344,17 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
         {selectedTab === 'usage' && (
           <div className="tab-content usage-tab">
             <h3>Request Timeline</h3>
+            <p className="chart-subtitle">
+              Per-hour request volume (each ● ≈ 100 requests), average response
+              time in ms, and error rate
+            </p>
+            <ChartLegend
+              items={[
+                { color: '#4ecdc4', label: '● ≈ 100 requests' },
+                { color: '#2ecc71', label: 'Error rate ≤ 5%' },
+                { color: '#e74c3c', label: 'Error rate > 5%' },
+              ]}
+            />
             <div className="timeline-chart">
               {analytics.usageByHour.map(pattern => (
                 <div key={pattern.hour} className="timeline-item">
