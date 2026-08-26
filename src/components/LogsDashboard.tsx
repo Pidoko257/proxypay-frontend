@@ -20,6 +20,7 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
 }) => {
   const [selectedTab, setSelectedTab] = useState('overview');
   const [filterText, setFilterText] = useState('');
+  const [usageGranularity, setUsageGranularity] = useState<'hourly' | 'daily'>('hourly');
 
   // Format date for display
   const formatDate = (date: Date) => {
@@ -178,25 +179,62 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
               </div>
             </div>
 
-            {/* Hourly Usage */}
+            {/* Hourly/Daily Usage */}
             <div className="chart-section">
-              <h3>Hourly Usage Pattern</h3>
-              <div className="hourly-chart">
-                {analytics.usageByHour.map(pattern => (
-                  <div key={pattern.hour} className="hour-bar" title={`Hour ${pattern.hour}: ${pattern.count} requests`}>
-                    <div
-                      className="bar-fill"
-                      style={{
-                        height: `${(pattern.count / Math.max(...analytics.usageByHour.map(p => p.count))) * 100}%`,
-                        opacity: pattern.errorRate > 5 ? 0.7 : 1,
-                        backgroundColor: pattern.errorRate > 5 ? '#ff6b6b' : '#4ecdc4',
-                      }}
-                    >
-                      <span className="hour-label">{pattern.hour}h</span>
-                    </div>
-                  </div>
-                ))}
+              <div className="chart-header">
+                <h3>Usage Pattern</h3>
+                <div className="usage-toggle">
+                  <button
+                    className={`usage-toggle-btn ${usageGranularity === 'hourly' ? 'active' : ''}`}
+                    onClick={() => setUsageGranularity('hourly')}
+                    title="Toggle hourly view"
+                  >
+                    Hourly
+                  </button>
+                  <button
+                    className={`usage-toggle-btn ${usageGranularity === 'daily' ? 'active' : ''}`}
+                    onClick={() => setUsageGranularity('daily')}
+                    title="Toggle daily view"
+                  >
+                    Daily
+                  </button>
+                </div>
               </div>
+              {usageGranularity === 'hourly' ? (
+                <div className="hourly-chart">
+                  {analytics.usageByHour.map(pattern => (
+                    <div key={pattern.hour} className="hour-bar" title={`Hour ${pattern.hour}: ${pattern.count} requests`}>
+                      <div
+                        className="bar-fill"
+                        style={{
+                          height: `${(pattern.count / Math.max(...analytics.usageByHour.map(p => p.count))) * 100}%`,
+                          opacity: pattern.errorRate > 5 ? 0.7 : 1,
+                          backgroundColor: pattern.errorRate > 5 ? '#ff6b6b' : '#4ecdc4',
+                        }}
+                      >
+                        <span className="hour-label">{pattern.hour}h</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="daily-chart">
+                  {analytics.usageByDay.map(pattern => (
+                    <div key={pattern.date} className="day-bar" title={`${pattern.date}: ${pattern.count} requests`}>
+                      <div
+                        className="bar-fill"
+                        style={{
+                          height: `${(pattern.count / Math.max(...analytics.usageByDay.map(p => p.count))) * 100}%`,
+                          opacity: pattern.errorRate > 5 ? 0.7 : 1,
+                          backgroundColor: pattern.errorRate > 5 ? '#ff6b6b' : '#4ecdc4',
+                        }}
+                      >
+                        <span className="day-label">{pattern.date.slice(5)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}

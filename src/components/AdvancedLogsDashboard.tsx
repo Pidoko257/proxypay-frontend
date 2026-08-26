@@ -26,6 +26,7 @@ interface FilterState {
 
 export const AdvancedLogsDashboard: React.FC<AdvancedDashboardProps> = ({ logs, initialAnalytics }) => {
   const [selectedTab, setSelectedTab] = useState('overview');
+  const [usageGranularity, setUsageGranularity] = useState<'hourly' | 'daily'>('hourly');
   const [filters, setFilters] = useState<FilterState>({
     startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
@@ -353,33 +354,78 @@ export const AdvancedLogsDashboard: React.FC<AdvancedDashboardProps> = ({ logs, 
             </div>
 
             <div className="chart-section">
-              <h3>Hourly Usage Pattern</h3>
-              <div className="hourly-chart">
-                {analytics.usageByHour.map(pattern => (
-                  <div
-                    key={pattern.hour}
-                    className="hour-bar"
-                    title={`Hour ${pattern.hour}: ${pattern.count} requests`}
+              <div className="chart-header">
+                <h3>Usage Pattern</h3>
+                <div className="usage-toggle">
+                  <button
+                    className={`usage-toggle-btn ${usageGranularity === 'hourly' ? 'active' : ''}`}
+                    onClick={() => setUsageGranularity('hourly')}
+                    title="Toggle hourly view"
                   >
-                    <div
-                      className="bar-fill"
-                      style={{
-                        height: `${
-                          Math.max(...analytics.usageByHour.map(p => p.count)) > 0
-                            ? (pattern.count / Math.max(...analytics.usageByHour.map(p => p.count))) * 100
-                            : 0
-                        }%`,
-                        opacity: pattern.errorRate > 5 ? 0.7 : 1,
-                        backgroundColor: pattern.errorRate > 5 ? '#ff6b6b' : '#4ecdc4',
-                      }}
-                    >
-                      <span className="hour-label">{pattern.hour}h</span>
-                    </div>
-                  </div>
-                ))}
+                    Hourly
+                  </button>
+                  <button
+                    className={`usage-toggle-btn ${usageGranularity === 'daily' ? 'active' : ''}`}
+                    onClick={() => setUsageGranularity('daily')}
+                    title="Toggle daily view"
+                  >
+                    Daily
+                  </button>
+                </div>
               </div>
-            </div>
+              {usageGranularity === 'hourly' ? (
+                <div className="hourly-chart">
+                  {analytics.usageByHour.map(pattern => (
+                    <div
+                      key={pattern.hour}
+                      className="hour-bar"
+                      title={`Hour ${pattern.hour}: ${pattern.count} requests`}
+                    >
+                      <div
+                        className="bar-fill"
+                        style={{
+                          height: `${
+                            Math.max(...analytics.usageByHour.map(p => p.count)) > 0
+                              ? (pattern.count / Math.max(...analytics.usageByHour.map(p => p.count))) * 100
+                              : 0
+                          }%`,
+                          opacity: pattern.errorRate > 5 ? 0.7 : 1,
+                          backgroundColor: pattern.errorRate > 5 ? '#ff6b6b' : '#4ecdc4',
+                        }}
+                      >
+                        <span className="hour-label">{pattern.hour}h</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="daily-chart">
+                  {analytics.usageByDay.map(pattern => (
+                    <div
+                      key={pattern.date}
+                      className="day-bar"
+                      title={`${pattern.date}: ${pattern.count} requests`}
+                    >
+                      <div
+                        className="bar-fill"
+                        style={{
+                          height: `${
+                            Math.max(...analytics.usageByDay.map(p => p.count)) > 0
+                              ? (pattern.count / Math.max(...analytics.usageByDay.map(p => p.count))) * 100
+                              : 0
+                          }%`,
+                          opacity: pattern.errorRate > 5 ? 0.7 : 1,
+                          backgroundColor: pattern.errorRate > 5 ? '#ff6b6b' : '#4ecdc4',
+                        }}
+                      >
+                        <span className="day-label">{pattern.date.slice(5)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
           </div>
+        </div>
         )}
 
         {/* Endpoints Tab */}
@@ -448,24 +494,57 @@ export const AdvancedLogsDashboard: React.FC<AdvancedDashboardProps> = ({ logs, 
         {/* Usage Tab */}
         {selectedTab === 'usage' && (
           <div className="tab-content usage-tab">
-            <h3>Request Timeline</h3>
+            <div className="usage-tab-header">
+              <h3>Request Timeline</h3>
+              <div className="usage-toggle">
+                <button
+                  className={`usage-toggle-btn ${usageGranularity === 'hourly' ? 'active' : ''}`}
+                  onClick={() => setUsageGranularity('hourly')}
+                  title="Toggle hourly view"
+                >
+                  Hourly
+                </button>
+                <button
+                  className={`usage-toggle-btn ${usageGranularity === 'daily' ? 'active' : ''}`}
+                  onClick={() => setUsageGranularity('daily')}
+                  title="Toggle daily view"
+                >
+                  Daily
+                </button>
+              </div>
+            </div>
             <div className="timeline-chart">
-              {analytics.usageByHour.map(pattern => (
-                <div key={pattern.hour} className="timeline-item">
-                  <div className="time">{pattern.hour}:00</div>
-                  <div className="requests" title={`${pattern.count} requests`}>
-                    {Array.from({ length: Math.min(Math.ceil(pattern.count / 100), 10) }).map((_, i) => (
-                      <span key={i} className="dot">
-                        ●
-                      </span>
-                    ))}
+              {usageGranularity === 'hourly' ? (
+                analytics.usageByHour.map(pattern => (
+                  <div key={pattern.hour} className="timeline-item">
+                    <div className="time">{pattern.hour}:00</div>
+                    <div className="requests" title={`${pattern.count} requests`}>
+                      {Array.from({ length: Math.min(Math.ceil(pattern.count / 100), 10) }).map((_, i) => (
+                        <span key={i} className="dot">●</span>
+                      ))}
+                    </div>
+                    <div className="avg-time">{formatNumber(pattern.avgResponseTime)}ms</div>
+                    <div className={`error-rate ${pattern.errorRate > 5 ? 'high' : 'low'}`}>
+                      {formatPercent(pattern.errorRate)}
+                    </div>
                   </div>
-                  <div className="avg-time">{formatNumber(pattern.avgResponseTime)}ms</div>
-                  <div className={`error-rate ${pattern.errorRate > 5 ? 'high' : 'low'}`}>
-                    {formatPercent(pattern.errorRate)}
+                ))
+              ) : (
+                analytics.usageByDay.map(pattern => (
+                  <div key={pattern.date} className="timeline-item">
+                    <div className="time">{pattern.date.slice(5)}</div>
+                    <div className="requests" title={`${pattern.count} requests`}>
+                      {Array.from({ length: Math.min(Math.ceil(pattern.count / 100), 10) }).map((_, i) => (
+                        <span key={i} className="dot">●</span>
+                      ))}
+                    </div>
+                    <div className="avg-time">{formatNumber(pattern.avgResponseTime)}ms</div>
+                    <div className={`error-rate ${pattern.errorRate > 5 ? 'high' : 'low'}`}>
+                      {formatPercent(pattern.errorRate)}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         )}
@@ -540,7 +619,8 @@ function createEmptyAnalytics(): AnalyticsResult {
     dateRange: { start: new Date(), end: new Date() },
     topEndpoints: [],
     topErrors: [],
-    usageByHour: Array.from({ length: 24 }, (_, i) => ({ hour: i, count: 0, avgResponseTime: 0, errorRate: 0 })),
+     usageByHour: Array.from({ length: 24 }, (_, i) => ({ hour: i, count: 0, avgResponseTime: 0, errorRate: 0 })),
+    usageByDay: [],
     statusCodeBreakdown: [],
     topUsers: [],
     topIPs: [],

@@ -20,26 +20,37 @@
     "load-test:scenario:rate-limit": "ts-node src/load-test.ts --scenarios rate-limit-flow",
     "load-test:scenario:docs": "ts-node src/load-test.ts --scenarios documentation-flow",
     "load-test:scenario:rampup": "ts-node src/load-test.ts --scenarios ramp-up-analysis",
-    "load-test:list": "ts-node src/load-test.ts --list-profiles"
+    "load-test:list": "ts-node src/load-test.ts --list-profiles",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "typecheck": "tsc --noEmit",
+    "type-check": "tsc --noEmit"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.6",
+    "@types/jest": "^29.5.14",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.0.0",
     "axios": "^1.7.7",
+    "identity-obj-proxy": "^3.0.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "ts-jest": "^29.4.12",
     "ts-node": "^10.9.0",
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "js-yaml": "^4.1.0",
     "@docusaurus/core": "3.9.2",
     "@docusaurus/preset-classic": "3.9.2",
     "@mdx-js/react": "^3.1.1",
     "clsx": "^2.1.1",
+    "js-yaml": "^4.1.0",
     "prism-react-renderer": "^2.4.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "redoc": "^2.5.1",
-    "js-yaml": "^4.1.0"
+    "redoc": "^2.5.1"
   }
 }
-

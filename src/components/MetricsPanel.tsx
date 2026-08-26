@@ -216,6 +216,50 @@ function getBadgeConfig(badge: string) {
   }
 }
 
+interface CompareRange {
+  start: string;
+  end: string;
+}
+
+function daysBetween(start: string, end: string): number {
+  const d1 = new Date(start);
+  const d2 = new Date(end);
+  return Math.max(1, Math.round((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24)));
+}
+
+function seededValue(seed: string, base: number, variance: number): number {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+    hash |= 0;
+  }
+  const normalized = (hash % 1000) / 1000;
+  return Math.round(base + (normalized * 2 - 1) * variance);
+}
+
+function generateMetricsForRange(base: EndpointMetric[], range: CompareRange): EndpointMetric[] {
+  const span = daysBetween(range.start, range.end);
+  const seedA = range.start + range.end;
+  return base.map((m) => {
+    const offset = seededValue(m.id + seedA, 0, 500);
+    const callsBase = m.callsPerDay * span;
+    const calls = callsBase + offset;
+    const callsPerDay = Math.max(0, Math.round(calls / span));
+    return {
+      ...m,
+      callsPerDay,
+       trend: parseFloat((m.trend + seededValue(m.id + seedA, 0, 3)).toFixed(1)),
+     };
+   });
+}
+
+function computeComparisonDiff(a: EndpointMetric, b: EndpointMetric) {
+  const callsDiff = a.callsPerDay - b.callsPerDay;
+  const callsPct = b.callsPerDay !== 0 ? (callsDiff / b.callsPerDay) * 100 : 0;
+  const trendDiff = a.trend - b.trend;
+  return { callsDiff, callsPct, trendDiff };
+}
+
 export default function MetricsPanel(): React.JSX.Element {
   const [metrics, setMetrics] = useState<EndpointMetric[]>([]);
   const [favorites, setFavorites] = useState<FavoriteData[]>([]);
@@ -224,6 +268,9 @@ export default function MetricsPanel(): React.JSX.Element {
   const [filterBadge, setFilterBadge] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [toast, setToast] = useState('');
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareRangeA, setCompareRangeA] = useState({ start: '2026-08-01', end: '2026-08-15' });
+  const [compareRangeB, setCompareRangeB] = useState({ start: '2026-08-16', end: '2026-08-26' });
 
   useEffect(() => {
     const saved = loadMetrics();
@@ -313,6 +360,15 @@ export default function MetricsPanel(): React.JSX.Element {
     return filtered;
   }, [metrics, searchQuery, filterCategory, filterBadge, sortBy]);
 
+  const compareMetricsA = useMemo(
+    () => generateMetricsForRange(getDefaultMetrics(), compareRangeA),
+    [compareRangeA]
+  );
+  const compareMetricsB = useMemo(
+    () => generateMetricsForRange(getDefaultMetrics(), compareRangeB),
+    [compareRangeB]
+  );
+
   const totalCalls = metrics.reduce((sum, m) => sum + m.callsPerDay, 0);
   const trendingCount = metrics.filter((m) => m.badge === 'trending').length;
   const popularCount = metrics.filter((m) => m.badge === 'popular').length;
@@ -398,13 +454,132 @@ export default function MetricsPanel(): React.JSX.Element {
               {opt.label}
             </button>
           ))}
-          <button className="mock-btn mock-btn-ghost mock-btn-sm" onClick={refreshData} title="Refresh data">
-            🔄
+           <button className="mock-btn mock-btn-ghost mock-btn-sm" onClick={refreshData} title="Refresh data">
+             🔄
+           </button>
+           <button
+             onClick={() => { setCompareMode((v) => !v); setToast(compareMode ? 'Comparison view disabled' : 'Comparison view enabled! 📊'); setTimeout(() => setToast(''), 1500); }}
+             className={`mock-btn mock-btn-sm ${compareMode ? 'mock-btn-primary' : 'mock-btn-ghost'}`}
+             title="Toggle comparison view"
+          >
+            {compareMode ? '🔍 Hide Comparison' : '🔍 Compare'}
           </button>
         </div>
       </div>
 
-      {/* Endpoint Cards */}
+      {/* Comparison View */}
+      {compareMode && (
+        <div className="metrics-comparison-view">
+          <div className="metrics-comparison-header">
+            <h3>📊 Compare Metrics Across Date Ranges</h3>
+            <div className="metrics-comparison-ranges">
+              <div className="metrics-comparison-range">
+                <label>Period A</label>
+                <div className="metrics-comparison-dates">
+                  <input
+                    type="date"
+                    value={compareRangeA.start}
+                    onChange={(e) => setCompareRangeA((r) => ({ ...r, start: e.target.value }))}
+                    className="mock-input mock-input-sm"
+                  />
+                  <span>–</span>
+                  <input
+                    type="date"
+                    value={compareRangeA.end}
+                    onChange={(e) => setCompareRangeA((r) => ({ ...r, end: e.target.value }))}
+                    className="mock-input mock-input-sm"
+                  />
+                </div>
+              </div>
+              <div className="metrics-comparison-range">
+                <label>Period B</label>
+                <div className="metrics-comparison-dates">
+                  <input
+                    type="date"
+                    value={compareRangeB.start}
+                    onChange={(e) => setCompareRangeB((r) => ({ ...r, start: e.target.value }))}
+                    className="mock-input mock-input-sm"
+                  />
+                  <span>–</span>
+                  <input
+                    type="date"
+                    value={compareRangeB.end}
+                    onChange={(e) => setCompareRangeB((r) => ({ ...r, end: e.target.value }))}
+                    className="mock-input mock-input-sm"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="metrics-comparison-table-wrapper">
+            <table className="metrics-comparison-table">
+              <thead>
+                <tr>
+                  <th>Endpoint</th>
+                  <th>Period A<br />calls/day</th>
+                  <th>Period B<br />calls/day</th>
+                  <th>Difference</th>
+                  <th>Period A<br />trend</th>
+                  <th>Period B<br />trend</th>
+                  <th>Trend Δ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(searchQuery
+                  ? compareMetricsA.filter((m) =>
+                    m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    m.path.toLowerCase().includes(searchQuery.toLowerCase())
+                  )
+                  : compareMetricsA
+                ).map((mA) => {
+                  const mB = compareMetricsB.find((m) => m.id === mA.id) || mA;
+                  const diff = computeComparisonDiff(mA, mB);
+                  const callsPositive = diff.callsDiff >= 0;
+                  const trendPositive = diff.trendDiff >= 0;
+                  return (
+                    <tr key={mA.id}>
+                      <td>
+                        <code>{mA.path}</code>
+                        <div className="metrics-comparison-name">{mA.name}</div>
+                      </td>
+                      <td>{formatCallsPerDay(mA.callsPerDay)}</td>
+                      <td>{formatCallsPerDay(mB.callsPerDay)}</td>
+                      <td className={callsPositive ? 'metrics-diff-positive' : 'metrics-diff-negative'}>
+                        {callsPositive ? '▲' : '▼'} {Math.abs(diff.callsDiff)} ({diff.callsPct.toFixed(1)}%)
+                      </td>
+                      <td>{mA.trend >= 0 ? '📈' : '📉'} {mA.trend}%</td>
+                      <td>{mB.trend >= 0 ? '📈' : '📉'} {mB.trend}%</td>
+                      <td className={trendPositive ? 'metrics-diff-positive' : 'metrics-diff-negative'}>
+                        {trendPositive ? '▲' : '▼'} {Math.abs(diff.trendDiff).toFixed(1)}%
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="metrics-comparison-summary">
+            <div className="metrics-summary-card">
+              <span className="metrics-summary-value">{formatCallsPerDay(compareMetricsA.reduce((s, m) => s + m.callsPerDay, 0))}</span>
+              <span className="metrics-summary-label">Period A Total</span>
+            </div>
+            <div className="metrics-summary-card">
+              <span className="metrics-summary-value">{formatCallsPerDay(compareMetricsB.reduce((s, m) => s + m.callsPerDay, 0))}</span>
+              <span className="metrics-summary-label">Period B Total</span>
+            </div>
+            <div className="metrics-summary-card metrics-summary-trending">
+              <span className="metrics-summary-value">
+                {compareMetricsA.reduce((s, m) => s + m.callsPerDay, 0) - compareMetricsB.reduce((s, m) => s + m.callsPerDay, 0) > 0 ? '📈' : '📉'}
+                {Math.abs(compareMetricsA.reduce((s, m) => s + m.callsPerDay, 0) - compareMetricsB.reduce((s, m) => s + m.callsPerDay, 0))}
+              </span>
+              <span className="metrics-summary-label">Net Difference</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="metrics-grid">
         {filteredAndSorted.length === 0 ? (
           <div className="mock-empty" style={{ gridColumn: '1 / -1' }}>
