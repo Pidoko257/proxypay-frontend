@@ -18,7 +18,7 @@ export default function ApiPage(): React.JSX.Element {
         {() => {
           const IntegratedApiReference = require('../components/IntegratedApiReference').default;
           return (
-            <div style={{ width: '100%', height: 'calc(100vh - 120px)' }}>
+            <div style={{ width: '100%', minHeight: 'calc(100vh - 120px)' }}>
               <IntegratedApiReference
                 specUrl="/openapi.yaml"
                 title="ProxyPay API Reference"

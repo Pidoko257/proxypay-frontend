@@ -26,6 +26,27 @@
   flex-shrink: 0;
 }
 
+/* Sidebar toggle button — hidden on desktop where the sidebar is always visible */
+.toggleButton {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 4px;
+  background: var(--ifm-background-surface-primary);
+  color: var(--ifm-font-color-base);
+  font-size: 0.9rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.toggleButton:hover {
+  border-color: var(--ifm-color-primary);
+  color: var(--ifm-color-primary);
+}
+
 .searchInput {
   flex: 1;
   padding: 0.5rem 0.75rem;
@@ -80,23 +101,41 @@
   min-width: 0; /* Allow flex child to respect max-content constraints */
 }
 
-/* Responsive: collapse sidebar on small screens */
+/* Responsive: on small screens the sidebar stacks below the main content
+   and is hidden until the user expands it with the toggle button. */
 @media (max-width: 1024px) {
   .layout {
     flex-direction: column;
+    /* Let content flow naturally so nothing is clipped or overlapped. */
+    overflow: visible;
   }
 
+  /* Main content first… */
+  .main {
+    order: 1;
+    flex: none;
+    min-height: 60vh;
+    overflow: visible;
+  }
+
+  /* …then the sidebar, stacked below. */
   .sidebar {
+    order: 2;
     width: 100%;
     border-right: none;
-    border-bottom: 1px solid var(--ifm-color-emphasis-200);
-    max-height: 40vh;
+    border-top: 1px solid var(--ifm-color-emphasis-200);
+    max-height: none;
+    display: none;
+  }
+
+  .sidebar.sidebarOpen {
+    display: flex;
+    max-height: 60vh;
     overflow-y: auto;
   }
 
-  .main {
-    flex: 1;
-    min-height: 60vh;
+  .toggleButton {
+    display: inline-flex;
   }
 }
 
@@ -122,12 +161,12 @@
     margin: 0;
   }
 
-  .sidebar {
-    max-height: 35vh;
+  .sidebar.sidebarOpen {
+    max-height: 45vh;
   }
 
   .main {
-    min-height: 65vh;
+    min-height: 55vh;
   }
 }
 

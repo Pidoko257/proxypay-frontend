@@ -252,7 +252,7 @@ export class MetricsCollector {
   exportJSON(): {
     snapshots: MetricSnapshot[];
     alerts: Alert[];
-    summary: ReturnType<typeof this.getSummary>;
+    summary: ReturnType<MetricsCollector['getSummary']>;
     trends: PerformanceTrend[];
   } {
     return {

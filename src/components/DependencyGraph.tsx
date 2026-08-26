@@ -76,7 +76,7 @@ const DEPENDENCY_GRAPH: DependencyGraph = {
 };
 
 // ── Styles ─────────────────────────────────────────────────────────
-const styles: Record<string, React.CSSProperties> = {
+const styles = {
   container: {
     maxWidth: 1100,
     margin: '0 auto',
@@ -578,7 +578,7 @@ export default function DependencyGraphViewer(): React.JSX.Element {
                     fill={isSelected ? color : '#fff'}
                     stroke={color}
                     strokeWidth={isSelected ? 3 : node.critical ? 2 : 1.5}
-                    transition="all 0.2s"
+                    style={{ transition: 'all 0.2s' }}
                   />
                   {/* Method badge */}
                   <rect
