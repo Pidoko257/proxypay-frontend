@@ -829,3 +829,91 @@
     flex-wrap: wrap;
   }
 }
+
+/* ── Data download + anomaly alerts ─────────────────────────────── */
+.dashboard-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.download-btn {
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.download-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.tab {
+  position: relative;
+}
+
+.tab-alert-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  margin-left: 6px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #fff;
+  vertical-align: middle;
+}
+
+.tab-alert-badge.warning {
+  background: #f59e0b;
+}
+
+.tab-alert-badge.critical {
+  background: #ef4444;
+}
+
+.anomaly-banner {
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid #fca5a5;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 0.88rem;
+}
+
+.anomaly-banner.warning {
+  border-color: #fcd34d;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.anomaly-banner ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.anomaly-config {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  font-size: 0.82rem;
+}
+
+.anomaly-config input {
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #d0d5dd;
+  font-size: 0.82rem;
+  min-width: 240px;
+}

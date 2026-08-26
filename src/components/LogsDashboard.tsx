@@ -5,6 +5,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { AnalyticsResult, EndpointMetrics, ErrorAnalysis } from '../analytics/analytics-engine';
+import {
+  buildDownloadFilename,
+  serializeRows,
+  triggerDownload,
+  DownloadFormat,
+} from './logsDownload.utils';
 import '../css/logs-dashboard.css';
 
 interface DashboardProps {
@@ -20,6 +26,36 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
 }) => {
   const [selectedTab, setSelectedTab] = useState('overview');
   const [filterText, setFilterText] = useState('');
+
+  // Build the raw rows that back the current dashboard view so users can take
+  // the data into a spreadsheet / external analysis tool.
+  const buildExportRows = (): Array<Record<string, unknown>> => {
+    const q = filterText.trim().toLowerCase();
+    const endpoints = analytics.topEndpoints.filter(
+      (e) => !q || `${e.method} ${e.endpoint}`.toLowerCase().includes(q),
+    );
+    return endpoints.map((e) => ({
+      method: e.method,
+      endpoint: e.endpoint,
+      requests: e.count,
+      avgResponseTimeMs: Math.round(e.avgResponseTime),
+      p95ResponseTimeMs: Math.round(e.p95ResponseTime),
+      errorRatePct: Number(e.errorRate.toFixed(2)),
+    }));
+  };
+
+  const handleDownload = (format: DownloadFormat) => {
+    const rows = buildExportRows();
+    const filters = {
+      tab: selectedTab,
+      endpoint: filterText,
+      from: new Date(analytics.dateRange.start).toISOString().slice(0, 10),
+      to: new Date(analytics.dateRange.end).toISOString().slice(0, 10),
+    };
+    const filename = buildDownloadFilename('server-logs', filters, format);
+    const { content, mimeType } = serializeRows(rows, format);
+    triggerDownload(filename, content, mimeType);
+  };
 
   // Format date for display
   const formatDate = (date: Date) => {
@@ -56,6 +92,14 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
       {/* Header */}
       <div className="dashboard-header">
         <h1>📊 Server Logs Analytics</h1>
+        <div className="dashboard-actions">
+          <button className="download-btn" onClick={() => handleDownload('json')}>
+            ⬇️ Download JSON
+          </button>
+          <button className="download-btn" onClick={() => handleDownload('csv')}>
+            ⬇️ Download CSV
+          </button>
+        </div>
         <div className="header-info">
           <div className="info-item">
             <span className="label">Period:</span>
