@@ -24,7 +24,7 @@ interface HistoricalPoint {
 }
 
 // ── Mock Data ──────────────────────────────────────────────────────
-const BENCHMARK_DATA: EndpointBenchmark[] = [
+export const BENCHMARK_DATA: EndpointBenchmark[] = [
   {
     endpoint: 'POST /payments',
     method: 'POST',
@@ -157,19 +157,43 @@ const BENCHMARK_DATA: EndpointBenchmark[] = [
   },
 ];
 
-function generateHistory(base: EndpointBenchmark): HistoricalPoint[] {
+export function generateHistory(base: EndpointBenchmark, startDate?: string, endDate?: string): HistoricalPoint[] {
   const points: HistoricalPoint[] = [];
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const jitter = () => 0.85 + Math.random() * 0.3;
-    points.push({
-      date: d.toISOString().slice(0, 10),
-      p50: Math.round(base.p50 * jitter()),
-      p95: Math.round(base.p95 * jitter()),
-      p99: Math.round(base.p99 * jitter()),
-      throughput: Math.round(base.throughput * jitter()),
-    });
+  let dayCount: number;
+  let currentDate: Date;
+
+  if (startDate && endDate) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    dayCount = Math.max(0, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+    currentDate = new Date(start);
+    for (let i = 0; i <= dayCount; i++) {
+      const d = new Date(currentDate);
+      const jitter = () => 0.85 + Math.random() * 0.3;
+      points.push({
+        date: d.toISOString().slice(0, 10),
+        p50: Math.round(base.p50 * jitter()),
+        p95: Math.round(base.p95 * jitter()),
+        p99: Math.round(base.p99 * jitter()),
+        throughput: Math.round(base.throughput * jitter()),
+      });
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+  } else {
+    dayCount = 30;
+    currentDate = new Date();
+    for (let i = dayCount - 1; i >= 0; i--) {
+      const d = new Date(currentDate);
+      d.setDate(d.getDate() - i);
+      const jitter = () => 0.85 + Math.random() * 0.3;
+      points.push({
+        date: d.toISOString().slice(0, 10),
+        p50: Math.round(base.p50 * jitter()),
+        p95: Math.round(base.p95 * jitter()),
+        p99: Math.round(base.p99 * jitter()),
+        throughput: Math.round(base.throughput * jitter()),
+      });
+    }
   }
   return points;
 }
@@ -449,6 +473,8 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [slaFilter, setSlaFilter] = useState('all');
   const [selectedEndpoint, setSelectedEndpoint] = useState<EndpointBenchmark | null>(null);
+  const [dateRangeStart, setDateRangeStart] = useState('');
+  const [dateRangeEnd, setDateRangeEnd] = useState('');
 
   const categories = useMemo(
     () => [...new Set(BENCHMARK_DATA.map((b) => b.category))],
@@ -466,8 +492,8 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
   }, [search, categoryFilter, slaFilter]);
 
   const history = useMemo(
-    () => (selectedEndpoint ? generateHistory(selectedEndpoint) : []),
-    [selectedEndpoint]
+    () => (selectedEndpoint ? generateHistory(selectedEndpoint, dateRangeStart || undefined, dateRangeEnd || undefined) : []),
+    [selectedEndpoint, dateRangeStart, dateRangeEnd]
   );
 
   const summaries = useMemo(() => {
@@ -533,17 +559,31 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
             <option key={c} value={c}>{c}</option>
           ))}
         </select>
-        <select
-          style={styles.filterSelect}
-          value={slaFilter}
-          onChange={(e) => setSlaFilter(e.target.value)}
-        >
-          <option value="all">All SLA Status</option>
-          <option value="ok">✅ OK</option>
-          <option value="warn">⚠️ Warning</option>
-          <option value="breach">🔴 Breach</option>
-        </select>
-      </div>
+         <select
+           style={styles.filterSelect}
+           value={slaFilter}
+           onChange={(e) => setSlaFilter(e.target.value)}
+         >
+           <option value="all">All SLA Status</option>
+           <option value="ok">✅ OK</option>
+           <option value="warn">⚠️ Warning</option>
+           <option value="breach">🔴 Breach</option>
+         </select>
+         <input
+           type="date"
+           value={dateRangeStart}
+           onChange={(e) => setDateRangeStart(e.target.value)}
+           style={{ ...styles.filterSelect, width: 140 }}
+           title="Start date for historical data"
+         />
+         <input
+           type="date"
+           value={dateRangeEnd}
+           onChange={(e) => setDateRangeEnd(e.target.value)}
+           style={{ ...styles.filterSelect, width: 140 }}
+           title="End date for historical data"
+         />
+       </div>
 
       {/* Table */}
       {filtered.length === 0 ? (
@@ -631,15 +671,17 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
       {/* Historical Trend */}
       {selectedEndpoint && (
         <div style={styles.trendSection}>
-          <div style={styles.trendHeader}>
-            📈 Latency Trend —{' '}
-            <code style={{ background: '#f1f5f9', padding: '0.15rem 0.5rem', borderRadius: 4 }}>
-              {selectedEndpoint.endpoint}
-            </code>
-            <span style={{ fontSize: '0.8rem', color: '#94a3b8', marginLeft: 8 }}>
-              (30-day history)
-            </span>
-          </div>
+           <div style={styles.trendHeader}>
+             📈 Latency Trend —{' '}
+             <code style={{ background: '#f1f5f9', padding: '0.15rem 0.5rem', borderRadius: 4 }}>
+               {selectedEndpoint.endpoint}
+             </code>
+             <span style={{ fontSize: '0.8rem', color: '#94a3b8', marginLeft: 8 }}>
+               {dateRangeStart && dateRangeEnd
+                 ? `Custom range: ${dateRangeStart} to ${dateRangeEnd} (${history.length} days)`
+                 : '(30-day default history)'}
+             </span>
+           </div>
           <div style={styles.chartContainer}>
             <LatencyChart history={history} />
           </div>
