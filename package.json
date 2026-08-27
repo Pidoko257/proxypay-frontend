@@ -7,16 +7,31 @@
     "start": "docusaurus start --port 3001",
     "build": "docusaurus build",
     "serve": "docusaurus serve",
-    "deploy": "docusaurus deploy"
+    "deploy": "docusaurus deploy",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@docusaurus/core": "3.9.2",
     "@docusaurus/preset-classic": "3.9.2",
     "@mdx-js/react": "^3.1.1",
     "clsx": "^2.1.1",
+    "keycharm": "^0.4.0",
     "prism-react-renderer": "^2.4.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "redoc": "^2.5.1"
+    "redoc": "^2.5.1",
+    "vis-data": "^8.0.5",
+    "vis-network": "^10.1.2",
+    "vis-util": "^6.0.2"
+  },
+  "devDependencies": {
+    "@docusaurus/types": "^3.10.2",
+    "@types/jest": "^30.0.0",
+    "identity-obj-proxy": "^3.0.0",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.4.12",
+    "typescript": "^5.9.3"
   }
 }
