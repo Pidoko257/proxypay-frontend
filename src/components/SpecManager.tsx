@@ -18,6 +18,8 @@ interface ConflictEntry {
 const VERSIONS_KEY = 'proxypay-spec-versions';
 const CURRENT_SPEC_KEY = 'proxypay-current-spec';
 const AUTO_SYNC_KEY = 'proxypay-auto-sync';
+const BACKUPS_KEY = 'proxypay-spec-backups';
+const BACKUP_SCHEDULE_KEY = 'proxypay-spec-backup-schedule';
 
 function generateId(): string {
   return Math.random().toString(36).substring(2, 10);
@@ -47,6 +49,43 @@ function loadCurrentSpec(): SpecVersion | null {
 
 function saveCurrentSpec(spec: SpecVersion): void {
   localStorage.setItem(CURRENT_SPEC_KEY, JSON.stringify(spec));
+}
+
+function createBackup(label: string, source: string, spec: string): SpecVersion {
+  return {
+    id: generateId(),
+    timestamp: Date.now(),
+    label,
+    source,
+    spec,
+    size: new Blob([spec]).size,
+  };
+}
+
+function loadBackups(): SpecVersion[] {
+  try {
+    const raw = localStorage.getItem(BACKUPS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveBackups(backups: SpecVersion[]): void {
+  localStorage.setItem(BACKUPS_KEY, JSON.stringify(backups));
+}
+
+function loadBackupSchedule(): { enabled: boolean; interval: number; lastRun: number | null } {
+  try {
+    const raw = localStorage.getItem(BACKUP_SCHEDULE_KEY);
+    return raw ? JSON.parse(raw) : { enabled: false, interval: 86400, lastRun: null };
+  } catch {
+    return { enabled: false, interval: 86400, lastRun: null };
+  }
+}
+
+function saveBackupSchedule(schedule: { enabled: boolean; interval: number; lastRun: number | null }): void {
+  localStorage.setItem(BACKUP_SCHEDULE_KEY, JSON.stringify(schedule));
 }
 
 function validateSpec(yaml: string): { valid: boolean; errors: string[] } {
@@ -192,6 +231,12 @@ export default function SpecManager(): React.JSX.Element {
   const [autoSyncUrl, setAutoSyncUrl] = useState('');
   const [autoSyncLastRun, setAutoSyncLastRun] = useState<number | null>(null);
 
+  // Backup state
+  const [backupEnabled, setBackupEnabled] = useState(false);
+  const [backupInterval, setBackupInterval] = useState(86400);
+  const [backupLastRun, setBackupLastRun] = useState<number | null>(null);
+  const [backups, setBackups] = useState<SpecVersion[]>([]);
+
   // Validation
   const [validationResult, setValidationResult] = useState<{ valid: boolean; errors: string[] } | null>(null);
 
@@ -199,6 +244,7 @@ export default function SpecManager(): React.JSX.Element {
     const v = loadVersions();
     setVersions(v);
     setCurrentSpec(loadCurrentSpec());
+    setBackups(loadBackups());
 
     const autoSync = localStorage.getItem(AUTO_SYNC_KEY);
     if (autoSync) {
@@ -210,7 +256,33 @@ export default function SpecManager(): React.JSX.Element {
         setAutoSyncLastRun(parsed.lastRun || null);
       } catch {}
     }
+
+    const backupSchedule = loadBackupSchedule();
+    setBackupEnabled(backupSchedule.enabled);
+    setBackupInterval(backupSchedule.interval);
+    setBackupLastRun(backupSchedule.lastRun);
   }, []);
+
+  // Auto-backup effect
+  useEffect(() => {
+    if (!backupEnabled || !currentSpec) return;
+
+    const intervalMs = backupInterval * 1000;
+    const intervalId = setInterval(() => {
+      const backup = createBackup(
+        `Backup ${new Date().toLocaleString()}`,
+        'Auto-backup',
+        currentSpec.spec
+      );
+      const updated = [backup, ...backups];
+      setBackups(updated);
+      saveBackups(updated);
+      setBackupLastRun(Date.now());
+      saveBackupSchedule({ enabled: backupEnabled, interval: backupInterval, lastRun: Date.now() });
+    }, intervalMs);
+
+    return () => clearInterval(intervalId);
+  }, [backupEnabled, backupInterval, currentSpec, backups]);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -363,6 +435,53 @@ export default function SpecManager(): React.JSX.Element {
       showToast(enabled ? 'Auto-sync enabled' : 'Auto-sync disabled');
     },
     [autoSyncLastRun, showToast]
+  );
+
+  const runBackup = useCallback(() => {
+    if (!currentSpec) {
+      showToast('No active spec to backup');
+      return;
+    }
+    const backup = createBackup(
+      `Backup ${new Date().toLocaleString()}`,
+      'Auto-backup',
+      currentSpec.spec
+    );
+    const updated = [backup, ...backups];
+    setBackups(updated);
+    saveBackups(updated);
+    setBackupLastRun(Date.now());
+    saveBackupSchedule({ enabled: backupEnabled, interval: backupInterval, lastRun: Date.now() });
+    showToast('Backup created');
+  }, [currentSpec, backups, backupEnabled, backupInterval, showToast]);
+
+  const saveBackupSchedule = useCallback(
+    (enabled: boolean, interval: number) => {
+      const schedule = { enabled, interval, lastRun: backupLastRun };
+      localStorage.setItem(BACKUP_SCHEDULE_KEY, JSON.stringify(schedule));
+      setBackupEnabled(enabled);
+      setBackupInterval(interval);
+      showToast(enabled ? 'Auto-backup enabled' : 'Auto-backup disabled');
+    },
+    [backupLastRun, showToast]
+  );
+
+  const deleteBackup = useCallback(
+    (backupId: string) => {
+      const updated = backups.filter((b) => b.id !== backupId);
+      setBackups(updated);
+      saveBackups(updated);
+      showToast('Backup deleted');
+    },
+    [backups, showToast]
+  );
+
+  const exportBackup = useCallback(
+    (backup: SpecVersion) => {
+      downloadSpec(backup.spec, `${backup.label.replace(/[^a-z0-9_-]/gi, '_')}.yaml`);
+      showToast('Backup exported');
+    },
+    [showToast]
   );
 
   const previewVersion = versions.find((v) => v.id === previewVersionId);
@@ -644,6 +763,71 @@ export default function SpecManager(): React.JSX.Element {
         </div>
         {autoSyncEnabled && autoSyncLastRun && (
           <p className="spec-sync-last">Last sync: {new Date(autoSyncLastRun).toLocaleString()}</p>
+        )}
+      </div>
+
+      <div className="spec-backups">
+        <h3>🛡️ Spec Backups</h3>
+        <p className="spec-hint">Automatically backup your specs on a schedule to prevent data loss.</p>
+        <div className="mock-grid">
+          <div className="mock-field">
+            <label className="mock-checkbox-label">
+              <input
+                type="checkbox"
+                checked={backupEnabled}
+                onChange={(e) => saveBackupSchedule(e.target.checked, backupInterval)}
+              />
+              <span>Enable auto-backup</span>
+            </label>
+          </div>
+          {backupEnabled && (
+            <div className="mock-field">
+              <label>Interval</label>
+              <select
+                value={backupInterval}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setBackupInterval(val);
+                  saveBackupSchedule(true, val);
+                }}
+                className="mock-select"
+              >
+                <option value={3600}>Every hour</option>
+                <option value={21600}>Every 6 hours</option>
+                <option value={86400}>Every day</option>
+              </select>
+            </div>
+          )}
+        </div>
+        {backupEnabled && currentSpec && (
+          <button className="mock-btn mock-btn-secondary" onClick={runBackup} style={{ marginTop: '0.75rem' }}>
+            🛡️ Backup Now
+          </button>
+        )}
+        {backupEnabled && backupLastRun && (
+          <p className="spec-sync-last">Last backup: {new Date(backupLastRun).toLocaleString()}</p>
+        )}
+
+        {backups.length > 0 && (
+          <div className="spec-backups-list" style={{ marginTop: '1.5rem' }}>
+            <h4>Saved Backups ({backups.length})</h4>
+            {backups
+              .sort((a, b) => b.timestamp - a.timestamp)
+              .map((b) => (
+                <div key={b.id} className="spec-version-card">
+                  <div className="spec-version-info">
+                    <strong>{b.label}</strong>
+                    <span className="spec-version-meta">
+                      {new Date(b.timestamp).toLocaleString()} • {(b.size / 1024).toFixed(1)} KB
+                    </span>
+                  </div>
+                  <div className="spec-version-actions">
+                    <button className="mock-btn mock-btn-sm" onClick={() => exportBackup(b)}>📥 Export</button>
+                    <button className="mock-btn mock-btn-sm mock-btn-danger" onClick={() => deleteBackup(b.id)}>🗑️</button>
+                  </div>
+                </div>
+              ))}
+          </div>
         )}
       </div>
     </div>

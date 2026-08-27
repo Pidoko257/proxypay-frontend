@@ -19,6 +19,7 @@ const ANNOTATIONS_KEY = 'proxypay-annotations';
 const USERNAME_KEY = 'proxypay-username';
 const VOTES_KEY = 'proxypay-annotation-votes';
 const PINNED_KEY = 'proxypay-pinned-annotations';
+const FOLLOWED_KEY = 'proxypay-followed-annotations';
 
 const ANNOTATION_TYPES = [
   { value: 'tip', label: '💡 Tip', color: '#2e8555' },
@@ -67,13 +68,27 @@ function saveVotes(votes: Record<string, 'up' | 'down' | null>): void {
   localStorage.setItem(VOTES_KEY, JSON.stringify(votes));
 }
 
+function loadFollowed(): Set<string> {
+  try {
+    const raw = localStorage.getItem(FOLLOWED_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function saveFollowed(followed: Set<string>): void {
+  localStorage.setItem(FOLLOWED_KEY, JSON.stringify(Array.from(followed)));
+}
+
 export default function AnnotationsPanel(): React.JSX.Element {
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [username, setUsername] = useState('');
   const [usernameInput, setUsernameInput] = useState('');
   const [votes, setVotes] = useState<Record<string, 'up' | 'down' | null>>({});
+  const [followed, setFollowed] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState('');
-  const [activeView, setActiveView] = useState<'browse' | 'add' | 'admin'>('browse');
+  const [activeView, setActiveView] = useState<'browse' | 'add' | 'admin' | 'followed'>('browse');
 
   // Add form state
   const [endpointPath, setEndpointPath] = useState('/api/v1/');
@@ -91,6 +106,7 @@ export default function AnnotationsPanel(): React.JSX.Element {
     setAnnotations(loadAnnotations());
     setUsername(loadUsername());
     setVotes(loadVotes());
+    setFollowed(loadFollowed());
   }, []);
 
   const showToast = useCallback((msg: string) => {
@@ -239,6 +255,35 @@ export default function AnnotationsPanel(): React.JSX.Element {
     [annotations, showToast]
   );
 
+  const handleToggleFollow = useCallback(
+    (annotationId: string) => {
+      setFollowed((prev) => {
+        const next = new Set(prev);
+        if (next.has(annotationId)) {
+          next.delete(annotationId);
+          showToast('Unfollowed annotation');
+        } else {
+          next.add(annotationId);
+          showToast('Following annotation — you will be notified of new replies');
+        }
+        saveFollowed(next);
+        return next;
+      });
+    },
+    [showToast]
+  );
+
+  const simulateNewReply = useCallback(
+    (annotationId: string) => {
+      if (!followed.has(annotationId)) return;
+      const annotation = annotations.find((a) => a.id === annotationId);
+      if (annotation) {
+        showToast(`New reply on annotation: "${annotation.text.substring(0, 50)}..."`);
+      }
+    },
+    [followed, annotations, showToast]
+  );
+
   const filteredAnnotations = useMemo(() => {
     let filtered = annotations.filter((a) => (showArchived ? true : !a.archived));
 
@@ -318,6 +363,12 @@ export default function AnnotationsPanel(): React.JSX.Element {
           onClick={() => setActiveView('browse')}
         >
           📖 Browse ({filteredAnnotations.length})
+        </button>
+        <button
+          className={`mock-tab ${activeView === 'followed' ? 'active' : ''}`}
+          onClick={() => setActiveView('followed')}
+        >
+          🔔 Followed ({followed.size})
         </button>
         <button
           className={`mock-tab ${activeView === 'add' ? 'active' : ''}`}
@@ -420,6 +471,13 @@ export default function AnnotationsPanel(): React.JSX.Element {
                         </button>
                       </div>
                       <button
+                        className={`mock-btn mock-btn-sm mock-btn-ghost ${followed.has(a.id) ? 'annotation-followed' : ''}`}
+                        onClick={() => handleToggleFollow(a.id)}
+                        title={followed.has(a.id) ? 'Unfollow' : 'Follow'}
+                      >
+                        {followed.has(a.id) ? '🔔 Following' : '🔕 Follow'}
+                      </button>
+                      <button
                         className="mock-btn mock-btn-sm mock-btn-ghost"
                         onClick={() => handlePin(a.id)}
                         title={a.pinned ? 'Unpin' : 'Pin'}
@@ -439,10 +497,77 @@ export default function AnnotationsPanel(): React.JSX.Element {
                       >
                         {a.archived ? '📂 Restore' : '📦 Archive'}
                       </button>
+                      <button
+                        className="mock-btn mock-btn-sm mock-btn-ghost"
+                        onClick={() => simulateNewReply(a.id)}
+                        title="Simulate new reply notification"
+                      >
+                        💬 Simulate Reply
+                      </button>
                     </div>
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeView === 'followed' && (
+        <div className="annotations-followed">
+          <h3>🔔 Followed Annotations</h3>
+          {followed.size === 0 ? (
+            <div className="mock-empty">
+              <p>You are not following any annotations. Browse and click "Follow" to get notified of new replies.</p>
+            </div>
+          ) : (
+            <div className="annotations-list">
+              {annotations
+                .filter((a) => followed.has(a.id))
+                .map((a) => (
+                  <div
+                    key={a.id}
+                    className={`annotation-card ${a.pinned ? 'annotation-pinned' : ''} ${a.flagged ? 'annotation-flagged' : ''}`}
+                  >
+                    <div className="annotation-header">
+                      <span
+                        className="annotation-type-badge"
+                        style={{ backgroundColor: ANNOTATION_TYPES.find((t) => t.value === a.type)?.color }}
+                      >
+                        {ANNOTATION_TYPES.find((t) => t.value === a.type)?.label}
+                      </span>
+                      <span className={`mock-method-badge method-${a.endpointMethod.toLowerCase()}`}>
+                        {a.endpointMethod}
+                      </span>
+                      <code className="annotation-endpoint">{a.endpointPath}</code>
+                      {a.pinned && <span className="annotation-pin-badge">📌 Pinned</span>}
+                      {a.flagged && <span className="annotation-flag-badge">🚩 Flagged</span>}
+                      {a.archived && <span className="annotation-archive-badge">📦 Archived</span>}
+                    </div>
+                    <p className="annotation-text">{a.text}</p>
+                    <div className="annotation-footer">
+                      <div className="annotation-meta">
+                        <span className="annotation-author">👤 {a.author}</span>
+                        <span className="annotation-date">{new Date(a.timestamp).toLocaleString()}</span>
+                      </div>
+                      <div className="annotation-actions">
+                        <button
+                          className={`mock-btn mock-btn-sm mock-btn-ghost ${followed.has(a.id) ? 'annotation-followed' : ''}`}
+                          onClick={() => handleToggleFollow(a.id)}
+                        >
+                          {followed.has(a.id) ? '🔔 Unfollow' : '🔕 Follow'}
+                        </button>
+                        <button
+                          className="mock-btn mock-btn-sm mock-btn-ghost"
+                          onClick={() => simulateNewReply(a.id)}
+                          title="Simulate new reply notification"
+                        >
+                          💬 Simulate Reply
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
             </div>
           )}
         </div>
