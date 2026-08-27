@@ -1,6 +1,6 @@
 /**
  * Redoc Viewer Component
- * Renders OpenAPI specification using Redoc with deep-linking support
+ * Renders OpenAPI specification using Redoc with deep-linking support and copy link functionality
  */
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
@@ -12,6 +12,8 @@ import {
   scrollIntoView,
   onHashChange,
 } from '../utils/redocDeepLink';
+import { useToast } from './Toast';
+import Toast from './Toast';
 import styles from './RedocViewer.module.css';
 
 /**
@@ -42,6 +44,7 @@ export interface RedocViewerProps {
   onSpecLoaded?: (spec: OpenAPISpec) => void;
   onError?: (error: Error) => void;
   onDeepLinkNavigate?: (elementId: string) => void;
+  enableAnchorCopy?: boolean;
 }
 
 /**
@@ -59,12 +62,15 @@ export default function RedocViewer({
   onSpecLoaded,
   onError,
   onDeepLinkNavigate,
+  enableAnchorCopy = true,
 }: RedocViewerProps): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(!spec);
   const [error, setError] = useState<string | null>(null);
   const [loadedSpec, setLoadedSpec] = useState<OpenAPISpec | null>(spec || null);
   const hashChangeUnsubscribeRef = useRef<(() => void) | null>(null);
+  const { messages, success, error: showError } = useToast();
+  const copyButtonRef = useRef<HTMLDivElement>(null);
 
   /**
    * Load OpenAPI spec from URL or use provided spec
@@ -176,7 +182,23 @@ export default function RedocViewer({
   );
 
   /**
-   * Set up hash change listener for deep-linking
+   * Copy current anchor link to clipboard
+   */
+  const copyAnchorLink = useCallback(async () => {
+    if (!enableAnchorCopy) return;
+
+    try {
+      const url = window.location.href;
+      await navigator.clipboard.writeText(url);
+      success('Link copied to clipboard!', 2000);
+    } catch (err) {
+      showError('Failed to copy link', 2000);
+      console.error('Failed to copy anchor link:', err);
+    }
+  }, [enableAnchorCopy, success, showError]);
+
+  /**
+   * Set up hash change listener for deep-linking and copy button
    */
   useEffect(() => {
     if (!enableDeepLinking || !loadedSpec) return;
@@ -335,6 +357,20 @@ export default function RedocViewer({
    */
   return (
     <div className={styles.redocContainer}>
+      <Toast messages={messages} />
+      {enableAnchorCopy && window.location.hash && (
+        <div className={styles.copyButtonContainer} ref={copyButtonRef}>
+          <button
+            className={styles.copyButton}
+            onClick={copyAnchorLink}
+            title="Copy anchor link to clipboard"
+            aria-label="Copy anchor link"
+          >
+            <span className={styles.copyIcon}>🔗</span>
+            <span className={styles.copyText}>Copy Link</span>
+          </button>
+        </div>
+      )}
       <div ref={containerRef} className={styles.redoc} />
     </div>
   );

@@ -2,10 +2,10 @@
  * API Sidebar Navigation Component
  * Shows API tag structure and endpoints for navigation
  * Integrates with Redoc for synchronized navigation
+ * Supports per-tag search and HTTP method filtering
  */
 
 import React, { useMemo, useState, useEffect } from 'react';
-import Link from '@docusaurus/Link';
 import {
   toEndpointLink,
   toTagLink,
@@ -51,8 +51,26 @@ function MethodBadge({ method }: { method: string }): React.JSX.Element {
 }
 
 /**
- * API Sidebar Navigation Component
+ * Filter endpoints by method
  */
+function filterEndpointsByMethod(endpoints: ParsedEndpoint[], methods: Set<string>): ParsedEndpoint[] {
+  if (methods.size === 0) return endpoints;
+  return endpoints.filter(ep => methods.has(ep.method.toLowerCase()));
+}
+
+/**
+ * Filter endpoints by search query
+ */
+function filterEndpointsByQuery(endpoints: ParsedEndpoint[], query: string): ParsedEndpoint[] {
+  if (!query.trim()) return endpoints;
+  const q = query.toLowerCase();
+  return endpoints.filter(ep =>
+    ep.path.toLowerCase().includes(q) ||
+    ep.method.toLowerCase().includes(q) ||
+    ep.summary.toLowerCase().includes(q),
+  );
+}
+
 export default function APISidebarNav({
   endpoints,
   tagGroups: providedTagGroups,
@@ -69,6 +87,8 @@ export default function APISidebarNav({
   const [selectedEndpointId, setSelectedEndpointId] = useState<string | undefined>(
     propSelectedEndpointId
   );
+  const [tagSearchQueries, setTagSearchQueries] = useState<Record<string, string>>({});
+  const [tagMethodFilters, setTagMethodFilters] = useState<Record<string, Set<string>>>({});
 
   /**
    * Group endpoints by tag if not provided
@@ -230,43 +250,109 @@ export default function APISidebarNav({
       </div>
 
       <div className={styles.tagGroups}>
-        {tagGroups.map((group) => (
-          <div key={group.name} className={styles.tagGroup}>
-            {/* Tag Header */}
-            <button
-              className={styles.tagHeader}
-              onClick={() => handleTagClick(group.name)}
-              aria-expanded={localExpandedTags.has(group.name)}
-              data-tag-name={group.name}
-            >
-              <span className={styles.tagToggle}>
-                {localExpandedTags.has(group.name) ? '▼' : '▶'}
-              </span>
-              <span className={styles.tagName}>{group.name}</span>
-              <span className={styles.tagCount}>{group.endpoints.length}</span>
-            </button>
+        {tagGroups.map((group) => {
+          const tagKey = group.name;
+          const searchQuery = tagSearchQueries[tagKey] || '';
+          const methodFilter = tagMethodFilters[tagKey] || new Set();
+          
+          // Apply filters
+          let filteredEndpoints = group.endpoints;
+          filteredEndpoints = filterEndpointsByQuery(filteredEndpoints, searchQuery);
+          filteredEndpoints = filterEndpointsByMethod(filteredEndpoints, methodFilter);
 
-            {/* Endpoints List */}
-            {localExpandedTags.has(group.name) && (
-              <div className={styles.endpointsList}>
-                {group.endpoints.map((endpoint) => (
-                  <button
-                    key={endpoint.id}
-                    className={`${styles.endpointItem} ${
-                      selectedEndpointId === endpoint.id ? styles.selected : ''
-                    }`}
-                    onClick={() => handleEndpointClick(endpoint)}
-                    title={endpoint.summary}
-                    data-endpoint-id={endpoint.id}
-                  >
-                    <MethodBadge method={endpoint.method} />
-                    <span className={styles.endpointPath}>{endpoint.path}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+          return (
+            <div key={group.name} className={styles.tagGroup}>
+              {/* Tag Header */}
+              <button
+                className={styles.tagHeader}
+                onClick={() => handleTagClick(group.name)}
+                aria-expanded={localExpandedTags.has(group.name)}
+                data-tag-name={group.name}
+              >
+                <span className={styles.tagToggle}>
+                  {localExpandedTags.has(group.name) ? '▼' : '▶'}
+                </span>
+                <span className={styles.tagName}>{group.name}</span>
+                <span className={styles.tagCount}>
+                  {filteredEndpoints.length > 0 && filteredEndpoints.length !== group.endpoints.length
+                    ? `${filteredEndpoints.length}/${group.endpoints.length}`
+                    : group.endpoints.length}
+                </span>
+              </button>
+
+              {/* Tag Search and Filters */}
+              {localExpandedTags.has(group.name) && (
+                <div className={styles.tagFilterBar}>
+                  <input
+                    type="search"
+                    className={styles.tagSearch}
+                    placeholder="Filter endpoints..."
+                    value={searchQuery}
+                    onChange={(e) =>
+                      setTagSearchQueries((prev) => ({
+                        ...prev,
+                        [tagKey]: e.target.value,
+                      }))
+                    }
+                    aria-label={`Search endpoints in ${group.name}`}
+                  />
+                  
+                  {/* Method Filter Buttons */}
+                  <div className={styles.methodFilters}>
+                    {['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map((method) => (
+                      <button
+                        key={method}
+                        className={`${styles.methodFilter} ${
+                          methodFilter.has(method.toLowerCase()) ? styles.active : ''
+                        }`}
+                        onClick={() => {
+                          const newFilter = new Set(methodFilter);
+                          if (newFilter.has(method.toLowerCase())) {
+                            newFilter.delete(method.toLowerCase());
+                          } else {
+                            newFilter.add(method.toLowerCase());
+                          }
+                          setTagMethodFilters((prev) => ({
+                            ...prev,
+                            [tagKey]: newFilter,
+                          }));
+                        }}
+                        title={`Filter by ${method}`}
+                        aria-pressed={methodFilter.has(method.toLowerCase())}
+                      >
+                        {method}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Endpoints List */}
+              {localExpandedTags.has(group.name) && (
+                <div className={styles.endpointsList}>
+                  {filteredEndpoints.length > 0 ? (
+                    filteredEndpoints.map((endpoint) => (
+                      <button
+                        key={endpoint.id}
+                        className={`${styles.endpointItem} ${
+                          selectedEndpointId === endpoint.id ? styles.selected : ''
+                        }`}
+                        onClick={() => handleEndpointClick(endpoint)}
+                        title={endpoint.summary}
+                        data-endpoint-id={endpoint.id}
+                      >
+                        <MethodBadge method={endpoint.method} />
+                        <span className={styles.endpointPath}>{endpoint.path}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className={styles.noResults}>No endpoints match</div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Empty State */}

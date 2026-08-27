@@ -1,16 +1,11 @@
 /**
  * Server Logs Analytics Dashboard
- * React component for visualizing log analytics
+ * React component for visualizing log analytics with timezone support
  */
 
 import React, { useState, useEffect } from 'react';
 import { AnalyticsResult, EndpointMetrics, ErrorAnalysis } from '../analytics/analytics-engine';
-import {
-  buildDownloadFilename,
-  serializeRows,
-  triggerDownload,
-  DownloadFormat,
-} from './logsDownload.utils';
+import TimeZoneSelector, { formatDateInTimezone, detectUserTimezone } from './TimeZoneSelector';
 import '../css/logs-dashboard.css';
 
 interface DashboardProps {
@@ -26,40 +21,22 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
 }) => {
   const [selectedTab, setSelectedTab] = useState('overview');
   const [filterText, setFilterText] = useState('');
+  const [timezone, setTimezone] = useState(() => {
+    // Try to get from localStorage, fallback to detected timezone
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('logsTimezone') : null;
+    return saved || detectUserTimezone();
+  });
 
-  // Build the raw rows that back the current dashboard view so users can take
-  // the data into a spreadsheet / external analysis tool.
-  const buildExportRows = (): Array<Record<string, unknown>> => {
-    const q = filterText.trim().toLowerCase();
-    const endpoints = analytics.topEndpoints.filter(
-      (e) => !q || `${e.method} ${e.endpoint}`.toLowerCase().includes(q),
-    );
-    return endpoints.map((e) => ({
-      method: e.method,
-      endpoint: e.endpoint,
-      requests: e.count,
-      avgResponseTimeMs: Math.round(e.avgResponseTime),
-      p95ResponseTimeMs: Math.round(e.p95ResponseTime),
-      errorRatePct: Number(e.errorRate.toFixed(2)),
-    }));
-  };
+  // Save timezone preference to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('logsTimezone', timezone);
+    }
+  }, [timezone]);
 
-  const handleDownload = (format: DownloadFormat) => {
-    const rows = buildExportRows();
-    const filters = {
-      tab: selectedTab,
-      endpoint: filterText,
-      from: new Date(analytics.dateRange.start).toISOString().slice(0, 10),
-      to: new Date(analytics.dateRange.end).toISOString().slice(0, 10),
-    };
-    const filename = buildDownloadFilename('server-logs', filters, format);
-    const { content, mimeType } = serializeRows(rows, format);
-    triggerDownload(filename, content, mimeType);
-  };
-
-  // Format date for display
+  // Format date in selected timezone
   const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
+    return formatDateInTimezone(date, timezone, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -114,6 +91,13 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
             <span className={`value ${analytics.errorRate > 5 ? 'error' : 'success'}`}>
               {formatPercent(analytics.errorRate)}
             </span>
+          </div>
+          <div className="info-item timezone-selector-item">
+            <TimeZoneSelector 
+              selectedTimezone={timezone}
+              onTimezoneChange={setTimezone}
+              compact={true}
+            />
           </div>
         </div>
       </div>
