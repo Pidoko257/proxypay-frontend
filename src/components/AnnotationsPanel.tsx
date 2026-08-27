@@ -19,6 +19,46 @@ const ANNOTATIONS_KEY = 'proxypay-annotations';
 const USERNAME_KEY = 'proxypay-username';
 const VOTES_KEY = 'proxypay-annotation-votes';
 const PINNED_KEY = 'proxypay-pinned-annotations';
+const RATE_LIMIT_KEY = 'proxypay-annotation-rate';
+
+// Spam protection: cap how many annotations one user can create per rolling day.
+export const MAX_ANNOTATIONS_PER_DAY = 10;
+const RATE_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/** Timestamps (ms) of a user's recent annotation submissions, keyed by author. */
+type RateLog = Record<string, number[]>;
+
+function loadRateLog(): RateLog {
+  try {
+    const raw = localStorage.getItem(RATE_LIMIT_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveRateLog(log: RateLog): void {
+  localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(log));
+}
+
+/** Drop entries outside the rolling window. */
+export function pruneRateEntries(
+  timestamps: number[],
+  now: number = Date.now(),
+  windowMs: number = RATE_WINDOW_MS
+): number[] {
+  return timestamps.filter((t) => now - t < windowMs);
+}
+
+/** True when the user still has annotation quota left in the current window. */
+export function withinRateLimit(
+  timestamps: number[],
+  now: number = Date.now(),
+  max: number = MAX_ANNOTATIONS_PER_DAY,
+  windowMs: number = RATE_WINDOW_MS
+): boolean {
+  return pruneRateEntries(timestamps, now, windowMs).length < max;
+}
 
 const ANNOTATION_TYPES = [
   { value: 'tip', label: '💡 Tip', color: '#2e8555' },
@@ -122,6 +162,16 @@ export default function AnnotationsPanel(): React.JSX.Element {
       return;
     }
 
+    const now = Date.now();
+    const rateLog = loadRateLog();
+    const recent = pruneRateEntries(rateLog[username] || [], now);
+    if (!withinRateLimit(recent, now)) {
+      showToast(
+        `Rate limit reached — max ${MAX_ANNOTATIONS_PER_DAY} annotations per day. Try again later.`
+      );
+      return;
+    }
+
     const newAnnotation: Annotation = {
       id: generateId(),
       endpointPath,
@@ -140,8 +190,14 @@ export default function AnnotationsPanel(): React.JSX.Element {
     const updated = [newAnnotation, ...annotations];
     setAnnotations(updated);
     saveAnnotations(updated);
+
+    rateLog[username] = [...recent, now];
+    saveRateLog(rateLog);
+
     setAnnotationText('');
-    showToast('Annotation added!');
+    showToast(
+      `Annotation added! ${MAX_ANNOTATIONS_PER_DAY - recent.length - 1} left today.`
+    );
     setActiveView('browse');
   }, [username, annotationText, endpointPath, endpointMethod, annotationType, annotations, showToast]);
 
