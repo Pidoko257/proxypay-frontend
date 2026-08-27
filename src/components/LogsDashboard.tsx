@@ -8,6 +8,70 @@ import { AnalyticsResult, EndpointMetrics, ErrorAnalysis } from '../analytics/an
 import TimeZoneSelector, { formatDateInTimezone, detectUserTimezone } from './TimeZoneSelector';
 import '../css/logs-dashboard.css';
 
+/**
+ * Plain-language definitions for every metric shown on the dashboard.
+ * Surfaced as hover/focus tooltips and collected on the /logs-glossary page.
+ */
+export const METRIC_DEFINITIONS: Record<string, string> = {
+  'Total Requests': 'The total number of HTTP requests received in the selected period.',
+  'Total Errors':
+    'Count of requests that returned a 4xx or 5xx status code in the selected period.',
+  'Error Rate':
+    'Percentage of requests that failed (4xx/5xx) out of all requests. Lower is better; sustained values above 5% usually indicate a problem.',
+  'Avg Response Time':
+    'The mean time (in milliseconds) the server took to respond, averaged across every request. Sensitive to outliers.',
+  'P95 Response Time':
+    '95th percentile latency: 95% of requests were faster than this value. A better indicator of typical worst-case experience than the average.',
+  'P99 Response Time':
+    '99th percentile latency: only 1% of requests were slower. Highlights tail latency that affects your least-lucky users.',
+  'Status Code Distribution':
+    'Breakdown of responses by HTTP status class (2xx success, 3xx redirect, 4xx client error, 5xx server error).',
+  'Hourly Usage Pattern':
+    'Request volume grouped by hour of day, used to spot peak traffic windows and error spikes.',
+};
+
+/** Where readers can learn more about these metrics. */
+export const METRICS_DOC_URL = '/logs-glossary';
+
+/**
+ * A metric name with an info affordance: native `title` tooltip for quick
+ * reference plus a link to the full glossary.
+ */
+export const MetricLabel: React.FC<{ name: string; className?: string }> = ({
+  name,
+  className,
+}) => {
+  const definition = METRIC_DEFINITIONS[name];
+  return (
+    <span className={className}>
+      {name}
+      {definition && (
+        <>
+          {' '}
+          <span
+            className="metric-info"
+            role="img"
+            aria-label={`${name}: ${definition}`}
+            title={definition}
+            tabIndex={0}
+            data-testid={`metric-tooltip-${name}`}
+          >
+            ⓘ
+          </span>
+          <a
+            className="metric-doc-link"
+            href={METRICS_DOC_URL}
+            title={`Read the full definition of "${name}" in the metrics glossary`}
+            aria-label={`Documentation for ${name}`}
+          >
+            docs
+          </a>
+        </>
+      )}
+    </span>
+  );
+};
+
 interface DashboardProps {
   analytics: AnalyticsResult;
   onDateRangeChange?: (start: Date, end: Date) => void;
@@ -87,7 +151,9 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
             <span className="value">{formatNumber(analytics.totalRequests)}</span>
           </div>
           <div className="info-item">
-            <span className="label">Error Rate:</span>
+            <span className="label">
+              <MetricLabel name="Error Rate" />:
+            </span>
             <span className={`value ${analytics.errorRate > 5 ? 'error' : 'success'}`}>
               {formatPercent(analytics.errorRate)}
             </span>
@@ -145,44 +211,44 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
             <div className="metrics-grid">
               <div className="metric-card">
                 <div className="metric-icon">📊</div>
-                <div className="metric-title">Total Requests</div>
+                <div className="metric-title"><MetricLabel name="Total Requests" /></div>
                 <div className="metric-value">{formatNumber(analytics.totalRequests)}</div>
               </div>
 
               <div className="metric-card">
                 <div className="metric-icon">❌</div>
-                <div className="metric-title">Total Errors</div>
+                <div className="metric-title"><MetricLabel name="Total Errors" /></div>
                 <div className="metric-value">{formatNumber(analytics.totalErrors)}</div>
               </div>
 
               <div className="metric-card">
                 <div className={`metric-icon ${analytics.errorRate > 5 ? 'warn' : ''}`}>⚠️</div>
-                <div className="metric-title">Error Rate</div>
+                <div className="metric-title"><MetricLabel name="Error Rate" /></div>
                 <div className="metric-value">{formatPercent(analytics.errorRate)}</div>
               </div>
 
               <div className="metric-card">
                 <div className="metric-icon">⏱️</div>
-                <div className="metric-title">Avg Response Time</div>
+                <div className="metric-title"><MetricLabel name="Avg Response Time" /></div>
                 <div className="metric-value">{formatNumber(analytics.avgResponseTime)}ms</div>
               </div>
 
               <div className="metric-card">
                 <div className="metric-icon">📈</div>
-                <div className="metric-title">P95 Response Time</div>
+                <div className="metric-title"><MetricLabel name="P95 Response Time" /></div>
                 <div className="metric-value">{formatNumber(analytics.p95ResponseTime)}ms</div>
               </div>
 
               <div className="metric-card">
                 <div className="metric-icon">📊</div>
-                <div className="metric-title">P99 Response Time</div>
+                <div className="metric-title"><MetricLabel name="P99 Response Time" /></div>
                 <div className="metric-value">{formatNumber(analytics.p99ResponseTime)}ms</div>
               </div>
             </div>
 
             {/* Status Code Distribution */}
             <div className="chart-section">
-              <h3>Status Code Distribution</h3>
+              <h3><MetricLabel name="Status Code Distribution" /></h3>
               <div className="status-code-bars">
                 {analytics.statusCodeBreakdown.map(status => (
                   <div key={status.code} className="status-bar">
@@ -208,7 +274,7 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
 
             {/* Hourly Usage */}
             <div className="chart-section">
-              <h3>Hourly Usage Pattern</h3>
+              <h3><MetricLabel name="Hourly Usage Pattern" /></h3>
               <div className="hourly-chart">
                 {analytics.usageByHour.map(pattern => (
                   <div key={pattern.hour} className="hour-bar" title={`Hour ${pattern.hour}: ${pattern.count} requests`}>

@@ -144,20 +144,64 @@ const styles: Record<string, React.CSSProperties> = {
     touchAction: 'none' as const,
   },
   legend: {
-    display: 'flex',
-    flexWrap: 'wrap' as const,
-    gap: '1.5rem',
     marginTop: '1rem',
-    padding: '0.75rem 1rem',
+    padding: '1rem 1.25rem',
     background: '#f8fafc',
     borderRadius: 10,
     border: '1px solid #e8ecf0',
     fontSize: '0.8rem',
   },
+  legendTitle: {
+    fontSize: '0.85rem',
+    fontWeight: 700,
+    color: '#1e293b',
+    margin: '0 0 0.75rem',
+  },
+  legendGroup: {
+    marginBottom: '0.75rem',
+  },
+  legendGroupLabel: {
+    fontSize: '0.72rem',
+    fontWeight: 700,
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.04em',
+    color: '#64748b',
+    marginBottom: '0.4rem',
+  },
+  legendRow: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    gap: '1.25rem',
+  },
   legendItem: {
     display: 'flex',
     alignItems: 'center',
     gap: 6,
+  },
+  zoomControls: {
+    position: 'absolute' as const,
+    top: 12,
+    right: 12,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 6,
+    zIndex: 5,
+  },
+  zoomBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    border: '1px solid #d0d5dd',
+    background: '#fff',
+    fontSize: '1rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+    color: '#475569',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    lineHeight: 1,
   },
   tooltip: {
     position: 'absolute' as const,
@@ -321,6 +365,45 @@ export default function DependencyGraphViewer(): React.JSX.Element {
 
   const handleTouchEnd = useCallback(() => setIsPanning(false), []);
 
+  // Zoom in / out via buttons (mirrors wheel behaviour, clamped to [0.3, 3])
+  const zoomBy = useCallback((factor: number) => {
+    setTransform((prev) => ({
+      ...prev,
+      scale: Math.max(0.3, Math.min(3, prev.scale * factor)),
+    }));
+  }, []);
+
+  const zoomIn = useCallback(() => zoomBy(1.2), [zoomBy]);
+  const zoomOut = useCallback(() => zoomBy(1 / 1.2), [zoomBy]);
+
+  // Fit-to-screen: frame every visible node inside the viewport
+  const fitToScreen = useCallback(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper || visibleNodes.length === 0) {
+      setTransform({ x: 0, y: 0, scale: 1 });
+      return;
+    }
+    const HALF_W = 82;
+    const HALF_H = 20;
+    const minX = Math.min(...visibleNodes.map((n) => n.x - HALF_W));
+    const maxX = Math.max(...visibleNodes.map((n) => n.x + HALF_W));
+    const minY = Math.min(...visibleNodes.map((n) => n.y - HALF_H));
+    const maxY = Math.max(...visibleNodes.map((n) => n.y + HALF_H));
+    const graphW = maxX - minX;
+    const graphH = maxY - minY;
+    const { width, height } = wrapper.getBoundingClientRect();
+    const pad = 40;
+    const scale = Math.max(
+      0.3,
+      Math.min(3, Math.min((width - pad) / graphW, (height - pad) / graphH))
+    );
+    setTransform({
+      x: (width - graphW * scale) / 2 - minX * scale,
+      y: (height - graphH * scale) / 2 - minY * scale,
+      scale,
+    });
+  }, [visibleNodes]);
+
   // Export as image
   const handleExport = useCallback(() => {
     if (!svgRef.current) return;
@@ -391,9 +474,9 @@ export default function DependencyGraphViewer(): React.JSX.Element {
 
       <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '1rem' }}>
         Interactive directed graph showing how endpoints depend on each other.{' '}
-        <strong>Click a node</strong> to see its relationships;{' '}
-        <strong>double-click</strong> (or use the link in the details panel) to open its
-        API reference. <strong>Scroll</strong> to zoom; <strong>drag</strong> to pan.
+        <strong>Click a node</strong> to see its relationships.{' '}
+        <strong>Scroll</strong> or use the <strong>+ / −</strong> buttons to zoom;{' '}
+        <strong>drag</strong> to pan; <strong>⤢</strong> fits the graph to screen.
       </p>
 
       {/* Controls */}
@@ -439,6 +522,36 @@ export default function DependencyGraphViewer(): React.JSX.Element {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
+        {/* Zoom / pan controls */}
+        <div style={styles.zoomControls} data-testid="graph-zoom-controls">
+          <button
+            type="button"
+            style={styles.zoomBtn}
+            onClick={zoomIn}
+            aria-label="Zoom in"
+            title="Zoom in"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            style={styles.zoomBtn}
+            onClick={zoomOut}
+            aria-label="Zoom out"
+            title="Zoom out"
+          >
+            −
+          </button>
+          <button
+            type="button"
+            style={{ ...styles.zoomBtn, fontSize: '0.8rem' }}
+            onClick={fitToScreen}
+            aria-label="Fit graph to screen"
+            title="Fit to screen"
+          >
+            ⤢
+          </button>
+        </div>
         {tooltip && (
           <div
             style={{
@@ -641,29 +754,89 @@ export default function DependencyGraphViewer(): React.JSX.Element {
       </div>
 
       {/* Legend */}
-      <div style={styles.legend}>
-        {Object.entries(groupColors).map(([group, color]) => (
-          <div key={group} style={styles.legendItem}>
-            <div
-              style={{
-                width: 12,
-                height: 12,
-                borderRadius: 3,
-                background: color,
-              }}
-            />
-            <span>{group}</span>
+      <div style={styles.legend} data-testid="graph-legend" aria-label="Graph legend">
+        <p style={styles.legendTitle}>Legend</p>
+
+        <div style={styles.legendGroup}>
+          <div style={styles.legendGroupLabel}>Node colour — endpoint group</div>
+          <div style={styles.legendRow}>
+            {Object.entries(groupColors).map(([group, color]) => (
+              <div key={group} style={styles.legendItem}>
+                <div
+                  style={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: 3,
+                    background: color,
+                  }}
+                />
+                <span>{group}</span>
+              </div>
+            ))}
           </div>
-        ))}
-        <div style={styles.legendItem}>
-          <div style={{ width: 20, height: 2, background: '#ef4444' }} />
-          <span>Critical path</span>
         </div>
-        <div style={styles.legendItem}>
-          <div
-            style={{ width: 20, height: 2, background: '#94a3b8', border: '1px dashed #94a3b8' }}
-          />
-          <span>Non-critical</span>
+
+        <div style={styles.legendGroup}>
+          <div style={styles.legendGroupLabel}>Edges — dependency criticality</div>
+          <div style={styles.legendRow}>
+            <div style={styles.legendItem}>
+              <div style={{ width: 24, height: 0, borderTop: '2.5px solid #ef4444' }} />
+              <span>
+                <strong>Critical edge</strong> — solid red; failure breaks the payment flow
+              </span>
+            </div>
+            <div style={styles.legendItem}>
+              <div style={{ width: 24, height: 0, borderTop: '1.5px dashed #94a3b8' }} />
+              <span>
+                <strong>Non-critical edge</strong> — dashed grey; degraded but recoverable
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div style={styles.legendGroup}>
+          <div style={styles.legendGroupLabel}>Nodes — shape &amp; markers</div>
+          <div style={styles.legendRow}>
+            <div style={styles.legendItem}>
+              <div
+                style={{
+                  width: 26,
+                  height: 16,
+                  borderRadius: 4,
+                  border: '2px solid #1e293b',
+                  background: '#fff',
+                }}
+              />
+              <span>
+                <strong>Critical endpoint</strong> — thick border, marked ⚡
+              </span>
+            </div>
+            <div style={styles.legendItem}>
+              <div
+                style={{
+                  width: 26,
+                  height: 16,
+                  borderRadius: 4,
+                  border: '1.5px solid #94a3b8',
+                  background: '#fff',
+                }}
+              />
+              <span>
+                <strong>Standard endpoint</strong> — thin border
+              </span>
+            </div>
+            <div style={styles.legendItem}>
+              <div
+                style={{
+                  width: 22,
+                  height: 14,
+                  borderRadius: 3,
+                  background: '#3b82f6',
+                }}
+              />
+              <span>Selected node (filled with its group colour)</span>
+            </div>
+          </div>
         </div>
       </div>
 
