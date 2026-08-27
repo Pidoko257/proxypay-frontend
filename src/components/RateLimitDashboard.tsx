@@ -97,16 +97,30 @@ function getStatusLevel(percentageUsed: number): 'ok' | 'warning' | 'critical' {
   return 'ok';
 }
 
-function getTimeRemaining(resetTimestamp: number): string {
-  const now = Date.now();
+function getTimeRemaining(resetTimestamp: number, now: number = Date.now()): string {
   const diff = Math.max(0, resetTimestamp - now);
   const hours = Math.floor(diff / 3600000);
   const minutes = Math.floor((diff % 3600000) / 60000);
-  
+
   if (hours > 0) {
     return `${hours}h ${minutes}m`;
   }
   return `${minutes}m`;
+}
+
+/**
+ * Format the milliseconds until reset as a live HH:MM:SS countdown (issue #400).
+ * Clamps at zero so an already-elapsed reset shows "00:00:00" rather than a
+ * negative value.
+ */
+export function formatCountdown(msRemaining: number): string {
+  const diff = Math.max(0, msRemaining);
+  const totalSeconds = Math.floor(diff / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 }
 
 function formatDate(date: string | Date): string {
@@ -207,6 +221,8 @@ export default function RateLimitDashboard(): React.JSX.Element {
   const [alerts, setAlerts] = useState<RateLimitAlert[]>([]);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<number>(Date.now());
+  // Ticks once per second to drive the live reset countdown (issue #400).
+  const [nowTs, setNowTs] = useState<number>(Date.now());
 
   // Fetch rate limit status
   const fetchStatus = useCallback(async () => {
@@ -284,9 +300,19 @@ export default function RateLimitDashboard(): React.JSX.Element {
     return () => clearInterval(intervalId);
   }, [autoRefresh, fetchStatus]);
 
+  // Live 1-second countdown to the reset time
+  useEffect(() => {
+    const tickId = setInterval(() => setNowTs(Date.now()), 1000);
+    return () => clearInterval(tickId);
+  }, []);
+
   // Calculate time remaining for reset
   const timeRemaining = status
-    ? getTimeRemaining(status.resetTimestamp)
+    ? getTimeRemaining(status.resetTimestamp, nowTs)
+    : null;
+
+  const resetCountdown = status
+    ? formatCountdown(status.resetTimestamp - nowTs)
     : null;
 
   const currentStatus = status ? getStatusLevel(status.percentageUsed) : 'ok';
@@ -403,6 +429,17 @@ export default function RateLimitDashboard(): React.JSX.Element {
                 <div className="rate-limit-detail-row">
                   <span className="rate-limit-detail-label">Reset Time:</span>
                   <span className="rate-limit-detail-value">{formatDate(status.resetTime)}</span>
+                </div>
+                <div className="rate-limit-detail-row">
+                  <span className="rate-limit-detail-label">Resets In:</span>
+                  <span
+                    className="rate-limit-detail-value rate-limit-countdown"
+                    data-testid="rate-limit-countdown"
+                    aria-live="polite"
+                    title="Live countdown until your rate limit resets"
+                  >
+                    {resetCountdown}
+                  </span>
                 </div>
                 <div className="rate-limit-detail-row">
                   <span className="rate-limit-detail-label">Time Remaining:</span>

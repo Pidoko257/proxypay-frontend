@@ -52,7 +52,8 @@
   border-radius: 3px;
 }
 
-.comparisonToggle {
+.comparisonToggle,
+.savePdfButton {
   padding: 0.5rem 1rem;
   background: var(--ifm-color-primary);
   color: white;
@@ -63,6 +64,15 @@
   font-weight: 500;
   transition: all 0.2s ease;
   white-space: nowrap;
+}
+
+.savePdfButton {
+  background: var(--ifm-color-emphasis-700);
+}
+
+.savePdfButton:hover {
+  background: var(--ifm-color-emphasis-800);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .comparisonToggle:hover {
@@ -233,5 +243,59 @@
 
   .searchInput {
     border-width: 2px;
+  }
+}
+
+/*
+ * Print-friendly layout (issue #395)
+ *
+ * The on-screen layout uses sticky bars, a fixed-width scrollable sidebar and
+ * `overflow: hidden` flex containers. When sent to a printer / "Save as PDF"
+ * those produce clipped and overlapping content. For print we flatten the whole
+ * thing into a single, top-to-bottom document flow and drop interactive chrome.
+ */
+@media print {
+  .container,
+  .layout,
+  .main {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Interactive chrome has no meaning on paper. */
+  .searchBar,
+  .comparisonToggle,
+  .savePdfButton,
+  .comparisonModal {
+    display: none !important;
+  }
+
+  /* Show the endpoint navigation as a flat table of contents. */
+  .sidebar {
+    width: 100% !important;
+    max-height: none !important;
+    border-right: none !important;
+    border-bottom: 1px solid #000;
+    overflow: visible !important;
+    page-break-after: avoid;
+  }
+
+  .main {
+    min-width: 0 !important;
+  }
+
+  /* Avoid slicing an endpoint block across two pages where possible. */
+  :global(.redoc-wrap) [id^='operation/'],
+  :global(.api-endpoint-detail),
+  :global(.api-response-row) {
+    page-break-inside: avoid;
+  }
+
+  /* Neutralise sticky / fixed positioning that overlaps on paper. */
+  :global(.redoc-wrap) [style*='sticky'],
+  :global(.redoc-wrap) [style*='fixed'] {
+    position: static !important;
   }
 }

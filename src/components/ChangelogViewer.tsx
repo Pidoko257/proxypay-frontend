@@ -131,6 +131,106 @@ const CHANGELOG_DATA: ChangelogEntry[] = [
   },
 ];
 
+// ── Migration Wizard Data (issue #401) ────────────────────────────
+interface MigrationStep {
+  title: string;
+  instruction: string;
+  codeBefore?: string;
+  codeAfter?: string;
+}
+
+interface MigrationGuide {
+  fromEndpoint: string;
+  toEndpoint: string;
+  summary: string;
+  steps: MigrationStep[];
+}
+
+// Keyed by changelog entry id. Only deprecation entries need a guide.
+const MIGRATION_GUIDES: Record<string, MigrationGuide> = {
+  'cl-5': {
+    fromEndpoint: 'POST /bridge/legacy',
+    toEndpoint: 'POST /bridge/v2',
+    summary:
+      'The legacy Stellar bridge is removed in v3.0.0. The v2 bridge uses the same auth but a flatter request body and returns a settlement estimate.',
+    steps: [
+      {
+        title: 'Update the request URL',
+        instruction:
+          'Point your client at /bridge/v2. The host and Authorization header are unchanged.',
+        codeBefore: `curl -X POST https://api.proxypay.dev/bridge/legacy \\
+  -H "Authorization: Bearer $API_KEY"`,
+        codeAfter: `curl -X POST https://api.proxypay.dev/bridge/v2 \\
+  -H "Authorization: Bearer $API_KEY"`,
+      },
+      {
+        title: 'Flatten the request body',
+        instruction:
+          'The nested "transfer" object is gone. Move amount, currency and destination to the top level and rename "dest" to "destination".',
+        codeBefore: `{
+  "transfer": {
+    "amount": "100.00",
+    "ccy": "USDC",
+    "dest": "GA6HCMBLTZS5..."
+  }
+}`,
+        codeAfter: `{
+  "amount": "100.00",
+  "currency": "USDC",
+  "destination": "GA6HCMBLTZS5..."
+}`,
+      },
+      {
+        title: 'Read the new response fields',
+        instruction:
+          'v2 returns "settlement_estimate_seconds" and "fee" up front. Remove any polling that waited for the legacy "status: pending" payload.',
+        codeAfter: `{
+  "id": "brg_12ab...",
+  "status": "submitted",
+  "fee": "0.10",
+  "settlement_estimate_seconds": 5
+}`,
+      },
+      {
+        title: 'Verify and roll out',
+        instruction:
+          'Run your integration tests against /bridge/v2 in sandbox, then deploy. The legacy endpoint keeps working until v3.0.0 so you can roll back if needed.',
+      },
+    ],
+  },
+  'cl-8': {
+    fromEndpoint: 'Accept: application/xml',
+    toEndpoint: 'Accept: application/json',
+    summary:
+      'XML responses are sunset on 2026-10-02. Every endpoint already returns JSON by default — you mainly need to remove the XML opt-in and update parsing.',
+    steps: [
+      {
+        title: 'Remove the XML Accept header',
+        instruction:
+          'Delete the explicit "Accept: application/xml" header. JSON is the default, so no replacement header is required.',
+        codeBefore: `curl https://api.proxypay.dev/payments/123 \\
+  -H "Accept: application/xml"`,
+        codeAfter: `curl https://api.proxypay.dev/payments/123`,
+      },
+      {
+        title: 'Switch your parser to JSON',
+        instruction:
+          'Replace XML deserialization with a JSON parser. Field names are identical; only the envelope changes.',
+        codeBefore: `const doc = new DOMParser()
+  .parseFromString(body, "application/xml");
+const id = doc.querySelector("payment > id").textContent;`,
+        codeAfter: `const data = JSON.parse(body);
+const id = data.id;`,
+      },
+      {
+        title: 'Confirm before the sunset date',
+        instruction:
+          'Grep your codebase for "application/xml" and confirm no callers remain before 2026-10-02, after which XML requests return 406 Not Acceptable.',
+      },
+    ],
+  },
+};
+
 // ── Styles ─────────────────────────────────────────────────────────
 const styles: Record<string, React.CSSProperties> = {
   container: {
@@ -386,6 +486,112 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#94a3b8',
     fontSize: '1rem',
   },
+  quickFilterBtn: (active: boolean): React.CSSProperties => ({
+    padding: '0.5rem 0.9rem',
+    borderRadius: 8,
+    border: `1px solid ${active ? '#ef4444' : '#d0d5dd'}`,
+    background: active ? '#fee2e2' : '#fff',
+    color: active ? '#991b1b' : '#555',
+    fontSize: '0.85rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'background 0.2s, border-color 0.2s',
+  }),
+  migrateBtn: {
+    marginTop: '0.75rem',
+    padding: '0.45rem 0.9rem',
+    borderRadius: 8,
+    border: 'none',
+    background: '#ef4444',
+    color: '#fff',
+    fontSize: '0.82rem',
+    fontWeight: 700,
+    cursor: 'pointer',
+  },
+  wizardOverlay: {
+    position: 'fixed' as const,
+    inset: 0,
+    background: 'rgba(15, 23, 42, 0.55)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '1.5rem',
+    zIndex: 1000,
+  },
+  wizardModal: {
+    background: '#fff',
+    borderRadius: 14,
+    maxWidth: 640,
+    width: '100%',
+    maxHeight: '85vh',
+    overflowY: 'auto' as const,
+    boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+    padding: '1.75rem',
+  },
+  wizardHeader: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: '1rem',
+    marginBottom: '0.75rem',
+  },
+  wizardEndpoints: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    flexWrap: 'wrap' as const,
+    fontFamily: 'SF Mono, Fira Code, monospace',
+    fontSize: '0.8rem',
+    margin: '0.5rem 0 1rem',
+  },
+  wizardProgress: {
+    display: 'flex',
+    gap: 6,
+    marginBottom: '1rem',
+  },
+  wizardProgressDot: (active: boolean, done: boolean): React.CSSProperties => ({
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+    background: done ? '#22c55e' : active ? '#2e8555' : '#e2e8f0',
+  }),
+  wizardCode: {
+    background: '#0f172a',
+    color: '#e2e8f0',
+    borderRadius: 8,
+    padding: '0.85rem 1rem',
+    fontFamily: 'SF Mono, Fira Code, monospace',
+    fontSize: '0.8rem',
+    lineHeight: 1.55,
+    overflowX: 'auto' as const,
+    whiteSpace: 'pre' as const,
+    margin: '0.5rem 0',
+  },
+  wizardCodeLabel: {
+    fontSize: '0.72rem',
+    fontWeight: 700,
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.05em',
+    color: '#64748b',
+    marginTop: '0.75rem',
+  },
+  wizardFooter: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: '1.5rem',
+    gap: '0.75rem',
+  },
+  wizardNavBtn: (disabled: boolean): React.CSSProperties => ({
+    padding: '0.55rem 1.2rem',
+    borderRadius: 8,
+    border: 'none',
+    background: disabled ? '#e2e8f0' : 'var(--ifm-color-primary, #2e8555)',
+    color: disabled ? '#94a3b8' : '#fff',
+    fontSize: '0.88rem',
+    fontWeight: 600,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+  }),
 };
 
 // ── Utility ────────────────────────────────────────────────────────
@@ -435,14 +641,139 @@ ${items}
 </feed>`;
 }
 
+// ── Migration Wizard (issue #401) ─────────────────────────────────
+function MigrationWizard({
+  entry,
+  guide,
+  onClose,
+}: {
+  entry: ChangelogEntry;
+  guide: MigrationGuide;
+  onClose: () => void;
+}): React.JSX.Element {
+  const [stepIndex, setStepIndex] = useState(0);
+  const step = guide.steps[stepIndex];
+  const isFirst = stepIndex === 0;
+  const isLast = stepIndex === guide.steps.length - 1;
+
+  return (
+    <div
+      style={styles.wizardOverlay}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Migration wizard for ${entry.title}`}
+      data-testid="migration-wizard"
+      onClick={onClose}
+    >
+      <div style={styles.wizardModal} onClick={(e) => e.stopPropagation()}>
+        <div style={styles.wizardHeader}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#1e293b' }}>
+              🧭 Migrate: {entry.title}
+            </h3>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close migration wizard"
+            style={{
+              border: 'none',
+              background: 'transparent',
+              fontSize: '1.4rem',
+              cursor: 'pointer',
+              color: '#64748b',
+              lineHeight: 1,
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        <p style={{ fontSize: '0.88rem', color: '#475569', lineHeight: 1.6, margin: 0 }}>
+          {guide.summary}
+        </p>
+
+        <div style={styles.wizardEndpoints}>
+          <code style={styles.endpointTag}>{guide.fromEndpoint}</code>
+          <span aria-hidden>→</span>
+          <code style={styles.endpointTag}>{guide.toEndpoint}</code>
+        </div>
+
+        <div style={styles.wizardProgress} aria-hidden>
+          {guide.steps.map((s, i) => (
+            <span
+              key={s.title}
+              style={styles.wizardProgressDot(i === stepIndex, i < stepIndex)}
+            />
+          ))}
+        </div>
+
+        <div data-testid="migration-wizard-step">
+          <h4 style={{ margin: '0 0 0.35rem', fontSize: '1rem', color: '#1e293b' }}>
+            Step {stepIndex + 1} of {guide.steps.length}: {step.title}
+          </h4>
+          <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.6 }}>
+            {step.instruction}
+          </p>
+
+          {step.codeBefore && (
+            <>
+              <div style={styles.wizardCodeLabel}>Before</div>
+              <pre style={styles.wizardCode} data-testid="migration-code-before">
+                {step.codeBefore}
+              </pre>
+            </>
+          )}
+          {step.codeAfter && (
+            <>
+              <div style={styles.wizardCodeLabel}>After</div>
+              <pre style={styles.wizardCode} data-testid="migration-code-after">
+                {step.codeAfter}
+              </pre>
+            </>
+          )}
+        </div>
+
+        <div style={styles.wizardFooter}>
+          <button
+            style={styles.wizardNavBtn(isFirst)}
+            onClick={() => setStepIndex((i) => Math.max(0, i - 1))}
+            disabled={isFirst}
+          >
+            ← Back
+          </button>
+          {isLast ? (
+            <button
+              style={styles.wizardNavBtn(false)}
+              onClick={onClose}
+              data-testid="migration-wizard-done"
+            >
+              Done ✓
+            </button>
+          ) : (
+            <button
+              style={styles.wizardNavBtn(false)}
+              onClick={() => setStepIndex((i) => Math.min(guide.steps.length - 1, i + 1))}
+            >
+              Next →
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Component ─────────────────────────────────────────────────────
 export default function ChangelogViewer(): React.JSX.Element {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<EntryType | 'all'>('all');
   const [impactFilter, setImpactFilter] = useState<ImpactLevel | 'all'>('all');
+  // Quick toggle for "only high/critical impact" changes (issue #410).
+  const [highImpactOnly, setHighImpactOnly] = useState(false);
   const [versionFilter, setVersionFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('timeline');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [wizardEntryId, setWizardEntryId] = useState<string | null>(null);
   const [subscribeEmail, setSubscribeEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
 
@@ -462,10 +793,16 @@ export default function ChangelogViewer(): React.JSX.Element {
         entry.tags.some((t) => t.toLowerCase().includes(q));
       const matchType = typeFilter === 'all' || entry.type === typeFilter;
       const matchImpact = impactFilter === 'all' || entry.impact === impactFilter;
+      const matchHighImpact =
+        !highImpactOnly || entry.impact === 'high' || entry.impact === 'critical';
       const matchVersion = versionFilter === 'all' || entry.version === versionFilter;
-      return matchSearch && matchType && matchImpact && matchVersion;
+      return matchSearch && matchType && matchImpact && matchHighImpact && matchVersion;
     });
-  }, [search, typeFilter, impactFilter, versionFilter]);
+  }, [search, typeFilter, impactFilter, highImpactOnly, versionFilter]);
+
+  const wizardEntry = wizardEntryId
+    ? CHANGELOG_DATA.find((e) => e.id === wizardEntryId) ?? null
+    : null;
 
   const handleRSSExport = useCallback(
     (format: 'rss' | 'atom') => {
@@ -538,6 +875,8 @@ export default function ChangelogViewer(): React.JSX.Element {
           style={styles.filterSelect}
           value={impactFilter}
           onChange={(e) => setImpactFilter(e.target.value as ImpactLevel | 'all')}
+          aria-label="Filter by impact level"
+          data-testid="impact-filter"
         >
           <option value="all">All Impact</option>
           <option value="low">Low</option>
@@ -545,6 +884,15 @@ export default function ChangelogViewer(): React.JSX.Element {
           <option value="high">High</option>
           <option value="critical">Critical</option>
         </select>
+        <button
+          type="button"
+          style={styles.quickFilterBtn(highImpactOnly)}
+          onClick={() => setHighImpactOnly((v) => !v)}
+          aria-pressed={highImpactOnly}
+          data-testid="high-impact-toggle"
+        >
+          {highImpactOnly ? '● High & Critical only' : '○ High & Critical only'}
+        </button>
         <select
           style={styles.filterSelect}
           value={versionFilter}
@@ -601,7 +949,13 @@ export default function ChangelogViewer(): React.JSX.Element {
                 <span style={styles.typeBadge(entry.type)}>{entry.type}</span>
                 <span style={styles.entryVersion}>{entry.version}</span>
                 <span style={styles.entryDate}>{entry.date}</span>
-                <span style={styles.impactBadge(entry.impact)}>{entry.impact} impact</span>
+                <span
+                  style={styles.impactBadge(entry.impact)}
+                  data-testid="impact-badge"
+                  data-impact={entry.impact}
+                >
+                  {entry.impact} impact
+                </span>
               </div>
               <h3 style={styles.entryTitle}>{entry.title}</h3>
               <p style={styles.entryDesc}>{entry.description}</p>
@@ -612,6 +966,19 @@ export default function ChangelogViewer(): React.JSX.Element {
                   </code>
                 ))}
               </div>
+              {entry.type === 'deprecation' && MIGRATION_GUIDES[entry.id] && (
+                <button
+                  type="button"
+                  style={styles.migrateBtn}
+                  data-testid="open-migration-wizard"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setWizardEntryId(entry.id);
+                  }}
+                >
+                  🧭 Open migration wizard
+                </button>
+              )}
               {expandedId === entry.id && (
                 <div
                   style={{
@@ -703,6 +1070,15 @@ export default function ChangelogViewer(): React.JSX.Element {
           </button>
         </div>
       </div>
+
+      {/* Migration Wizard (issue #401) */}
+      {wizardEntry && MIGRATION_GUIDES[wizardEntry.id] && (
+        <MigrationWizard
+          entry={wizardEntry}
+          guide={MIGRATION_GUIDES[wizardEntry.id]}
+          onClose={() => setWizardEntryId(null)}
+        />
+      )}
     </div>
   );
 }
