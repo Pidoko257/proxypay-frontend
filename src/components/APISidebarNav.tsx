@@ -13,6 +13,7 @@ import {
   onHashChange,
 } from '../utils/redocDeepLink';
 import type { ParsedEndpoint, TagGroup } from '../utils/apiSpecParser';
+import { BookmarkManager, type Bookmark } from '../utils/bookmarkManager';
 import styles from './APISidebarNav.module.css';
 
 export interface APISidebarNavProps {
@@ -242,12 +243,124 @@ export default function APISidebarNav({
     });
   };
 
+  /**
+   * Handle bookmark toggle
+   */
+  const handleBookmarkToggle = (endpoint: ParsedEndpoint) => {
+    const success = BookmarkManager.toggleBookmark({
+      id: endpoint.id,
+      path: endpoint.path,
+      method: endpoint.method,
+      summary: endpoint.summary,
+      tag: endpoint.tag,
+    });
+
+    if (success) {
+      setBookmarks(BookmarkManager.getBookmarks());
+    }
+  };
+
+  /**
+   * Handle bookmark click
+   */
+  const handleBookmarkClick = (bookmark: Bookmark) => {
+    setSelectedEndpointId(bookmark.id);
+    if (enableDeepLinking) {
+      window.location.hash = toEndpointLink(bookmark.id);
+    }
+
+    // Scroll to the bookmarked endpoint in Redoc
+    requestAnimationFrame(() => {
+      const candidates = [
+        bookmark.id,
+        bookmark.id.toLowerCase().replace(/\s+/g, '-'),
+        `tag/${bookmark.tag || 'default'}/${bookmark.method.toLowerCase()}${bookmark.path}`,
+      ];
+
+      for (const candidateId of candidates) {
+        try {
+          const el =
+            document.querySelector(`[id="${CSS.escape(candidateId)}"]`) ||
+            document.querySelector(`[data-section-id="${CSS.escape(candidateId)}"]`) ||
+            document.getElementById(candidateId);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            return;
+          }
+        } catch {
+          // Malformed selector — skip.
+        }
+      }
+    });
+  };
+
+  /**
+   * Handle remove bookmark
+   */
+  const handleRemoveBookmark = (e: React.MouseEvent, bookmarkId: string) => {
+    e.stopPropagation();
+    const success = BookmarkManager.removeBookmark(bookmarkId);
+    if (success) {
+      setBookmarks(BookmarkManager.getBookmarks());
+    }
+  };
+
+  /**
+   * Handle clear all bookmarks
+   */
+  const handleClearAllBookmarks = () => {
+    if (window.confirm('Clear all bookmarks?')) {
+      BookmarkManager.clearAll();
+      setBookmarks([]);
+    }
+  };
+
   return (
     <nav className={styles.container}>
       <div className={styles.header}>
         <h3 className={styles.title}>API Endpoints</h3>
         <span className={styles.count}>{endpoints.length}</span>
       </div>
+
+      {bookmarks.length > 0 && (
+        <div className={styles.bookmarksSection}>
+          <div className={styles.bookmarksHeader}>
+            <h4 className={styles.bookmarksTitle}>★ Bookmarks ({bookmarks.length})</h4>
+            <button
+              className={styles.clearBookmarksBtn}
+              onClick={handleClearAllBookmarks}
+              title="Clear all bookmarks"
+              aria-label="Clear all bookmarks"
+            >
+              Clear
+            </button>
+          </div>
+          <div className={styles.bookmarksList}>
+            {bookmarks.map((bookmark) => (
+              <button
+                key={bookmark.id}
+                className={styles.bookmarkItem}
+                onClick={() => handleBookmarkClick(bookmark)}
+                title={`${bookmark.method} ${bookmark.path}: ${bookmark.summary}`}
+                aria-label={`Go to bookmarked ${bookmark.method} ${bookmark.path}`}
+              >
+                <span className={`${styles.bookmarkItemMethod} ${styles[getMethodColor(bookmark.method)]}`}>
+                  {bookmark.method.toUpperCase()}
+                </span>
+                <span className={styles.bookmarkItemPath}>{bookmark.path}</span>
+                <button
+                  className={styles.bookmarkItemRemove}
+                  onClick={(e) => handleRemoveBookmark(e, bookmark.id)}
+                  title="Remove bookmark"
+                  aria-label={`Remove ${bookmark.path} from bookmarks`}
+                >
+                  ×
+                </button>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className={styles.tagGroups}>
         {tagGroups.map((group) => {

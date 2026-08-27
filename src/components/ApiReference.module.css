@@ -235,3 +235,31 @@
     border-width: 2px;
   }
 }
+
+/**
+ * Extra small devices (< 360px)
+ */
+@media (max-width: 359px) {
+  .searchBar {
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.35rem;
+  }
+
+  .searchInput {
+    font-size: 0.8rem;
+  }
+
+  .searchCount {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.3rem;
+  }
+
+  .sidebar {
+    max-height: 50vh;
+  }
+
+  .main {
+    min-height: 50vh;
+  }
+}

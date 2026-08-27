@@ -281,9 +281,18 @@ export default function RedocViewer({
           nativeScrollbars: true,
           untrustedSpec: false,
           suppressWarnings: true,
+          // Mobile optimizations
+          responsiveBreadcrumbs: true,
+          pathInMiddlePanel: true,
+          // Custom theme with responsive adjustments
           theme: {
             rightPanel: {
               backgroundColor: surfaceColor || '#f5f6f7',
+            },
+            breakpoints: {
+              small: '600px',
+              medium: '900px',
+              large: '1200px',
             },
             colors: {
               primary: {
@@ -302,6 +311,17 @@ export default function RedocViewer({
             },
             typography: {
               fontFamily: 'inherit',
+              fontSize: '14px',
+              lineHeight: '1.5',
+              headings: {
+                fontFamily: 'inherit',
+                fontWeight: 600,
+              },
+            },
+            spacing: {
+              unit: 4,
+              sectionHorizontal: 40,
+              sectionVertical: 40,
             },
           },
         },
