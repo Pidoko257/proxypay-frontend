@@ -23,7 +23,8 @@
     "load-test:scenario:rate-limit": "ts-node src/load-test.ts --scenarios rate-limit-flow",
     "load-test:scenario:docs": "ts-node src/load-test.ts --scenarios documentation-flow",
     "load-test:scenario:rampup": "ts-node src/load-test.ts --scenarios ramp-up-analysis",
-    "load-test:list": "ts-node src/load-test.ts --list-profiles"
+    "load-test:list": "ts-node src/load-test.ts --list-profiles",
+    "test": "node --test src/components/helpers/__tests__/*.test.ts"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

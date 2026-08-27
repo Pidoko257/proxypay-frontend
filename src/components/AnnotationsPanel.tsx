@@ -1,4 +1,9 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import {
+  reconcileAnnotationsFromStorage,
+  isAnnotationStorageEvent,
+  describeRemoval,
+} from './helpers/annotationSync';
 
 interface Annotation {
   id: string;
@@ -97,6 +102,48 @@ export default function AnnotationsPanel(): React.JSX.Element {
     setToast(msg);
     setTimeout(() => setToast(''), 2000);
   }, []);
+
+  // Mirror the latest annotations/votes into refs so the cross-tab `storage`
+  // listener (registered once) can reconcile against current state.
+  const annotationsRef = useRef<Annotation[]>([]);
+  const votesRef = useRef<Record<string, 'up' | 'down' | null>>({});
+  useEffect(() => {
+    annotationsRef.current = annotations;
+  }, [annotations]);
+  useEffect(() => {
+    votesRef.current = votes;
+  }, [votes]);
+
+  // Keep annotations in sync across browser tabs. When another tab mutates the
+  // annotations store (e.g. deletes an annotation) the browser fires a `storage`
+  // event here; we reconcile our in-memory list, drop anything that was removed,
+  // clean up orphaned votes, and let the user know.
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      if (!isAnnotationStorageEvent(event.key, ANNOTATIONS_KEY)) return;
+
+      const { annotations: next, removedIds, changed } = reconcileAnnotationsFromStorage(
+        annotationsRef.current,
+        localStorage.getItem(ANNOTATIONS_KEY)
+      );
+      if (!changed) return;
+
+      setAnnotations(next);
+
+      if (removedIds.length > 0) {
+        const removed = new Set(removedIds);
+        const cleanedVotes = Object.fromEntries(
+          Object.entries(votesRef.current).filter(([id]) => !removed.has(id))
+        );
+        setVotes(cleanedVotes);
+        saveVotes(cleanedVotes);
+        showToast(describeRemoval(removedIds.length));
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [showToast]);
 
   const handleLogin = useCallback(() => {
     const name = usernameInput.trim();
