@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { apiReferenceUrlFor, nodeTooltip } from './dependencyGraph.utils';
 
 // ── Types ──────────────────────────────────────────────────────────
 interface GraphNode {
@@ -428,6 +429,19 @@ export default function DependencyGraphViewer(): React.JSX.Element {
     img.src = url;
   }, []);
 
+  const openApiReference = useCallback((node: GraphNode) => {
+    const url = apiReferenceUrlFor(node);
+    if (typeof window !== 'undefined') {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  }, []);
+
+  const degreeOf = useCallback(
+    (id: string) =>
+      DEPENDENCY_GRAPH.edges.filter((e) => e.from === id || e.to === id).length,
+    []
+  );
+
   const nodeById = useMemo(() => {
     const m = new Map<string, GraphNode>();
     DEPENDENCY_GRAPH.nodes.forEach((n) => m.set(n.id, n));
@@ -658,12 +672,13 @@ export default function DependencyGraphViewer(): React.JSX.Element {
                   onClick={() =>
                     setSelectedNode((prev) => (prev === node.id ? null : node.id))
                   }
+                  onDoubleClick={() => openApiReference(node)}
                   onMouseEnter={(e) => {
                     if (!selectedNode)
                       setTooltip({
                         x: e.nativeEvent.offsetX,
                         y: e.nativeEvent.offsetY,
-                        text: `${node.label} [${node.group}]`,
+                        text: nodeTooltip(node, degreeOf(node.id)),
                       });
                   }}
                   onMouseLeave={() => setTooltip(null)}
@@ -847,6 +862,24 @@ export default function DependencyGraphViewer(): React.JSX.Element {
                 {selectedNodeData.critical ? 'Yes ⚡' : 'No'}
               </span>
             </p>
+            <a
+              href={apiReferenceUrlFor(selectedNodeData)}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-block',
+                marginTop: '0.6rem',
+                padding: '0.4rem 0.9rem',
+                borderRadius: 8,
+                background: 'var(--ifm-color-primary, #1a5c32)',
+                color: '#fff',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
+              Open in API Reference ↗
+            </a>
           </div>
           <div>
             <h4

@@ -1,4 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import {
+  applyCustomSlaTargets,
+  loadCustomSlaTargets,
+  saveCustomSlaTarget,
+  isValidSlaTarget,
+} from './performanceBenchmarks.utils';
 
 // ── Types ──────────────────────────────────────────────────────────
 interface EndpointBenchmark {
@@ -449,21 +455,47 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [slaFilter, setSlaFilter] = useState('all');
   const [selectedEndpoint, setSelectedEndpoint] = useState<EndpointBenchmark | null>(null);
+  const [customSla, setCustomSla] = useState<Record<string, number>>({});
+  const [editingEndpoint, setEditingEndpoint] = useState<string | null>(null);
+  const [draftSla, setDraftSla] = useState('');
+
+  useEffect(() => {
+    setCustomSla(loadCustomSlaTargets());
+  }, []);
+
+  const benchmarks = useMemo(
+    () => applyCustomSlaTargets(BENCHMARK_DATA, customSla),
+    [customSla]
+  );
+
+  const commitSla = (endpoint: string, raw: string) => {
+    const parsed = Number(raw);
+    const next = isValidSlaTarget(parsed)
+      ? saveCustomSlaTarget(endpoint, parsed)
+      : saveCustomSlaTarget(endpoint, null);
+    setCustomSla({ ...next });
+    setEditingEndpoint(null);
+  };
+
+  const resetSla = (endpoint: string) => {
+    setCustomSla({ ...saveCustomSlaTarget(endpoint, null) });
+    setEditingEndpoint(null);
+  };
 
   const categories = useMemo(
-    () => [...new Set(BENCHMARK_DATA.map((b) => b.category))],
-    []
+    () => [...new Set(benchmarks.map((b) => b.category))],
+    [benchmarks]
   );
 
   const filtered = useMemo(() => {
-    return BENCHMARK_DATA.filter((b) => {
+    return benchmarks.filter((b) => {
       const q = search.toLowerCase();
       const matchSearch = !q || b.endpoint.toLowerCase().includes(q);
       const matchCat = categoryFilter === 'all' || b.category === categoryFilter;
       const matchSla = slaFilter === 'all' || b.slaStatus === slaFilter;
       return matchSearch && matchCat && matchSla;
     });
-  }, [search, categoryFilter, slaFilter]);
+  }, [benchmarks, search, categoryFilter, slaFilter]);
 
   const history = useMemo(
     () => (selectedEndpoint ? generateHistory(selectedEndpoint) : []),
@@ -473,13 +505,13 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
   const summaries = useMemo(() => {
     const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
     return {
-      avgLatency: Math.round(avg(BENCHMARK_DATA.map((b) => b.p50))),
-      avgThroughput: Math.round(avg(BENCHMARK_DATA.map((b) => b.throughput))),
-      avgUptime: (avg(BENCHMARK_DATA.map((b) => b.uptime))).toFixed(2),
-      slaOk: BENCHMARK_DATA.filter((b) => b.slaStatus === 'ok').length,
-      slaWarn: BENCHMARK_DATA.filter((b) => b.slaStatus === 'warn').length,
+      avgLatency: Math.round(avg(benchmarks.map((b) => b.p50))),
+      avgThroughput: Math.round(avg(benchmarks.map((b) => b.throughput))),
+      avgUptime: (avg(benchmarks.map((b) => b.uptime))).toFixed(2),
+      slaOk: benchmarks.filter((b) => b.slaStatus === 'ok').length,
+      slaWarn: benchmarks.filter((b) => b.slaStatus === 'warn').length,
     };
-  }, []);
+  }, [benchmarks]);
 
   return (
     <div style={styles.container}>
@@ -558,7 +590,7 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
               <th style={styles.th}>p99</th>
               <th style={styles.th}>Throughput</th>
               <th style={styles.th}>Uptime</th>
-              <th style={styles.th}>SLA</th>
+              <th style={styles.th}>SLA Target (p95)</th>
             </tr>
           </thead>
           <tbody>
@@ -617,10 +649,59 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
                     {b.uptime}%
                   </span>
                 </td>
-                <td style={styles.td}>
-                  <span style={styles.slaBadge(b.slaStatus)}>
-                    {b.slaStatus === 'ok' ? '✅ OK' : b.slaStatus === 'warn' ? '⚠ Warn' : '🔴 Breach'}
-                  </span>
+                <td style={styles.td} onClick={(e) => e.stopPropagation()}>
+                  {editingEndpoint === b.endpoint ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <input
+                        autoFocus
+                        type="number"
+                        min={1}
+                        step={10}
+                        value={draftSla}
+                        aria-label={`Custom SLA target for ${b.endpoint}`}
+                        style={{ width: 80, padding: '0.2rem 0.35rem', borderRadius: 6, border: '1px solid #d0d5dd', fontSize: '0.8rem' }}
+                        onChange={(e) => setDraftSla(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') commitSla(b.endpoint, draftSla);
+                          if (e.key === 'Escape') setEditingEndpoint(null);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        style={{ ...styles.slaBadge('ok'), border: 'none', cursor: 'pointer' }}
+                        onClick={() => commitSla(b.endpoint, draftSla)}
+                      >
+                        Save
+                      </button>
+                    </span>
+                  ) : (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <span style={styles.slaBadge(b.slaStatus)}>
+                        {b.slaStatus === 'ok' ? '✅ OK' : b.slaStatus === 'warn' ? '⚠ Warn' : '🔴 Breach'}
+                      </span>
+                      <button
+                        type="button"
+                        title="Edit SLA target for this endpoint"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.78rem', color: '#64748b' }}
+                        onClick={() => {
+                          setEditingEndpoint(b.endpoint);
+                          setDraftSla(String(b.slaTarget));
+                        }}
+                      >
+                        {b.slaTarget}ms{customSla[b.endpoint] ? ' ✏️*' : ' ✏️'}
+                      </button>
+                      {customSla[b.endpoint] && (
+                        <button
+                          type="button"
+                          title="Reset to default SLA target"
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: '#94a3b8' }}
+                          onClick={() => resetSla(b.endpoint)}
+                        >
+                          ↺
+                        </button>
+                      )}
+                    </span>
+                  )}
                 </td>
               </tr>
             ))}
@@ -664,6 +745,11 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
         }}
       >
         <strong>📊 Performance Targets</strong>
+        <div style={{ marginTop: '0.35rem', fontStyle: 'italic' }}>
+          Click the ✏️ next to any SLA badge to set a custom p95 target for that
+          endpoint. Custom targets are saved to this browser and drive the OK / Warn
+          / Breach status.
+        </div>
         <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '2rem', marginTop: '0.5rem' }}>
           <div>p50 &lt; 200ms for read endpoints</div>
           <div>p99 &lt; 1000ms for write endpoints</div>

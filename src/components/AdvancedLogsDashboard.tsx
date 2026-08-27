@@ -3,7 +3,7 @@
  * Enhanced dashboard with interactive filters and date range selection
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { AnalyticsResult, EndpointMetrics } from '../analytics/analytics-engine';
 import { LogAnalyticsEngine } from '../analytics/analytics-engine';
 import { ParsedLogEntry } from '../analytics/log-parser';
@@ -27,6 +27,8 @@ export const AdvancedLogsDashboard: React.FC<AdvancedDashboardProps> = ({ logs, 
     maxResponseTime: 10000,
   });
   const [showFilters, setShowFilters] = useState(false);
+  const [alertTarget, setAlertTarget] = useState('');
+  const lastAlertKey = useRef('');
 
   // Filter logs based on filter state
   const filteredLogs = useMemo(() => {
@@ -82,6 +84,41 @@ export const AdvancedLogsDashboard: React.FC<AdvancedDashboardProps> = ({ logs, 
     }
     return LogAnalyticsEngine.analyze(filteredLogs);
   }, [filteredLogs, initialAnalytics]);
+
+  // ── Anomaly detection ──────────────────────────────────────────
+  const anomalies = useMemo(
+    () =>
+      detectAnomalies({
+        errorRate: analytics.errorRate,
+        p95ResponseTime: analytics.p95ResponseTime,
+        baselineP95: initialAnalytics?.p95ResponseTime,
+        usageByHour: analytics.usageByHour,
+      }),
+    [analytics, initialAnalytics],
+  );
+
+  const anomalyTabs = useMemo(() => anomaliesByTab(anomalies), [anomalies]);
+  const overallSeverity = worstSeverity(anomalies);
+
+  // Optional email/webhook alerting — fires once per distinct anomaly set.
+  useEffect(() => {
+    if (!alertTarget || anomalies.length === 0) return;
+    const key = anomalies.map((a) => a.id).join('|');
+    if (key === lastAlertKey.current) return;
+    lastAlertKey.current = key;
+    void dispatchWebhookAlert(alertTarget, anomalies);
+  }, [alertTarget, anomalies]);
+
+  const tabBadge = (tab: DashboardTab) => {
+    const list = anomalyTabs[tab];
+    if (!list || !list.length) return null;
+    const sev = list.some((a) => a.severity === 'critical') ? 'critical' : 'warning';
+    return (
+      <span className={`tab-alert-badge ${sev}`} title={list.map((a) => a.message).join('\n')}>
+        {list.length}
+      </span>
+    );
+  };
 
   const handleFilterChange = useCallback(
     (key: keyof FilterState, value: any) => {
@@ -246,6 +283,32 @@ export const AdvancedLogsDashboard: React.FC<AdvancedDashboardProps> = ({ logs, 
         )}
       </div>
 
+      {/* Anomaly alerts */}
+      {anomalies.length > 0 && (
+        <div className={`anomaly-banner ${overallSeverity ?? 'warning'}`} role="alert">
+          <strong>
+            {overallSeverity === 'critical' ? '🔴' : '⚠️'} {anomalies.length} anomal
+            {anomalies.length === 1 ? 'y' : 'ies'} detected
+          </strong>
+          <ul>
+            {anomalies.map((a) => (
+              <li key={a.id}>{a.message}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="anomaly-config">
+        <label htmlFor="anomaly-webhook">🔔 Alert webhook / email endpoint (optional):</label>
+        <input
+          id="anomaly-webhook"
+          type="url"
+          placeholder="https://hooks.example.com/logs-alerts"
+          value={alertTarget}
+          onChange={(e) => setAlertTarget(e.target.value)}
+        />
+      </div>
+
       {/* Tabs */}
       <div className="dashboard-tabs">
         <button
@@ -253,6 +316,7 @@ export const AdvancedLogsDashboard: React.FC<AdvancedDashboardProps> = ({ logs, 
           onClick={() => setSelectedTab('overview')}
         >
           📈 Overview
+          {tabBadge('overview')}
         </button>
         <button
           className={`tab ${selectedTab === 'endpoints' ? 'active' : ''}`}
@@ -265,12 +329,14 @@ export const AdvancedLogsDashboard: React.FC<AdvancedDashboardProps> = ({ logs, 
           onClick={() => setSelectedTab('errors')}
         >
           ⚠️ Errors
+          {tabBadge('errors')}
         </button>
         <button
           className={`tab ${selectedTab === 'usage' ? 'active' : ''}`}
           onClick={() => setSelectedTab('usage')}
         >
           📅 Usage
+          {tabBadge('usage')}
         </button>
         <button
           className={`tab ${selectedTab === 'users' ? 'active' : ''}`}

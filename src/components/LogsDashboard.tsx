@@ -133,6 +133,14 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
       {/* Header */}
       <div className="dashboard-header">
         <h1>📊 Server Logs Analytics</h1>
+        <div className="dashboard-actions">
+          <button className="download-btn" onClick={() => handleDownload('json')}>
+            ⬇️ Download JSON
+          </button>
+          <button className="download-btn" onClick={() => handleDownload('csv')}>
+            ⬇️ Download CSV
+          </button>
+        </div>
         <div className="header-info">
           <div className="info-item">
             <span className="label">Period:</span>
