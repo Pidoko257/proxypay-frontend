@@ -1108,6 +1108,14 @@ a[target='_blank']::after {
   font-size: 1.1rem;
 }
 
+.rate-limit-detail-value.rate-limit-countdown {
+  color: var(--ifm-color-primary);
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  letter-spacing: 0.03em;
+}
+
 .rate-limit-upgrade-link {
   display: inline-block;
   margin-top: 0.5rem;

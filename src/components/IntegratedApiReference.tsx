@@ -24,6 +24,17 @@ export interface IntegratedApiReferenceProps {
 }
 
 /**
+ * Trigger the browser's print dialog so users can print the API reference or
+ * save it as a PDF for offline reading (issue #395). The print-friendly layout
+ * itself lives in the `@media print` block of ApiReference.module.css.
+ */
+export function saveAsPdf(): void {
+  if (typeof window !== 'undefined' && typeof window.print === 'function') {
+    window.print();
+  }
+}
+
+/**
  * Search filter for endpoints
  */
 function filterEndpointsBySearch(
@@ -238,6 +249,16 @@ export default function IntegratedApiReference({
           aria-pressed={comparisonMode}
         >
           ⇄ Compare
+        </button>
+        <button
+          type="button"
+          className={styles.savePdfButton}
+          onClick={saveAsPdf}
+          title="Print or save the API reference as a PDF for offline reading"
+          aria-label="Save API reference as PDF"
+          data-testid="api-save-pdf"
+        >
+          🖨 Save as PDF
         </button>
       </div>
 
