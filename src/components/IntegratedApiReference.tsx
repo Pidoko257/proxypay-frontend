@@ -1,12 +1,13 @@
 /**
  * Integrated API Reference Page with Redoc and Sidebar
- * Combines Redoc viewer with sidebar navigation for enhanced UX
+ * Combines Redoc viewer with sidebar navigation, comparison view, and enhanced UX
  */
 
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import jsYaml from 'js-yaml';
 import RedocViewer from './RedocViewer';
 import APISidebarNav from './APISidebarNav';
+import EndpointComparison from './EndpointComparison';
 import { parseEndpoints, groupByTag, type OpenAPISpec, type ParsedEndpoint, type TagGroup } from '../utils/apiSpecParser';
 import { parseDeepLink, toEndpointLink } from '../utils/redocDeepLink';
 import styles from './ApiReference.module.css';
@@ -57,10 +58,13 @@ export default function IntegratedApiReference({
   onSpecLoaded,
   onError,
 }: IntegratedApiReferenceProps): React.JSX.Element {
-  const [loadedSpec, setLoadedSpec] = useState<OpenAPISpec | null>(spec || null);
+  const [loadedSpec, setLoadedSpec] = useState<OpenAPISpec | undefined>(spec);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEndpointId, setSelectedEndpointId] = useState<string | undefined>();
   const [expandedTags, setExpandedTags] = useState<Set<string>>(new Set());
+  const [comparisonMode, setComparisonMode] = useState(false);
+  const [comparisonEndpoint1, setComparisonEndpoint1] = useState<ParsedEndpoint | undefined>();
+  const [comparisonEndpoint2, setComparisonEndpoint2] = useState<ParsedEndpoint | undefined>();
 
   /**
    * Parse endpoints from spec
@@ -149,8 +153,70 @@ export default function IntegratedApiReference({
     setSelectedEndpointId(elementId);
   }, []);
 
+  /**
+   * Handle endpoint selection for comparison
+   */
+  const handleComparisonSelect = useCallback((endpoint: ParsedEndpoint) => {
+    if (!comparisonMode) {
+      setComparisonMode(true);
+      setComparisonEndpoint1(endpoint);
+      return;
+    }
+
+    if (!comparisonEndpoint1) {
+      setComparisonEndpoint1(endpoint);
+      return;
+    }
+
+    if (endpoint.id === comparisonEndpoint1.id) {
+      return;
+    }
+
+    if (!comparisonEndpoint2) {
+      setComparisonEndpoint2(endpoint);
+    } else {
+      // If both are selected, replace the second one
+      setComparisonEndpoint2(endpoint);
+    }
+  }, [comparisonMode, comparisonEndpoint1]);
+
+  /**
+   * Close comparison view
+   */
+  const handleCloseComparison = useCallback(() => {
+    setComparisonMode(false);
+    setComparisonEndpoint1(undefined);
+    setComparisonEndpoint2(undefined);
+  }, []);
+
+  /**
+   * Start fresh comparison with selected endpoint
+   */
+  const handleComparisonEndpointSelect = useCallback((endpoint: ParsedEndpoint) => {
+    if (endpoint.id === comparisonEndpoint1?.id) {
+      setComparisonEndpoint2(endpoint);
+    } else if (endpoint.id === comparisonEndpoint2?.id) {
+      setComparisonEndpoint1(endpoint);
+    } else {
+      setComparisonEndpoint1(endpoint);
+      setComparisonEndpoint2(undefined);
+    }
+  }, [comparisonEndpoint1, comparisonEndpoint2]);
+
   return (
     <div className={styles.container}>
+      {/* Comparison Modal */}
+      {comparisonMode && (
+        <div className={styles.comparisonModal}>
+          <EndpointComparison
+            endpoint1={comparisonEndpoint1}
+            endpoint2={comparisonEndpoint2}
+            onClose={handleCloseComparison}
+            onSelect={handleComparisonEndpointSelect}
+          />
+        </div>
+      )}
+
       {/* Search bar */}
       <div className={styles.searchBar}>
         <input
@@ -164,6 +230,15 @@ export default function IntegratedApiReference({
         <span className={styles.searchCount}>
           {filteredEndpoints.length} / {endpoints.length} endpoints
         </span>
+        <button
+          className={`${styles.comparisonToggle} ${comparisonMode ? styles.active : ''}`}
+          onClick={() => (comparisonMode ? handleCloseComparison() : setComparisonMode(true))}
+          title={comparisonMode ? 'Close comparison view' : 'Open comparison view'}
+          aria-label="Toggle endpoint comparison"
+          aria-pressed={comparisonMode}
+        >
+          ⇄ Compare
+        </button>
       </div>
 
       <div className={styles.layout}>

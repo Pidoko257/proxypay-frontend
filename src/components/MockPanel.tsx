@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRequestHistory } from '../hooks/useRequestHistory';
+import { RequestHistory } from './RequestHistory';
 
 interface MockConfig {
   id: string;
@@ -31,18 +33,109 @@ function generateId(): string {
   return Math.random().toString(36).substring(2, 10);
 }
 
-function resolveTemplate(template: string, path: string, method: string): string {
+/**
+ * Configuration constants for template resolution
+ */
+const TEMPLATE_CONFIG = {
+  MAX_RANGE_SIZE: 1_000_000, // Maximum allowed range for randomInt
+  MAX_VALUE: 2_147_483_647, // Max safe integer for random generation
+  MIN_VALUE: -2_147_483_648, // Min safe integer for random generation
+  MAX_RECURSION_DEPTH: 10,
+  EXECUTION_TIMEOUT_MS: 1000,
+};
+
+/**
+ * Validates randomInt min/max parameters
+ * @throws Error if validation fails
+ */
+function validateRandomIntParams(min: number, max: number): void {
+  // Validate that min <= max
+  if (min > max) {
+    throw new Error(`Invalid randomInt range: min (${min}) cannot be greater than max (${max})`);
+  }
+
+  // Validate that values are within safe integer range
+  if (min < TEMPLATE_CONFIG.MIN_VALUE || min > TEMPLATE_CONFIG.MAX_VALUE) {
+    throw new Error(`Min value ${min} is outside safe integer range [${TEMPLATE_CONFIG.MIN_VALUE}, ${TEMPLATE_CONFIG.MAX_VALUE}]`);
+  }
+
+  if (max < TEMPLATE_CONFIG.MIN_VALUE || max > TEMPLATE_CONFIG.MAX_VALUE) {
+    throw new Error(`Max value ${max} is outside safe integer range [${TEMPLATE_CONFIG.MIN_VALUE}, ${TEMPLATE_CONFIG.MAX_VALUE}]`);
+  }
+
+  // Validate that range size does not exceed maximum
+  const rangeSize = max - min + 1;
+  if (rangeSize > TEMPLATE_CONFIG.MAX_RANGE_SIZE) {
+    throw new Error(`Range size (${rangeSize}) exceeds maximum allowed size (${TEMPLATE_CONFIG.MAX_RANGE_SIZE})`);
+  }
+}
+
+/**
+ * Generates a random integer within the specified range
+ * @throws Error if parameters are invalid
+ */
+function generateRandomInt(min: number, max: number): number {
+  validateRandomIntParams(min, max);
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/**
+ * Resolves template variables in a string with validation and recursion safety
+ * Supported templates:
+ * - {{timestamp}} → current Unix timestamp
+ * - {{randomId}} → random UUID
+ * - {{isoDate}} → ISO date string
+ * - {{randomInt:min,max}} → random integer in range [min, max]
+ * - {{path}} → request path
+ * - {{method}} → HTTP method
+ * 
+ * @throws Error if template resolution fails or contains invalid parameters
+ */
+function resolveTemplate(template: string, path: string, method: string, depth = 0): string {
+  // Recursion depth protection
+  if (depth > TEMPLATE_CONFIG.MAX_RECURSION_DEPTH) {
+    throw new Error(`Template resolution exceeded maximum recursion depth (${TEMPLATE_CONFIG.MAX_RECURSION_DEPTH})`);
+  }
+
   let resolved = template;
+
+  // Static replacements (no validation needed)
   resolved = resolved.replace(/\{\{timestamp\}\}/g, String(Date.now()));
   resolved = resolved.replace(/\{\{randomId\}\}/g, crypto.randomUUID?.() ?? generateId() + '-' + generateId());
   resolved = resolved.replace(/\{\{isoDate\}\}/g, new Date().toISOString());
   resolved = resolved.replace(/\{\{path\}\}/g, path);
   resolved = resolved.replace(/\{\{method\}\}/g, method);
-  resolved = resolved.replace(/\{\{randomInt:(\d+),(\d+)\}\}/g, (_, min, max) => {
-    const lo = parseInt(min, 10);
-    const hi = parseInt(max, 10);
-    return String(Math.floor(Math.random() * (hi - lo + 1)) + lo);
-  });
+
+  // randomInt replacement with validation
+  // Regex captures optional minus signs for negative numbers
+  let lastResolved = '';
+  let iterations = 0;
+  const maxIterations = 100; // Prevent infinite loops from malformed templates
+
+  while (resolved !== lastResolved && iterations < maxIterations) {
+    lastResolved = resolved;
+    resolved = resolved.replace(/\{\{randomInt:(-?\d+),(-?\d+)\}\}/g, (match, minStr, maxStr) => {
+      try {
+        const min = parseInt(minStr, 10);
+        const max = parseInt(maxStr, 10);
+
+        // Validate parameters before generation
+        validateRandomIntParams(min, max);
+
+        return String(generateRandomInt(min, max));
+      } catch (error) {
+        // Return the original match if validation fails to preserve the template for debugging
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Error(`Failed to resolve randomInt template "${match}": ${errorMessage}`);
+      }
+    });
+    iterations++;
+  }
+
+  if (iterations >= maxIterations) {
+    throw new Error('Template resolution exceeded maximum iterations (possible infinite loop)');
+  }
+
   return resolved;
 }
 
@@ -62,7 +155,8 @@ function saveConfigs(configs: MockConfig[]): void {
 export default function MockPanel(): React.JSX.Element {
   const [configs, setConfigs] = useState<MockConfig[]>([]);
   const [selectedConfigId, setSelectedConfigId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'editor' | 'preview' | 'saved'>('editor');
+  const [activeTab, setActiveTab] = useState<'editor' | 'preview' | 'saved' | 'history'>('editor');
+  const { history, addEntry, clearHistory } = useRequestHistory();
 
   // Editor state
   const [name, setName] = useState('');
@@ -75,6 +169,7 @@ export default function MockPanel(): React.JSX.Element {
   const [simulateError, setSimulateError] = useState(false);
   const [errorBody, setErrorBody] = useState('{\n  "error": "Internal Server Error",\n  "code": 500\n}');
   const [previewOutput, setPreviewOutput] = useState('');
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const [copyFeedback, setCopyFeedback] = useState('');
 
   useEffect(() => {
@@ -109,28 +204,35 @@ export default function MockPanel(): React.JSX.Element {
   }, []);
 
   const generatePreview = useCallback(() => {
-    let parsedHeaders: Record<string, string> = {};
     try {
-      parsedHeaders = JSON.parse(headers);
-    } catch {
-      parsedHeaders = { 'Content-Type': 'application/json' };
+      let parsedHeaders: Record<string, string> = {};
+      try {
+        parsedHeaders = JSON.parse(headers);
+      } catch {
+        parsedHeaders = { 'Content-Type': 'application/json' };
+      }
+
+      const resolvedBody = resolveTemplate(body, path, method);
+      const resolvedErrorBody = simulateError ? resolveTemplate(errorBody, path, method) : '';
+
+      const response = {
+        status: statusCode,
+        headers: parsedHeaders,
+        body: simulateError ? resolvedErrorBody : resolvedBody,
+        latency_ms: latency,
+        url: path,
+        method,
+      };
+
+      setPreviewOutput(JSON.stringify(response, null, 2));
+      setPreviewError(null);
+      setActiveTab('preview');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error during template resolution';
+      setPreviewError(`Template Error: ${errorMessage}`);
+      setPreviewOutput('');
+      setActiveTab('preview');
     }
-
-    const resolvedBody = resolveTemplate(body, path, method);
-
-    const response = {
-      status: statusCode,
-      headers: parsedHeaders,
-      body: simulateError
-        ? resolveTemplate(errorBody, path, method)
-        : resolvedBody,
-      latency_ms: latency,
-      url: path,
-      method,
-    };
-
-    setPreviewOutput(JSON.stringify(response, null, 2));
-    setActiveTab('preview');
   }, [headers, body, statusCode, simulateError, errorBody, latency, path, method]);
 
   const saveConfig = useCallback(() => {
@@ -162,9 +264,13 @@ export default function MockPanel(): React.JSX.Element {
     setConfigs(updated);
     saveConfigs(updated);
     setSelectedConfigId(newConfig.id);
+    
+    // Add to request history
+    addEntry(method, path, statusCode, latency);
+    
     setCopyFeedback('Saved!');
     setTimeout(() => setCopyFeedback(''), 1500);
-  }, [configs, selectedConfigId, name, method, path, statusCode, headers, body, latency, simulateError, errorBody]);
+  }, [configs, selectedConfigId, name, method, path, statusCode, headers, body, latency, simulateError, errorBody, addEntry]);
 
   const deleteConfig = useCallback(
     (id: string) => {
@@ -187,6 +293,13 @@ export default function MockPanel(): React.JSX.Element {
     setBody((prev) => prev + ' ' + variable);
   }, []);
 
+  const loadFromHistory = useCallback((method: string, path: string) => {
+    setMethod(method);
+    setPath(path);
+    setName(`${method} ${path}`);
+    setActiveTab('editor');
+  }, []);
+
   return (
     <div className="mock-panel">
       <div className="mock-panel-header">
@@ -207,6 +320,9 @@ export default function MockPanel(): React.JSX.Element {
         </button>
         <button className={`mock-tab ${activeTab === 'saved' ? 'active' : ''}`} onClick={() => setActiveTab('saved')}>
           💾 Saved ({configs.length})
+        </button>
+        <button className={`mock-tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>
+          📜 History ({history.length})
         </button>
       </div>
 
@@ -341,11 +457,23 @@ export default function MockPanel(): React.JSX.Element {
         <div className="mock-preview">
           <div className="mock-preview-header">
             <h3>Response Preview</h3>
-            <button className="mock-btn mock-btn-ghost" onClick={() => copyToClipboard(previewOutput, 'preview')}>
+            <button 
+              className="mock-btn mock-btn-ghost" 
+              onClick={() => copyToClipboard(previewOutput, 'preview')}
+              disabled={!!previewError}
+            >
               📋 Copy
             </button>
           </div>
-          <pre className="mock-preview-code"><code>{previewOutput || 'Click "Preview Response" to generate a preview'}</code></pre>
+          {previewError && (
+            <div className="mock-error-display">
+              <div className="mock-error-icon">⚠️</div>
+              <div className="mock-error-message">{previewError}</div>
+            </div>
+          )}
+          {!previewError && (
+            <pre className="mock-preview-code"><code>{previewOutput || 'Click "Preview Response" to generate a preview'}</code></pre>
+          )}
         </div>
       )}
 
@@ -381,6 +509,12 @@ export default function MockPanel(): React.JSX.Element {
                 ))}
             </div>
           )}
+        </div>
+      )}
+
+      {activeTab === 'history' && (
+        <div className="mock-history">
+          <RequestHistory history={history} onLoad={loadFromHistory} onClear={clearHistory} />
         </div>
       )}
     </div>

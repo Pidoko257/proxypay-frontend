@@ -723,16 +723,15 @@ const styles: Record<string, React.CSSProperties> = {
 };
 
 // ── Main Component ─────────────────────────────────────────────────
+// A change is treated as "deprecated" when it is flagged as a deprecation
+// severity or its endpoint has entered the deprecated sunset phase.
+const isDeprecated = (d: EndpointDiff): boolean =>
+  d.severity === 'deprecation' || d.sunsetStatus === 'deprecated';
+
 export default function MigrationGuide(): React.JSX.Element {
   const [expandedMigration, setExpandedMigration] = useState<string | null>(MIGRATION_DATA[0]?.to || null);
   const [expandedDiffs, setExpandedDiffs] = useState<Set<string>>(new Set());
-  const [codeLanguage, setCodeLanguage] = useState<string>('javascript');
-
-  const LANGUAGES = [
-    { value: 'javascript', label: 'JavaScript' },
-    { value: 'python', label: 'Python' },
-    { value: 'go', label: 'Go' },
-  ];
+  const [deprecatedOnly, setDeprecatedOnly] = useState(false);
 
   const toggleMigration = (to: string) => {
     setExpandedMigration((prev) => (prev === to ? null : to));
@@ -755,6 +754,19 @@ export default function MigrationGuide(): React.JSX.Element {
   const breakingCount = allDiffs.filter((d) => d.severity === 'breaking').length;
   const deprecationCount = allDiffs.filter((d) => d.severity === 'deprecation').length;
   const additionCount = allDiffs.filter((d) => d.severity === 'addition').length;
+
+  const deprecatedDiffs = useMemo(() => allDiffs.filter(isDeprecated), [allDiffs]);
+  const hasDeprecated = deprecatedDiffs.length > 0;
+
+  // When the deprecated-only filter is active, keep only migrations that still
+  // contain a deprecated change.
+  const visibleMigrations = useMemo(
+    () =>
+      deprecatedOnly
+        ? MIGRATION_DATA.filter((m) => m.diffs.some(isDeprecated))
+        : MIGRATION_DATA,
+    [deprecatedOnly]
+  );
 
   return (
     <div style={styles.container}>
@@ -790,9 +802,57 @@ export default function MigrationGuide(): React.JSX.Element {
         </div>
       </div>
 
+      {/* Deprecation banner — shown whenever any deprecated change exists */}
+      {hasDeprecated && (
+        <div
+          data-testid="deprecation-banner"
+          role="alert"
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: '0.75rem',
+            padding: '0.9rem 1.25rem',
+            marginBottom: '1.5rem',
+            background: '#fef3c7',
+            border: '1px solid #fcd34d',
+            borderLeft: '5px solid #d97706',
+            borderRadius: 10,
+            color: '#92400e',
+            fontSize: '0.9rem',
+          }}
+        >
+          <span style={{ fontSize: '1.1rem' }}>⚠️</span>
+          <span style={{ flex: '1 1 260px' }}>
+            <strong>
+              {deprecatedDiffs.length} deprecated{' '}
+              {deprecatedDiffs.length === 1 ? 'endpoint/change' : 'endpoints/changes'} found.
+            </strong>{' '}
+            Deprecated items are still available but will be removed at their sunset date — migrate
+            before then.
+          </span>
+          <button
+            type="button"
+            onClick={() => setDeprecatedOnly((v) => !v)}
+            style={{
+              ...styles.toggleBtn,
+              borderColor: deprecatedOnly ? '#d97706' : '#d0d5dd',
+              background: deprecatedOnly ? '#d97706' : '#fff',
+              color: deprecatedOnly ? '#fff' : '#92400e',
+            }}
+          >
+            {deprecatedOnly ? '↺ Show all changes' : '⚠ Show deprecated only'}
+          </button>
+        </div>
+      )}
+
       {/* Per-version Migrations */}
-      {MIGRATION_DATA.map((migration) => {
-        const isExpanded = expandedMigration === migration.to;
+      {visibleMigrations.map((migration) => {
+        // While the deprecated-only filter is active, force-expand any migration
+        // that still has a deprecated change so the highlighted cards are visible.
+        const isExpanded =
+          expandedMigration === migration.to ||
+          (deprecatedOnly && migration.diffs.some(isDeprecated));
         return (
           <div
             key={migration.to}
@@ -830,21 +890,55 @@ export default function MigrationGuide(): React.JSX.Element {
                   <strong>Overview:</strong> {migration.overview}
                 </div>
 
-                {migration.diffs.map((diff) => {
+                {migration.diffs
+                  .filter((diff) => !deprecatedOnly || isDeprecated(diff))
+                  .map((diff) => {
                   const diffKey = `${migration.to}-${diff.path}-${diff.method}`;
                   const isDiffExpanded = expandedDiffs.has(diffKey);
+                  const deprecated = isDeprecated(diff);
+                  const baseBg = deprecated ? '#fffbeb' : 'transparent';
                   return (
                     <div
                       key={diffKey}
-                      style={styles.diffCard}
+                      data-testid={deprecated ? 'diff-card-deprecated' : 'diff-card'}
+                      data-deprecated={deprecated ? 'true' : 'false'}
+                      style={{
+                        ...styles.diffCard,
+                        background: baseBg,
+                        ...(deprecated
+                          ? { borderLeft: '4px solid #d97706', paddingLeft: 'calc(1.5rem - 4px)' }
+                          : {}),
+                      }}
                       onMouseEnter={(e) => {
-                        (e.currentTarget as HTMLElement).style.background = '#f8fafc';
+                        (e.currentTarget as HTMLElement).style.background = deprecated
+                          ? '#fef3c7'
+                          : '#f8fafc';
                       }}
                       onMouseLeave={(e) => {
-                        (e.currentTarget as HTMLElement).style.background = 'transparent';
+                        (e.currentTarget as HTMLElement).style.background = baseBg;
                       }}
                     >
                       <div style={styles.diffHeader}>
+                        {deprecated && (
+                          <span
+                            data-testid="deprecated-flag"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              padding: '0.2rem 0.6rem',
+                              borderRadius: 6,
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.04em',
+                              background: '#d97706',
+                              color: '#fff',
+                            }}
+                          >
+                            ⚠ Deprecated
+                          </span>
+                        )}
                         <span style={styles.severityBadge(diff.severity)}>{diff.severity}</span>
                         <code style={styles.endpointTag}>
                           {diff.method} {diff.path}
