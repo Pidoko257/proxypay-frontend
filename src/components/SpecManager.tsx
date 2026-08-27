@@ -155,6 +155,58 @@ function mergeSpecs(base: string, overlay: string): string {
   return trimmedBase + '\n' + newPathsOnly.join('\n');
 }
 
+// ─── Backup / Recovery ────────────────────────────────────────────────────────
+
+const BACKUP_TYPE = 'proxypay-spec-backup';
+
+interface SpecBackup {
+  type: typeof BACKUP_TYPE;
+  schema: 1;
+  exportedAt: number;
+  versions: SpecVersion[];
+}
+
+/** Serialize every saved spec version into a portable backup document. */
+export function serializeBackup(versions: SpecVersion[], now: number = Date.now()): string {
+  const backup: SpecBackup = {
+    type: BACKUP_TYPE,
+    schema: 1,
+    exportedAt: now,
+    versions,
+  };
+  return JSON.stringify(backup, null, 2);
+}
+
+/**
+ * Parse a previously exported backup and merge it with the versions already
+ * present. Entries are de-duplicated by id (backup wins) and returned
+ * newest-first. Throws on a malformed or unrelated file.
+ */
+export function parseBackup(json: string, existing: SpecVersion[] = []): SpecVersion[] {
+  let parsed: Partial<SpecBackup>;
+  try {
+    parsed = JSON.parse(json);
+  } catch {
+    throw new Error('File is not valid JSON');
+  }
+  if (!parsed || parsed.type !== BACKUP_TYPE || !Array.isArray(parsed.versions)) {
+    throw new Error('Not a ProxyPay spec backup file');
+  }
+  const byId = new Map<string, SpecVersion>();
+  for (const v of existing) byId.set(v.id, v);
+  for (const v of parsed.versions) {
+    if (
+      v &&
+      typeof v.id === 'string' &&
+      typeof v.spec === 'string' &&
+      typeof v.timestamp === 'number'
+    ) {
+      byId.set(v.id, v as SpecVersion);
+    }
+  }
+  return Array.from(byId.values()).sort((a, b) => b.timestamp - a.timestamp);
+}
+
 function downloadSpec(content: string, filename: string): void {
   const blob = new Blob([content], { type: 'application/x-yaml' });
   const url = URL.createObjectURL(blob);
@@ -353,6 +405,37 @@ export default function SpecManager(): React.JSX.Element {
     [showToast]
   );
 
+  const handleExportBackup = useCallback(() => {
+    if (versions.length === 0) {
+      showToast('No versions to export');
+      return;
+    }
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadSpec(serializeBackup(versions), `proxypay-spec-backup-${stamp}.json`);
+    showToast(`Exported ${versions.length} version(s)`);
+  }, [versions, showToast]);
+
+  const handleImportBackup = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = '';
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const merged = parseBackup(ev.target?.result as string, versions);
+          setVersions(merged);
+          saveVersions(merged);
+          showToast(`Restored — ${merged.length} version(s) available`);
+        } catch (err: any) {
+          showToast(`Import failed: ${err.message || 'invalid backup'}`);
+        }
+      };
+      reader.readAsText(file);
+    },
+    [versions, showToast]
+  );
+
   const saveAutoSync = useCallback(
     (enabled: boolean, interval: number, url: string) => {
       const config = { enabled, interval, url, lastRun: autoSyncLastRun };
@@ -477,6 +560,20 @@ export default function SpecManager(): React.JSX.Element {
                 Active: <strong>{currentSpec.label}</strong>
               </span>
             )}
+            <div className="spec-backup-actions">
+              <button className="mock-btn mock-btn-sm" onClick={handleExportBackup}>
+                💾 Export Backup
+              </button>
+              <label className="mock-btn mock-btn-sm spec-import-backup-label">
+                ♻️ Import Backup
+                <input
+                  type="file"
+                  accept=".json,application/json"
+                  onChange={handleImportBackup}
+                  className="spec-file-input"
+                />
+              </label>
+            </div>
           </div>
           {versions.length === 0 ? (
             <div className="mock-empty"><p>No versions yet. Import a spec to get started.</p></div>

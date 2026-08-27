@@ -37,6 +37,16 @@ const STATUS_COLORS = {
 const POLLING_INTERVAL = 30000; // 30 seconds
 const DEMO_MODE = true; // Set to false when connecting to real API
 
+// ─── Polling helpers ──────────────────────────────────────────────────────────
+
+/**
+ * Polling should only run when the user has auto-refresh enabled AND the browser
+ * tab is currently visible. Polling a hidden tab wastes bandwidth and battery.
+ */
+export function shouldPollNow(autoRefresh: boolean, documentHidden: boolean): boolean {
+  return autoRefresh && !documentHidden;
+}
+
 // ─── Mock Data Generator ──────────────────────────────────────────────────────
 
 function generateMockStatus(): RateLimitStatus {
@@ -273,15 +283,45 @@ export default function RateLimitDashboard(): React.JSX.Element {
     fetchStatus();
   }, [fetchStatus]);
 
-  // Auto-refresh polling
+  // Auto-refresh polling — paused while the tab is hidden (Page Visibility API)
   useEffect(() => {
     if (!autoRefresh) return;
 
-    const intervalId = setInterval(() => {
-      fetchStatus();
-    }, POLLING_INTERVAL);
+    let intervalId: ReturnType<typeof setInterval> | undefined;
 
-    return () => clearInterval(intervalId);
+    const startPolling = () => {
+      if (intervalId !== undefined) return;
+      intervalId = setInterval(() => {
+        fetchStatus();
+      }, POLLING_INTERVAL);
+    };
+
+    const stopPolling = () => {
+      if (intervalId !== undefined) {
+        clearInterval(intervalId);
+        intervalId = undefined;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (shouldPollNow(true, document.hidden)) {
+        // Tab became active again — refresh immediately, then resume polling.
+        fetchStatus();
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
+    if (shouldPollNow(autoRefresh, document.hidden)) {
+      startPolling();
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [autoRefresh, fetchStatus]);
 
   // Calculate time remaining for reset

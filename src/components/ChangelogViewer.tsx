@@ -15,6 +15,31 @@ interface ChangelogEntry {
   impact: ImpactLevel;
   endpoints: string[];
   tags: string[];
+  /** For deprecations: the date the endpoint(s) stop working. */
+  sunsetDate?: string;
+}
+
+// Deprecated endpoints within this many days of their sunset date are
+// highlighted as urgent so integrators know to migrate now.
+const SUNSET_WARNING_DAYS = 90;
+
+type SunsetStatus = 'none' | 'upcoming' | 'nearing' | 'passed';
+
+/** Whole days from `now` until `dateStr` (negative once the date has passed). */
+export function daysUntil(dateStr: string, now: number = Date.now()): number {
+  return Math.ceil((new Date(dateStr).getTime() - now) / 86_400_000);
+}
+
+/** Classify where a deprecation sits on its deprecation → sunset timeline. */
+export function sunsetStatus(
+  sunsetDate: string | undefined,
+  now: number = Date.now()
+): SunsetStatus {
+  if (!sunsetDate) return 'none';
+  const days = daysUntil(sunsetDate, now);
+  if (days < 0) return 'passed';
+  if (days <= SUNSET_WARNING_DAYS) return 'nearing';
+  return 'upcoming';
 }
 
 // ── Mock Data ──────────────────────────────────────────────────────
@@ -73,6 +98,7 @@ const CHANGELOG_DATA: ChangelogEntry[] = [
     impact: 'high',
     endpoints: ['POST /bridge/legacy'],
     tags: ['bridge', 'stellar'],
+    sunsetDate: '2026-12-10',
   },
   {
     id: 'cl-6',
@@ -106,6 +132,7 @@ const CHANGELOG_DATA: ChangelogEntry[] = [
     impact: 'critical',
     endpoints: ['* (all endpoints)'],
     tags: ['format', 'breaking'],
+    sunsetDate: '2026-10-02',
   },
   {
     id: 'cl-9',
@@ -386,6 +413,64 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#94a3b8',
     fontSize: '1rem',
   },
+  deprecationPanel: {
+    background: '#fffbeb',
+    border: '1px solid #fde68a',
+    borderRadius: 12,
+    padding: '1.25rem 1.5rem',
+    marginBottom: '1.75rem',
+  },
+  deprecationHeading: {
+    fontSize: '1.05rem',
+    fontWeight: 700,
+    color: '#92400e',
+    margin: '0 0 0.9rem',
+  },
+  deprecationRow: (nearing: boolean): React.CSSProperties => ({
+    display: 'grid',
+    gridTemplateColumns: 'minmax(160px, 1.4fr) 1fr 1fr auto',
+    gap: '0.75rem',
+    alignItems: 'center',
+    padding: '0.6rem 0.75rem',
+    borderRadius: 8,
+    background: nearing ? '#fee2e2' : '#fff',
+    border: `1px solid ${nearing ? '#fca5a5' : '#f1e7c6'}`,
+    marginBottom: '0.5rem',
+    fontSize: '0.85rem',
+  }),
+  deprecationBar: {
+    position: 'relative' as const,
+    height: 6,
+    borderRadius: 3,
+    background: '#e5e7eb',
+    overflow: 'hidden',
+    marginTop: '0.5rem',
+  },
+  deprecationBarFill: (nearing: boolean): React.CSSProperties => ({
+    position: 'absolute' as const,
+    left: 0,
+    top: 0,
+    bottom: 0,
+    background: nearing ? '#ef4444' : '#f59e0b',
+  }),
+  sunsetPill: (status: SunsetStatus): React.CSSProperties => {
+    const map: Record<SunsetStatus, { bg: string; fg: string }> = {
+      none: { bg: '#e2e8f0', fg: '#475569' },
+      upcoming: { bg: '#fef3c7', fg: '#92400e' },
+      nearing: { bg: '#fecaca', fg: '#7f1d1d' },
+      passed: { bg: '#e5e7eb', fg: '#6b7280' },
+    };
+    return {
+      display: 'inline-block',
+      padding: '0.15rem 0.55rem',
+      borderRadius: 999,
+      fontSize: '0.72rem',
+      fontWeight: 700,
+      background: map[status].bg,
+      color: map[status].fg,
+      whiteSpace: 'nowrap' as const,
+    };
+  },
 };
 
 // ── Utility ────────────────────────────────────────────────────────
@@ -497,6 +582,25 @@ export default function ChangelogViewer(): React.JSX.Element {
     []
   );
 
+  // Deprecation timeline — deprecations that carry a sunset date, ordered by how
+  // soon they stop working so integrators can see what needs migrating first.
+  const deprecationTimeline = useMemo(() => {
+    const now = Date.now();
+    return CHANGELOG_DATA.filter((e) => e.type === 'deprecation' && e.sunsetDate)
+      .map((e) => {
+        const start = new Date(e.date).getTime();
+        const end = new Date(e.sunsetDate as string).getTime();
+        const elapsed = Math.min(1, Math.max(0, (now - start) / (end - start)));
+        return {
+          entry: e,
+          status: sunsetStatus(e.sunsetDate, now),
+          daysLeft: daysUntil(e.sunsetDate as string, now),
+          progress: Math.round(elapsed * 100),
+        };
+      })
+      .sort((a, b) => a.daysLeft - b.daysLeft);
+  }, []);
+
   return (
     <div style={styles.container}>
       {/* Header */}
@@ -514,6 +618,55 @@ export default function ChangelogViewer(): React.JSX.Element {
           </span>
         </div>
       </div>
+
+      {/* Deprecation timeline */}
+      {deprecationTimeline.length > 0 && (
+        <div style={styles.deprecationPanel}>
+          <h2 style={styles.deprecationHeading}>
+            ⏳ Deprecation Timeline — when deprecated endpoints stop working
+          </h2>
+          {deprecationTimeline.map(({ entry, status, daysLeft, progress }) => {
+            const nearing = status === 'nearing' || status === 'passed';
+            return (
+              <div key={entry.id} style={styles.deprecationRow(nearing)}>
+                <div>
+                  <strong>{entry.title}</strong>
+                  <div>
+                    {entry.endpoints.map((ep) => (
+                      <code key={ep} style={styles.endpointTag}>
+                        {ep}
+                      </code>
+                    ))}
+                  </div>
+                </div>
+                <span>
+                  <span style={{ color: '#999' }}>Deprecated:</span> {entry.date}
+                </span>
+                <span>
+                  <span style={{ color: '#999' }}>Sunset:</span> {entry.sunsetDate}
+                </span>
+                <span style={styles.sunsetPill(status)}>
+                  {status === 'passed'
+                    ? 'Past sunset'
+                    : status === 'nearing'
+                    ? `⚠️ ${daysLeft} days left`
+                    : `${daysLeft} days left`}
+                </span>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <div style={styles.deprecationBar}>
+                    <div
+                      style={{
+                        ...styles.deprecationBarFill(nearing),
+                        width: `${progress}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Controls */}
       <div style={styles.controls}>
