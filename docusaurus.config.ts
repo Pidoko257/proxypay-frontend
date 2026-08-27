@@ -5,6 +5,26 @@ import * as webpack from 'webpack';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as dotenv from 'dotenv';
+
+// Load environment variables from .env.local or .env
+// Supports: .env, .env.local, .env.[NODE_ENV], .env.[NODE_ENV].local
+const envPath = path.join(process.cwd(), `.env.${process.env.NODE_ENV || 'development'}.local`);
+const envLocalPath = path.join(process.cwd(), '.env.local');
+const envDefaultPath = path.join(process.cwd(), `.env.${process.env.NODE_ENV || 'development'}`);
+const envPath2 = path.join(process.cwd(), '.env');
+
+// Load in order of precedence (most specific first)
+[envPath, envLocalPath, envDefaultPath, envPath2].forEach((filePath) => {
+  if (fs.existsSync(filePath)) {
+    dotenv.config({ path: filePath });
+  }
+});
+
+// Helper to get env var with fallback
+const getEnv = (key: string, defaultValue: string = ''): string => {
+  return process.env[key] || defaultValue;
+};
 
 // =========================================================================
 // OpenAPI spec cache busting (Task 2)
@@ -56,13 +76,14 @@ const config: Config = {
     v4: true,
   },
 
-  url: 'https://Pidoko257.github.io',
-  baseUrl: '/proxypay-frontend/',
+  // Use environment variables with fallback to defaults
+  url: getEnv('NEXT_PUBLIC_BASE_URL', 'https://Pidoko257.github.io').split('/proxypay-frontend')[0] || 'https://Pidoko257.github.io',
+  baseUrl: getEnv('NEXT_PUBLIC_DOCUSAURUS_BASE_URL', '/proxypay-frontend/'),
 
-  organizationName: 'Pidoko257',
-  projectName: 'proxypay-frontend',
-  deploymentBranch: 'gh-pages',
-  trailingSlash: false,
+  organizationName: getEnv('NEXT_PUBLIC_GITHUB_ORG', 'Pidoko257'),
+  projectName: getEnv('NEXT_PUBLIC_GITHUB_REPO', 'proxypay-frontend'),
+  deploymentBranch: getEnv('NEXT_PUBLIC_DEPLOYMENT_BRANCH', 'gh-pages'),
+  trailingSlash: getEnv('NEXT_PUBLIC_DOCUSAURUS_TRAILING_SLASH', 'false') === 'true',
 
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',

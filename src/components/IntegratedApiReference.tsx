@@ -10,6 +10,7 @@ import APISidebarNav from './APISidebarNav';
 import EndpointComparison from './EndpointComparison';
 import { parseEndpoints, groupByTag, type OpenAPISpec, type ParsedEndpoint, type TagGroup } from '../utils/apiSpecParser';
 import { parseDeepLink, toEndpointLink } from '../utils/redocDeepLink';
+import { envConfig } from '../utils/env-config';
 import styles from './ApiReference.module.css';
 
 export interface IntegratedApiReferenceProps {
@@ -65,6 +66,9 @@ export default function IntegratedApiReference({
   const [comparisonMode, setComparisonMode] = useState(false);
   const [comparisonEndpoint1, setComparisonEndpoint1] = useState<ParsedEndpoint | undefined>();
   const [comparisonEndpoint2, setComparisonEndpoint2] = useState<ParsedEndpoint | undefined>();
+
+  // Use environment-configured spec URL if not overridden
+  const resolvedSpecUrl = specUrl === '/openapi.yaml' ? envConfig.openapiSpecUrl : specUrl;
 
   /**
    * Parse endpoints from spec
@@ -261,7 +265,7 @@ export default function IntegratedApiReference({
         {/* Main Redoc viewer */}
         <main className={styles.main}>
           <RedocViewer
-            specUrl={specUrl}
+            specUrl={resolvedSpecUrl}
             spec={loadedSpec}
             title={title}
             disableSidebar={!showSidebar}

@@ -3,6 +3,16 @@
  * Defines test scenarios, load profiles, and performance thresholds
  */
 
+import { envConfig } from './utils/env-config';
+
+// Helper to get env var with fallback
+const getEnv = (key: string, defaultValue: string = ''): string => {
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env[key] || defaultValue;
+  }
+  return defaultValue;
+};
+
 export interface LoadTestConfig {
   // Test environment
   baseUrl: string;
@@ -120,10 +130,10 @@ export interface ThresholdViolation {
 
 // Default configuration
 export const defaultConfig: LoadTestConfig = {
-  baseUrl: 'http://localhost:3001',
-  apiBaseUrl: 'http://localhost:3000',
-  timeout: 30000,
-  verbose: false,
+  baseUrl: getEnv('NEXT_PUBLIC_BASE_URL', 'http://localhost:3001'),
+  apiBaseUrl: getEnv('NEXT_PUBLIC_API_BASE_URL', 'http://localhost:3000'),
+  timeout: parseInt(getEnv('NEXT_PUBLIC_API_TIMEOUT', '30000'), 10),
+  verbose: getEnv('NEXT_PUBLIC_VERBOSE_LOGGING', 'false') === 'true',
 
   loadProfiles: [
     {
@@ -327,9 +337,9 @@ export const defaultConfig: LoadTestConfig = {
   },
 
   reporting: {
-    outputDir: './load-test-results',
+    outputDir: getEnv('NEXT_PUBLIC_LOAD_TEST_OUTPUT_DIR', './load-test-results'),
     format: ['html', 'json', 'console'],
-    generateGraphs: true,
+    generateGraphs: getEnv('NEXT_PUBLIC_LOAD_TEST_GENERATE_GRAPHS', 'true') === 'true',
     emailReport: {
       enabled: false,
       recipients: [],
@@ -343,7 +353,8 @@ export const loadTestConfigs = {
 
   staging: {
     ...defaultConfig,
-    baseUrl: 'https://staging-api.proxypay.io',
+    baseUrl: getEnv('NEXT_PUBLIC_BASE_URL', 'https://staging-api.proxypay.io'),
+    apiBaseUrl: getEnv('NEXT_PUBLIC_API_BASE_URL', 'https://staging-api.proxypay.io'),
     thresholds: {
       ...defaultConfig.thresholds,
       p95ResponseTime: 1000,
@@ -354,7 +365,8 @@ export const loadTestConfigs = {
 
   production: {
     ...defaultConfig,
-    baseUrl: 'https://api.proxypay.io',
+    baseUrl: getEnv('NEXT_PUBLIC_BASE_URL', 'https://api.proxypay.io'),
+    apiBaseUrl: getEnv('NEXT_PUBLIC_API_BASE_URL', 'https://api.proxypay.io'),
     loadProfiles: defaultConfig.loadProfiles.filter(p => p.name !== 'spike-test'),
     thresholds: {
       ...defaultConfig.thresholds,
