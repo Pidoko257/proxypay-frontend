@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { AnalyticsResult, EndpointMetrics } from '../analytics/analytics-engine';
+import { AnalyticsResult } from '../analytics/analytics-engine';
 import { LogAnalyticsEngine } from '../analytics/analytics-engine';
 import { ParsedLogEntry } from '../analytics/log-parser';
 import { ExportControls, FilterState } from './ExportControls';
@@ -82,6 +82,32 @@ export const AdvancedLogsDashboard: React.FC<AdvancedDashboardProps> = ({ logs, 
     }
     return LogAnalyticsEngine.analyze(filteredLogs);
   }, [filteredLogs, initialAnalytics]);
+
+  const anomalyExplanations = useMemo(() => {
+    const explanations: Array<{ title: string; explanation: string; steps: string[] }> = [];
+    if (analytics.errorRate > 5) {
+      explanations.push({
+        title: 'Elevated error rate',
+        explanation: 'A large share of requests is failing, which can indicate an unhealthy dependency, invalid client input, or a recent deployment issue.',
+        steps: ['Group errors by endpoint and status code.', 'Check dependency and deployment health.', 'Review the first occurrence time for a recent change.'],
+      });
+    }
+    if (analytics.p95ResponseTime > 1000 || analytics.avgResponseTime > 500) {
+      explanations.push({
+        title: 'Slow responses',
+        explanation: 'The response-time distribution suggests overloaded workers, slow database queries, or an upstream service delay.',
+        steps: ['Compare the slowest endpoints in the Endpoints tab.', 'Inspect database and upstream latency.', 'Check traffic volume around the slow period.'],
+      });
+    }
+    if (analytics.statusCodeBreakdown.some(status => status.code >= 500)) {
+      explanations.push({
+        title: 'Server-side failures',
+        explanation: '5xx responses mean the service could not complete requests and usually require server or dependency investigation.',
+        steps: ['Review application and dependency logs.', 'Check capacity, health checks, and recent deployments.', 'Capture a representative request for reproduction.'],
+      });
+    }
+    return explanations;
+  }, [analytics]);
 
   const handleFilterChange = useCallback(
     (key: keyof FilterState, value: any) => {
@@ -322,6 +348,21 @@ export const AdvancedLogsDashboard: React.FC<AdvancedDashboardProps> = ({ logs, 
                 <div className="metric-value">{formatNumber(analytics.p99ResponseTime)}ms</div>
               </div>
             </div>
+
+            {anomalyExplanations.length > 0 && (
+              <section className="anomaly-explanations" aria-labelledby="anomaly-explanations-title">
+                <h3 id="anomaly-explanations-title">Anomaly explanations</h3>
+                {anomalyExplanations.map(anomaly => (
+                  <article key={anomaly.title} className="anomaly-explanation">
+                    <h4>{anomaly.title}</h4>
+                    <p>{anomaly.explanation}</p>
+                    <strong>Suggested checks</strong>
+                    <ul>{anomaly.steps.map(step => <li key={step}>{step}</li>)}</ul>
+                  </article>
+                ))}
+                <a href="/logs-glossary">Read the logs troubleshooting guide</a>
+              </section>
+            )}
 
             <div className="chart-section">
               <h3>Status Code Distribution</h3>

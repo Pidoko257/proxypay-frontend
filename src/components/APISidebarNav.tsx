@@ -90,6 +90,10 @@ export default function APISidebarNav({
   const [tagSearchQueries, setTagSearchQueries] = useState<Record<string, string>>({});
   const [tagMethodFilters, setTagMethodFilters] = useState<Record<string, Set<string>>>({});
 
+  useEffect(() => {
+    setSelectedEndpointId(propSelectedEndpointId);
+  }, [propSelectedEndpointId]);
+
   /**
    * Group endpoints by tag if not provided
    */

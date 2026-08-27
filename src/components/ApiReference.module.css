@@ -12,6 +12,24 @@
   color: var(--ifm-font-color-base);
 }
 
+.externalSelectionNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--ifm-color-primary);
+  background: var(--ifm-color-primary-lightest);
+}
+
+.externalSelectionNotice button {
+  border: 0;
+  background: transparent;
+  color: var(--ifm-color-primary-darkest);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
 /* Search bar */
 .searchBar {
   display: flex;
