@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { buildPreviewTokens, describeSpacing, readableTextColor } from './helpers/themePreview';
+import { validateContrast, suggestColors } from '../utils/contrastValidator';
 
 type ThemePalette = {
   primary: string;
@@ -216,6 +216,53 @@ function saveStoredTheme<T>(key: string, value: T): void {
   window.localStorage.setItem(key, JSON.stringify(value));
 }
 
+function validateThemeContrast(theme: ThemeDefinition, mode: ThemeMode): ContrastWarning[] {
+  const palette = getThemePalette(theme, mode);
+  const warnings: ContrastWarning[] = [];
+
+  // Check text on surface contrast
+  const textSurfaceContrast = validateContrast(palette.text, palette.surface);
+  if (!textSurfaceContrast.isCompliant) {
+    warnings.push({
+      field: 'text-surface',
+      colors: `Text (${palette.text}) on Surface (${palette.surface})`,
+      ratio: textSurfaceContrast.ratio,
+      isCompliant: false,
+    });
+  }
+
+  // Check muted text on surface contrast
+  const mutedSurfaceContrast = validateContrast(palette.muted, palette.surface);
+  if (!mutedSurfaceContrast.isCompliant) {
+    warnings.push({
+      field: 'muted-surface',
+      colors: `Muted (${palette.muted}) on Surface (${palette.surface})`,
+      ratio: mutedSurfaceContrast.ratio,
+      isCompliant: false,
+    });
+  }
+
+  // Check primary text contrast
+  const primaryTextContrast = validateContrast(palette.primary, palette.surface);
+  if (!primaryTextContrast.isCompliant) {
+    warnings.push({
+      field: 'primary-surface',
+      colors: `Primary (${palette.primary}) on Surface (${palette.surface})`,
+      ratio: primaryTextContrast.ratio,
+      isCompliant: false,
+    });
+  }
+
+  return warnings;
+}
+
+interface ContrastWarning {
+  field: string;
+  colors: string;
+  ratio: number;
+  isCompliant: boolean;
+}
+
 export default function ThemeCustomizer(): React.JSX.Element {
   const [previewTheme, setPreviewTheme] = useState<ThemeDefinition>(presetThemes[0]);
   const [appliedTheme, setAppliedTheme] = useState<ThemeDefinition>(presetThemes[0]);
@@ -223,6 +270,7 @@ export default function ThemeCustomizer(): React.JSX.Element {
   const [customTheme, setCustomTheme] = useState<ThemeDefinition>(defaultCustomTheme);
   const [themeMode, setThemeMode] = useState<ThemeMode>('light');
   const [schemeLabel, setSchemeLabel] = useState('Light preview');
+  const [contrastWarnings, setContrastWarnings] = useState<ContrastWarning[]>([]);
 
   useEffect(() => {
     const storedPreference = readStoredTheme<ThemeDefinition>(STORAGE_KEYS.preference);
@@ -246,6 +294,9 @@ export default function ThemeCustomizer(): React.JSX.Element {
 
   useEffect(() => {
     applyThemeToDocument(previewTheme, themeMode);
+    // Validate contrast when theme or mode changes
+    const warnings = validateThemeContrast(previewTheme, themeMode);
+    setContrastWarnings(warnings);
   }, [previewTheme, themeMode]);
 
   const themeVariables = useMemo(() => {
@@ -361,6 +412,12 @@ export default function ThemeCustomizer(): React.JSX.Element {
     const nextMode = themeMode === 'light' ? 'dark' : 'light';
     setThemeMode(nextMode);
     setSchemeLabel(nextMode === 'dark' ? 'Dark preview' : 'Light preview');
+  };
+
+  const getSuggestedTextColor = (): string | null => {
+    const palette = getThemePalette(customTheme, themeMode);
+    const suggestions = suggestColors(palette.text, palette.surface);
+    return suggestions.find((s) => s.isValid)?.color || null;
   };
 
   return (
@@ -650,6 +707,49 @@ export default function ThemeCustomizer(): React.JSX.Element {
               Export JSON
             </button>
           </div>
+
+          {contrastWarnings.length > 0 && (
+            <div className="theme-customizer__warnings">
+              <h4>⚠️ Contrast Issues Detected</h4>
+              <p>
+                The current color combination may not meet WCAG AA accessibility standards. Users with
+                vision deficiencies may struggle to read the text.
+              </p>
+              <ul>
+                {contrastWarnings.map((warning) => {
+                  const suggestedColor = suggestColors(
+                    getThemePalette(customTheme, themeMode)[warning.field.split('-')[0] as keyof ThemePalette],
+                    getThemePalette(customTheme, themeMode)[warning.field.split('-')[1] as keyof ThemePalette]
+                  ).find((s) => s.isValid);
+                  return (
+                    <li key={warning.field}>
+                      <strong>{warning.colors}</strong> — Ratio: {warning.ratio.toFixed(2)}:1 (need 4.5:1)
+                      {suggestedColor && (
+                        <div style={{ marginTop: '8px', fontSize: '0.9em' }}>
+                          <span style={{ display: 'inline-block', marginRight: '8px' }}>Suggestion: </span>
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              width: '24px',
+                              height: '24px',
+                              backgroundColor: suggestedColor.color,
+                              border: '1px solid #ccc',
+                              borderRadius: '4px',
+                              verticalAlign: 'middle',
+                            }}
+                            title={suggestedColor.color}
+                          />
+                          <span style={{ marginLeft: '8px' }}>
+                            {suggestedColor.color} (Ratio: {suggestedColor.ratio.toFixed(2)}:1)
+                          </span>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
         </div>
 
         <div className="theme-customizer__panel">
