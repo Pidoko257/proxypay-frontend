@@ -3,7 +3,7 @@
  * Buttons and UI for exporting analytics reports with filter preservation
  */
 
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { AnalyticsResult } from '../analytics/analytics-engine';
 import { ReportGenerator, ExportOptions } from '../analytics/report-generator';
 
