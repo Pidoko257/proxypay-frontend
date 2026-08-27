@@ -12,6 +12,8 @@ import { parseEndpoints, groupByTag, type OpenAPISpec, type ParsedEndpoint, type
 import { parseDeepLink, toEndpointLink } from '../utils/redocDeepLink';
 import styles from './ApiReference.module.css';
 
+const SELECTED_ENDPOINT_STORAGE_KEY = 'proxypay-selected-api-endpoint';
+
 export interface IntegratedApiReferenceProps {
   specUrl?: string;
   spec?: OpenAPISpec;
@@ -61,6 +63,7 @@ export default function IntegratedApiReference({
   const [loadedSpec, setLoadedSpec] = useState<OpenAPISpec | undefined>(spec);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEndpointId, setSelectedEndpointId] = useState<string | undefined>();
+  const [externalSelectionNotice, setExternalSelectionNotice] = useState<string | null>(null);
   const [expandedTags, setExpandedTags] = useState<Set<string>>(new Set());
   const [comparisonMode, setComparisonMode] = useState(false);
   const [comparisonEndpoint1, setComparisonEndpoint1] = useState<ParsedEndpoint | undefined>();
@@ -89,6 +92,23 @@ export default function IntegratedApiReference({
     return filterEndpointsBySearch(endpoints, searchQuery);
   }, [endpoints, searchQuery]);
 
+  useEffect(() => {
+    const storedEndpoint = localStorage.getItem(SELECTED_ENDPOINT_STORAGE_KEY);
+    if (storedEndpoint) {
+      setSelectedEndpointId(storedEndpoint);
+    }
+
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key !== SELECTED_ENDPOINT_STORAGE_KEY || !event.newValue) return;
+
+      setSelectedEndpointId(event.newValue);
+      setExternalSelectionNotice(`Endpoint selection updated in another tab: ${event.newValue}`);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   /**
    * Handle spec loaded
    */
@@ -116,6 +136,8 @@ export default function IntegratedApiReference({
   const handleEndpointClick = useCallback(
     (endpoint: ParsedEndpoint) => {
       setSelectedEndpointId(endpoint.id);
+      localStorage.setItem(SELECTED_ENDPOINT_STORAGE_KEY, endpoint.id);
+      setExternalSelectionNotice(null);
       if (enableDeepLinking) {
         window.location.hash = toEndpointLink(endpoint.id);
       }
@@ -205,6 +227,14 @@ export default function IntegratedApiReference({
 
   return (
     <div className={styles.container}>
+      {externalSelectionNotice && (
+        <div role="status" className={styles.externalSelectionNotice}>
+          {externalSelectionNotice}
+          <button type="button" onClick={() => setExternalSelectionNotice(null)} aria-label="Dismiss notification">
+            Dismiss
+          </button>
+        </div>
+      )}
       {/* Comparison Modal */}
       {comparisonMode && (
         <div className={styles.comparisonModal}>

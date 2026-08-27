@@ -244,6 +244,62 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+.anomaly-explanations,
+.error-drilldown {
+  margin: 24px 0;
+  padding: 20px;
+  border: 1px solid #f0c36d;
+  border-left: 4px solid #e67e22;
+  border-radius: 8px;
+  background: #fffaf0;
+}
+
+.anomaly-explanations h3,
+.anomaly-explanation h4,
+.error-drilldown h3 {
+  margin-top: 0;
+  color: #7d4e13;
+}
+
+.anomaly-explanation {
+  padding: 12px 0;
+  border-top: 1px solid #f3d9a3;
+}
+
+.anomaly-explanation ul {
+  margin-bottom: 8px;
+}
+
+.error-item-button {
+  width: 100%;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.error-item-button:hover,
+.error-item-button:focus-visible {
+  outline: 2px solid #3498db;
+  outline-offset: 2px;
+}
+
+.error-drilldown-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.error-drilldown-header button {
+  padding: 6px 12px;
+  border: 1px solid #7d4e13;
+  border-radius: 4px;
+  background: white;
+  color: #7d4e13;
+  cursor: pointer;
+}
+
 .tab-content {
   animation: fadeIn 0.3s ease;
 }

@@ -85,6 +85,7 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
 }) => {
   const [selectedTab, setSelectedTab] = useState('overview');
   const [filterText, setFilterText] = useState('');
+  const [selectedError, setSelectedError] = useState<ErrorAnalysis | null>(null);
   const [timezone, setTimezone] = useState(() => {
     // Try to get from localStorage, fallback to detected timezone
     const saved = typeof window !== 'undefined' ? localStorage.getItem('logsTimezone') : null;
@@ -340,7 +341,13 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
           <div className="tab-content errors-tab">
             <div className="errors-list">
               {analytics.topErrors.map((error, idx) => (
-                <div key={error.error} className="error-item">
+                <button
+                  type="button"
+                  key={error.error}
+                  className="error-item error-item-button"
+                  onClick={() => setSelectedError(error)}
+                  aria-label={`View details for ${error.error}`}
+                >
                   <div className="error-rank">{idx + 1}</div>
                   <div className="error-details">
                     <div className="error-message">{error.error}</div>
@@ -369,9 +376,28 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
                       }}
                     />
                   </div>
-                </div>
+                </button>
               ))}
             </div>
+            {selectedError && (
+              <section className="error-drilldown" aria-labelledby="error-drilldown-title">
+                <div className="error-drilldown-header">
+                  <h3 id="error-drilldown-title">Error details: {selectedError.error}</h3>
+                  <button type="button" onClick={() => setSelectedError(null)} aria-label="Close error details">
+                    Close
+                  </button>
+                </div>
+                <p>{selectedError.count} occurrences across {selectedError.endpoints.length} affected endpoints.</p>
+                <div className="affected-endpoints">
+                  <span className="label">Affected endpoints:</span>
+                  {selectedError.endpoints.map(endpoint => <span key={endpoint} className="endpoint-tag">{endpoint}</span>)}
+                </div>
+                <p className="error-occurrences">
+                  Recent occurrence window: {formatDate(selectedError.firstOccurrence)} to {formatDate(selectedError.lastOccurrence)}.
+                </p>
+                <p>Status codes observed: {selectedError.statusCodes.join(', ') || 'Unknown'}.</p>
+              </section>
+            )}
           </div>
         )}
 

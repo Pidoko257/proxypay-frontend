@@ -67,10 +67,22 @@ export default function RedocViewer({
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(!spec);
   const [error, setError] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(() => typeof navigator !== 'undefined' && !navigator.onLine);
   const [loadedSpec, setLoadedSpec] = useState<OpenAPISpec | null>(spec || null);
   const hashChangeUnsubscribeRef = useRef<(() => void) | null>(null);
   const { messages, success, error: showError } = useToast();
   const copyButtonRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   /**
    * Load OpenAPI spec from URL or use provided spec
@@ -90,7 +102,7 @@ export default function RedocViewer({
         setLoading(true);
         setError(null);
 
-        const response = await fetch(specUrl);
+        const response = await fetch(specUrl, { cache: 'no-cache' });
         if (!response.ok) {
           throw new Error(`Failed to load OpenAPI spec: ${response.statusText}`);
         }
@@ -328,6 +340,7 @@ export default function RedocViewer({
     return (
       <div className={styles.container}>
         <div className={styles.loading}>
+          {isOffline && <p role="status">You are offline. Loading the cached API specification.</p>}
           <div className={styles.spinner}></div>
           <p>Loading API specification...</p>
         </div>
@@ -342,6 +355,7 @@ export default function RedocViewer({
     return (
       <div className={styles.container}>
         <div className={styles.error}>
+          {isOffline && <p role="status">You are offline. The API specification could not be loaded from cache.</p>}
           <h3>Failed to Load API Reference</h3>
           <p>{error}</p>
           <p className={styles.errorHint}>
