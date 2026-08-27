@@ -9,6 +9,9 @@
     "build": "docusaurus build",
     "serve": "docusaurus serve",
     "deploy": "docusaurus deploy",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "load-test": "ts-node src/load-test.ts",
     "load-test:smoke": "ts-node src/load-test.ts --profile smoke-test",
     "load-test:normal": "ts-node src/load-test.ts --profile normal-load",
@@ -21,26 +24,30 @@
     "load-test:scenario:rate-limit": "ts-node src/load-test.ts --scenarios rate-limit-flow",
     "load-test:scenario:docs": "ts-node src/load-test.ts --scenarios documentation-flow",
     "load-test:scenario:rampup": "ts-node src/load-test.ts --scenarios ramp-up-analysis",
-    "load-test:list": "ts-node src/load-test.ts --list-profiles"
+    "load-test:list": "ts-node src/load-test.ts --list-profiles",
+    "test": "npm run test:history && npm run test:component",
+    "test:history": "ts-node src/hooks/__tests__/useRequestHistory.test.ts",
+    "test:component": "ts-node src/components/__tests__/RequestHistory.test.ts"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.0.0",
     "axios": "^1.7.7",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.4.12",
     "ts-node": "^10.9.0",
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "js-yaml": "^4.1.0",
     "@docusaurus/core": "3.9.2",
     "@docusaurus/preset-classic": "3.9.2",
     "@mdx-js/react": "^3.1.1",
     "clsx": "^2.1.1",
+    "js-yaml": "^4.1.0",
     "prism-react-renderer": "^2.4.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "redoc": "^2.5.1",
-    "js-yaml": "^4.1.0"
+    "redoc": "^2.5.1"
   }
 }
-

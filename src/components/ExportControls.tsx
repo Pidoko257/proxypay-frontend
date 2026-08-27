@@ -1,65 +1,76 @@
 /**
  * Export Controls Component
- * Buttons and UI for exporting analytics reports
+ * Buttons and UI for exporting analytics reports with filter preservation
  */
 
 import React, { useMemo, useState } from 'react';
 import { AnalyticsResult } from '../analytics/analytics-engine';
-import { ReportGenerator } from '../analytics/report-generator';
-import {
-  ExportFormat,
-  resolveFilename,
-  sanitizeFilename,
-  suggestedFilename,
-} from './exportFilename';
+import { ReportGenerator, ExportOptions } from '../analytics/report-generator';
+
+export interface FilterState {
+  startDate: string;
+  endDate: string;
+  endpoint: string;
+  method: string;
+  statusCode: string;
+  minResponseTime: number;
+  maxResponseTime: number;
+}
 
 interface ExportControlsProps {
   analytics: AnalyticsResult;
+  filters?: FilterState;
+  onExportStart?: () => void;
+  onExportComplete?: () => void;
 }
 
-export const ExportControls: React.FC<ExportControlsProps> = ({ analytics }) => {
-  // #362: let the user customise the filename before download ("Save As").
-  const defaultName = useMemo(() => suggestedFilename(), []);
-  const [filename, setFilename] = useState<string>(defaultName);
+export const ExportControls: React.FC<ExportControlsProps> = ({ 
+  analytics, 
+  filters,
+  onExportStart,
+  onExportComplete 
+}) => {
+  const handleExport = (format: 'json' | 'csv') => {
+    onExportStart?.();
+    
+    try {
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const options: ExportOptions = {
+        format,
+        filename: `logs-analytics-${timestamp}.${getExtension(format)}`,
+        filters,
+      };
+      
+      ReportGenerator.exportReport(analytics, options);
+    } finally {
+      onExportComplete?.();
+    }
+  };
 
-  const handleExport = (format: ExportFormat) => {
-    ReportGenerator.exportReport(analytics, {
-      format,
-      filename: resolveFilename(filename, format),
-    });
+  const getExtension = (format: string): string => {
+    switch (format) {
+      case 'json': return 'json';
+      case 'csv': return 'csv';
+      default: return 'txt';
+    }
   };
 
   return (
     <div className="export-controls">
-      <label className="export-filename">
-        <span className="export-label">Save As:</span>
-        <input
-          type="text"
-          className="export-filename-input"
-          value={filename}
-          onChange={(e) => setFilename(e.target.value)}
-          onBlur={() => {
-            if (!sanitizeFilename(filename)) setFilename(defaultName);
-          }}
-          placeholder={defaultName}
-          aria-label="Export filename"
-          spellCheck={false}
-        />
-        <span className="export-filename-hint">{resolveFilename(filename, 'csv')}</span>
-      </label>
-
-      <span className="export-label">Export Report:</span>
-      <button className="export-btn json-btn" onClick={() => handleExport('json')} title="Download as JSON">
+      <span className="export-label">📥 Export Report:</span>
+      <button 
+        className="export-btn json-btn" 
+        onClick={() => handleExport('json')} 
+        title="Download as JSON with all data and metadata"
+      >
         📋 JSON
       </button>
-      <button className="export-btn csv-btn" onClick={() => handleExport('csv')} title="Download as CSV">
+      <button 
+        className="export-btn csv-btn" 
+        onClick={() => handleExport('csv')} 
+        title="Download as CSV (spreadsheet format)"
+      >
         📊 CSV
-      </button>
-      <button className="export-btn html-btn" onClick={() => handleExport('html')} title="Download as HTML">
-        🌐 HTML
-      </button>
-      <button className="export-btn md-btn" onClick={() => handleExport('markdown')} title="Download as Markdown">
-        📝 Markdown
       </button>
     </div>
   );
