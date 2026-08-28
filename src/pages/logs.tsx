@@ -8,6 +8,7 @@ import { AdvancedLogsDashboard } from '../components/AdvancedLogsDashboard';
 import { SampleLogGenerator } from '../analytics/sample-logs';
 import { LogAnalyticsEngine } from '../analytics/analytics-engine';
 import { ParsedLogEntry } from '../analytics/log-parser';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 
 export default function LogsPage() {
   const [logs, setLogs] = useState<ParsedLogEntry[]>([]);
@@ -28,8 +29,8 @@ export default function LogsPage() {
 
   if (loading) {
     return (
-      <div style={{ padding: '40px', textAlign: 'center' }}>
-        <h2>Loading Analytics...</h2>
+      <div style={{ padding: '40px' }}>
+        <LoadingSkeleton className="proxypay-skeleton-grid" />
       </div>
     );
   }
