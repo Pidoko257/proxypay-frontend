@@ -224,6 +224,7 @@ export default function MetricsPanel(): React.JSX.Element {
   const [filterBadge, setFilterBadge] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [toast, setToast] = useState('');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
     const saved = loadMetrics();
@@ -276,6 +277,14 @@ export default function MetricsPanel(): React.JSX.Element {
     setTimeout(() => setToast(''), 1500);
   }, []);
 
+  const handleSort = (key: typeof sortBy) => {
+    if (sortBy === key) setSortDirection((direction) => direction === 'asc' ? 'desc' : 'asc');
+    else {
+      setSortBy(key);
+      setSortDirection('desc');
+    }
+  };
+
   const filteredAndSorted = useMemo(() => {
     let filtered = [...metrics];
 
@@ -310,8 +319,8 @@ export default function MetricsPanel(): React.JSX.Element {
         break;
     }
 
-    return filtered;
-  }, [metrics, searchQuery, filterCategory, filterBadge, sortBy]);
+    return sortDirection === 'asc' ? filtered.reverse() : filtered;
+  }, [metrics, searchQuery, filterCategory, filterBadge, sortBy, sortDirection]);
 
   const totalCalls = metrics.reduce((sum, m) => sum + m.callsPerDay, 0);
   const trendingCount = metrics.filter((m) => m.badge === 'trending').length;
@@ -393,9 +402,11 @@ export default function MetricsPanel(): React.JSX.Element {
             <button
               key={opt.key}
               className={`metrics-sort-btn ${sortBy === opt.key ? 'active' : ''}`}
-              onClick={() => setSortBy(opt.key)}
+              onClick={() => handleSort(opt.key)}
+              aria-label={`Sort by ${opt.label}`}
+              aria-pressed={sortBy === opt.key}
             >
-              {opt.label}
+              {opt.label} {sortBy === opt.key ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
             </button>
           ))}
           <button className="mock-btn mock-btn-ghost mock-btn-sm" onClick={refreshData} title="Refresh data">

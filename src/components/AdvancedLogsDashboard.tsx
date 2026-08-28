@@ -7,21 +7,12 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { AnalyticsResult, EndpointMetrics } from '../analytics/analytics-engine';
 import { LogAnalyticsEngine } from '../analytics/analytics-engine';
 import { ParsedLogEntry } from '../analytics/log-parser';
+import { ExportControls, FilterState } from './ExportControls';
 import '../css/logs-dashboard.css';
 
 interface AdvancedDashboardProps {
   logs: ParsedLogEntry[];
   initialAnalytics?: AnalyticsResult;
-}
-
-interface FilterState {
-  startDate: string;
-  endDate: string;
-  endpoint: string;
-  method: string;
-  statusCode: string;
-  minResponseTime: number;
-  maxResponseTime: number;
 }
 
 export const AdvancedLogsDashboard: React.FC<AdvancedDashboardProps> = ({ logs, initialAnalytics }) => {
@@ -158,6 +149,11 @@ export const AdvancedLogsDashboard: React.FC<AdvancedDashboardProps> = ({ logs, 
             <span className="value">{formatNumber(analytics.avgResponseTime)}ms</span>
           </div>
         </div>
+      </div>
+
+      {/* Export Controls */}
+      <div className="export-section">
+        {analytics && <ExportControls analytics={analytics} filters={filters} />}
       </div>
 
       {/* Filter Bar */}

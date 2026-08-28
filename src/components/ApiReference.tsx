@@ -19,6 +19,16 @@ interface Endpoint {
   requestBody?: RequestBodySpec;
   responses?: Record<string, ResponseSpec>;
   tags?: string[];
+  status: EndpointStatus;
+}
+
+export type EndpointStatus = 'new' | 'deprecated' | 'experimental' | 'stable';
+
+export function getEndpointStatus(operation: Record<string, unknown>): EndpointStatus {
+  if (operation.deprecated === true) return 'deprecated';
+  if (operation['x-experimental'] === true || operation['x-status'] === 'experimental') return 'experimental';
+  if (operation['x-status'] === 'new' || operation['x-new'] === true) return 'new';
+  return 'stable';
 }
 
 interface Parameter {
@@ -90,6 +100,7 @@ function extractEndpoints(spec: Record<string, unknown>): Endpoint[] {
         requestBody: op.requestBody as RequestBodySpec | undefined,
         responses: op.responses as Record<string, ResponseSpec> | undefined,
         tags: op.tags as string[] | undefined,
+        status: getEndpointStatus(op),
       });
     }
   }
@@ -228,6 +239,19 @@ function MethodBadge({ method }: { method: string }) {
     >
       {method.toUpperCase()}
     </span>
+  );
+}
+
+function StatusBadge({ status }: { status: EndpointStatus }) {
+  return (
+    <a
+      href="/api"
+      className={`api-endpoint-status api-endpoint-status-${status}`}
+      title="Learn about endpoint status"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {status}
+    </a>
   );
 }
 
@@ -419,6 +443,7 @@ function EndpointDetail({
     >
       <div className="api-endpoint-detail-header">
         <MethodBadge method={endpoint.method} />
+        <StatusBadge status={endpoint.status} />
         <code className="api-endpoint-path">{endpoint.path}</code>
         <div className="api-endpoint-nav">
           <button onClick={onPrev} disabled={!hasPrev} aria-label="Previous endpoint">
@@ -633,6 +658,7 @@ export default function ApiReference(): React.JSX.Element {
                 onClick={() => selectEndpoint(ep)}
               >
                 <MethodBadge method={ep.method} />
+                <StatusBadge status={ep.status} />
                 <span className="api-endpoint-item-path">{ep.path}</span>
               </button>
             ))

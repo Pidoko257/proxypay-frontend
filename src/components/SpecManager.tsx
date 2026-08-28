@@ -168,7 +168,7 @@ function downloadSpec(content: string, filename: string): void {
 export default function SpecManager(): React.JSX.Element {
   const [versions, setVersions] = useState<SpecVersion[]>([]);
   const [currentSpec, setCurrentSpec] = useState<SpecVersion | null>(null);
-  const [activeView, setActiveView] = useState<'import' | 'versions' | 'preview' | 'merge'>('import');
+  const [activeView, setActiveView] = useState<'import' | 'versions' | 'preview' | 'merge' | 'conflicts'>('import');
   const [toast, setToast] = useState('');
 
   // Import state
@@ -194,6 +194,11 @@ export default function SpecManager(): React.JSX.Element {
 
   // Validation
   const [validationResult, setValidationResult] = useState<{ valid: boolean; errors: string[] } | null>(null);
+
+  // Conflict resolution state
+  const [conflictResolutionMode, setConflictResolutionMode] = useState(false);
+  const [conflictingVersions, setConflictingVersions] = useState<SpecVersion[]>([]);
+  const [selectedConflictVersion, setSelectedConflictVersion] = useState<string | null>(null);
 
   useEffect(() => {
     const v = loadVersions();
@@ -367,6 +372,47 @@ export default function SpecManager(): React.JSX.Element {
 
   const previewVersion = versions.find((v) => v.id === previewVersionId);
 
+  const detectVersionConflicts = useCallback(() => {
+    // Check for duplicate or conflicting versions
+    const conflicts: SpecVersion[] = [];
+    const seenPaths = new Set<string>();
+
+    for (const version of versions) {
+      const key = `${version.label}-${version.source}`;
+      if (seenPaths.has(key)) {
+        conflicts.push(version);
+      }
+      seenPaths.add(key);
+    }
+
+    if (conflicts.length > 0) {
+      setConflictingVersions(conflicts);
+      setConflictResolutionMode(true);
+    }
+  }, [versions]);
+
+  const resolveConflict = useCallback(
+    (keepVersionId: string) => {
+      const kept = versions.find((v) => v.id === keepVersionId);
+      if (!kept) return;
+
+      // Remove all versions with the same label/source except the one we're keeping
+      const kept_key = `${kept.label}-${kept.source}`;
+      const updated = versions.filter((v) => {
+        const v_key = `${v.label}-${v.source}`;
+        return v_key !== kept_key || v.id === keepVersionId;
+      });
+
+      setVersions(updated);
+      saveVersions(updated);
+      setConflictResolutionMode(false);
+      setConflictingVersions([]);
+      setSelectedConflictVersion(null);
+      showToast('Conflicts resolved!');
+    },
+    [versions, showToast]
+  );
+
   return (
     <div className="spec-manager">
       <div className="spec-manager-header">
@@ -391,6 +437,11 @@ export default function SpecManager(): React.JSX.Element {
         <button className={`mock-tab ${activeView === 'preview' ? 'active' : ''}`} onClick={() => setActiveView('preview')}>
           👁️ Preview
         </button>
+        {conflictingVersions.length > 0 && (
+          <button className={`mock-tab ${activeView === 'conflicts' ? 'active' : ''}`} onClick={() => setActiveView('conflicts')}>
+            ⚠️ Conflicts ({conflictingVersions.length})
+          </button>
+        )}
       </div>
 
       {activeView === 'import' && (
@@ -593,6 +644,47 @@ export default function SpecManager(): React.JSX.Element {
               <pre className="mock-preview-code"><code>{previewVersion.spec}</code></pre>
             </div>
           )}
+        </div>
+      )}
+
+      {activeView === 'conflicts' && (
+        <div className="spec-conflicts-view">
+          <h3>⚠️ Version Conflicts</h3>
+          <p className="spec-hint">
+            Multiple versions with the same label or source have been detected. Select which version to keep.
+          </p>
+          {conflictingVersions.length === 0 ? (
+            <div className="mock-empty"><p>No conflicts detected.</p></div>
+          ) : (
+            <div className="spec-conflict-list">
+              {conflictingVersions.map((v) => (
+                <div key={v.id} className={`spec-conflict-card ${selectedConflictVersion === v.id ? 'selected' : ''}`}>
+                  <div className="spec-conflict-info">
+                    <input
+                      type="radio"
+                      name="conflict-resolution"
+                      value={v.id}
+                      checked={selectedConflictVersion === v.id}
+                      onChange={(e) => setSelectedConflictVersion(e.target.value)}
+                    />
+                    <div>
+                      <strong>{v.label}</strong>
+                      <span className="spec-version-meta">
+                        {new Date(v.timestamp).toLocaleString()} • {v.source} • {(v.size / 1024).toFixed(1)} KB
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <button
+            className="mock-btn mock-btn-primary"
+            onClick={() => selectedConflictVersion && resolveConflict(selectedConflictVersion)}
+            disabled={!selectedConflictVersion}
+          >
+            ✅ Keep Selected Version
+          </button>
         </div>
       )}
 

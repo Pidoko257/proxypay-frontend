@@ -1,6 +1,7 @@
 /**
  * Redoc Viewer Component
- * Renders OpenAPI specification using Redoc with deep-linking support
+ * Renders OpenAPI specification using Redoc with deep-linking support and copy link functionality
+ * Includes cache-busting support via version query parameters
  */
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
@@ -12,6 +13,16 @@ import {
   scrollIntoView,
   onHashChange,
 } from '../utils/redocDeepLink';
+import { getSpecUrlWithCacheBusting, checkSpecVersion, updateVersionTracking } from '../utils/specVersionManager';
+import { useToast } from './Toast';
+import Toast from './Toast';
+import { loadRedoc } from '../utils/redocLoader';
+import {
+  buildRedocTheme,
+  readRedocThemeColors,
+  redocThemeColorsEqual,
+  type RedocThemeColors,
+} from '../utils/redocTheme';
 import styles from './RedocViewer.module.css';
 
 /**
@@ -42,6 +53,7 @@ export interface RedocViewerProps {
   onSpecLoaded?: (spec: OpenAPISpec) => void;
   onError?: (error: Error) => void;
   onDeepLinkNavigate?: (elementId: string) => void;
+  enableAnchorCopy?: boolean;
 }
 
 /**
@@ -59,23 +71,28 @@ export default function RedocViewer({
   onSpecLoaded,
   onError,
   onDeepLinkNavigate,
+  enableAnchorCopy = true,
 }: RedocViewerProps): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(!spec);
   const [error, setError] = useState<string | null>(null);
   const [loadedSpec, setLoadedSpec] = useState<OpenAPISpec | null>(spec || null);
   const hashChangeUnsubscribeRef = useRef<(() => void) | null>(null);
+  const { messages, success, error: showError } = useToast();
+  const copyButtonRef = useRef<HTMLDivElement>(null);
+  // Fix #356: remember the colours Redoc was last initialised with so a theme
+  // change can be detected and the viewer re-initialised.
+  const lastThemeColorsRef = useRef<RedocThemeColors | null>(null);
 
   /**
    * Load OpenAPI spec from URL or use provided spec
+   * Includes cache-busting query parameter based on spec version
    */
   useEffect(() => {
     if (spec) {
       setLoadedSpec(spec);
       setLoading(false);
-      if (onSpecLoaded) {
-        onSpecLoaded(spec);
-      }
+      onSpecLoaded?.(spec);
       return;
     }
 
@@ -84,32 +101,41 @@ export default function RedocViewer({
         setLoading(true);
         setError(null);
 
-        const response = await fetch(specUrl);
+        // Add cache-busting query parameter to spec URL
+        const cacheBustedUrl = getSpecUrlWithCacheBusting(specUrl);
+
+        const response = await fetch(cacheBustedUrl);
         if (!response.ok) {
           throw new Error(`Failed to load OpenAPI spec: ${response.statusText}`);
         }
 
         let specData: OpenAPISpec;
+        let specContent: string;
 
         // Handle both JSON and YAML
         const contentType = response.headers.get('content-type') || '';
         if (contentType.includes('yaml')) {
-          const yamlText = await response.text();
-          specData = jsYaml.load(yamlText) as OpenAPISpec;
+          specContent = await response.text();
+          specData = jsYaml.load(specContent) as OpenAPISpec;
         } else {
-          specData = await response.json();
+          specContent = await response.text();
+          specData = JSON.parse(specContent);
+        }
+
+        // Update version tracking after successful load
+        try {
+          updateVersionTracking(specContent);
+        } catch (err) {
+          console.warn('Failed to update version tracking:', err);
+          // Don't fail the spec load if version tracking fails
         }
 
         setLoadedSpec(specData);
-        if (onSpecLoaded) {
-          onSpecLoaded(specData);
-        }
+        onSpecLoaded?.(specData);
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
         setError(error.message);
-        if (onError) {
-          onError(error);
-        }
+        onError?.(error);
         console.error('Failed to load OpenAPI spec:', error);
       } finally {
         setLoading(false);
@@ -139,7 +165,7 @@ export default function RedocViewer({
           const el = container.querySelector(selector) as HTMLElement | null;
           if (el) {
             scrollIntoView(el);
-            if (onDeepLinkNavigate) onDeepLinkNavigate(elementId);
+            onDeepLinkNavigate?.(elementId);
             return true;
           }
         } catch {
@@ -169,14 +195,30 @@ export default function RedocViewer({
       const anchor = document.getElementById(elementId) || document.getElementById(slugId);
       if (anchor) {
         scrollIntoView(anchor);
-        if (onDeepLinkNavigate) onDeepLinkNavigate(elementId);
+        onDeepLinkNavigate?.(elementId);
       }
     },
     [enableDeepLinking, onDeepLinkNavigate],
   );
 
   /**
-   * Set up hash change listener for deep-linking
+   * Copy current anchor link to clipboard
+   */
+  const copyAnchorLink = useCallback(async () => {
+    if (!enableAnchorCopy) return;
+
+    try {
+      const url = window.location.href;
+      await navigator.clipboard.writeText(url);
+      success('Link copied to clipboard!', 2000);
+    } catch (err) {
+      showError('Failed to copy link', 2000);
+      console.error('Failed to copy anchor link:', err);
+    }
+  }, [enableAnchorCopy, success, showError]);
+
+  /**
+   * Set up hash change listener for deep-linking and copy button
    */
   useEffect(() => {
     if (!enableDeepLinking || !loadedSpec) return;
@@ -204,50 +246,26 @@ export default function RedocViewer({
   }, [enableDeepLinking, loadedSpec, handleDeepLink]);
 
   /**
-   * Render Redoc when spec is loaded
+   * Render Redoc instance.
+   *
+   * Fix #218: Redoc's theme engine does not resolve CSS custom properties — it
+   * consumes the raw string.  The computed `--ifm-*` values are read at
+   * init-time so actual hex colours are passed.
+   * Fix #356: the container is cleared first so this can also run as a
+   * re-initialisation when the site theme changes.
    */
-  useEffect(() => {
-    if (!loadedSpec || !containerRef.current) return;
-
-    // Check if Redoc is available
-    if (typeof (window as any).Redoc === 'undefined') {
-      // Load Redoc from CDN if not already loaded
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js';
-      script.onload = () => {
-        renderRedoc();
-      };
-      script.onerror = () => {
-        setError('Failed to load Redoc library from CDN');
-      };
-      document.head.appendChild(script);
-      return;
-    }
-
-    renderRedoc();
-  }, [loadedSpec]);
-
-  /**
-   * Render Redoc instance
-   */
-  const renderRedoc = () => {
+  const renderRedoc = useCallback(() => {
     if (!containerRef.current || !loadedSpec) return;
 
     const RedocStandalone = (window as any).Redoc;
+    if (!RedocStandalone) return;
 
     try {
-      // Fix #218: Redoc's theme engine does not resolve CSS custom
-      // properties — it consumes the raw string.  Read the computed value
-      // from the document at init-time so actual hex colours are passed.
-      const rootStyle = window.getComputedStyle(document.documentElement);
-      const primaryColor =
-        rootStyle.getPropertyValue('--ifm-color-primary').trim() || '#2e8555';
-      const bgColor =
-        rootStyle.getPropertyValue('--ifm-background-color').trim() || '#ffffff';
-      const surfaceColor =
-        rootStyle.getPropertyValue('--ifm-background-surface-color').trim() || '#f5f6f7';
-      const textColor =
-        rootStyle.getPropertyValue('--ifm-font-color-base').trim() || '#1c1e21';
+      const themeColors = readRedocThemeColors(window);
+      lastThemeColorsRef.current = themeColors;
+
+      // Remove any previously rendered instance before (re)initialising.
+      containerRef.current.innerHTML = '';
 
       RedocStandalone.init(
         loadedSpec,
@@ -259,29 +277,7 @@ export default function RedocViewer({
           nativeScrollbars: true,
           untrustedSpec: false,
           suppressWarnings: true,
-          theme: {
-            rightPanel: {
-              backgroundColor: surfaceColor || '#f5f6f7',
-            },
-            colors: {
-              primary: {
-                main: primaryColor,
-              },
-              error: {
-                main: '#f93e3e',
-              },
-              text: {
-                primary: textColor,
-              },
-              background: bgColor,
-            },
-            sidebar: {
-              activeTextColor: primaryColor,
-            },
-            typography: {
-              fontFamily: 'inherit',
-            },
-          },
+          theme: buildRedocTheme(themeColors),
         },
         containerRef.current,
       );
@@ -297,7 +293,78 @@ export default function RedocViewer({
       console.error('Failed to initialize Redoc:', err);
       setError('Failed to initialize API reference viewer');
     }
-  };
+  }, [
+    loadedSpec,
+    hideHostname,
+    disableSidebar,
+    expandTagsByDefault,
+    enableDeepLinking,
+    handleDeepLink,
+  ]);
+
+  /**
+   * Load the Redoc bundle (deduplicated, singleton) and render once the spec
+   * is available.  Fix #355: waiting on the shared loader promise guarantees
+   * `window.Redoc` is fully parsed before `init()` runs, even if several
+   * viewers mount at once or the CDN is slow.
+   */
+  useEffect(() => {
+    if (!loadedSpec || !containerRef.current) return;
+
+    let cancelled = false;
+    loadRedoc()
+      .then(() => {
+        if (!cancelled) renderRedoc();
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Failed to load Redoc library from CDN',
+        );
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loadedSpec, renderRedoc]);
+
+  /**
+   * Fix #356: re-initialise Redoc when the site theme changes so its colours
+   * follow the active theme instead of being frozen at first render.  Watches
+   * both the Docusaurus `data-theme` / `class` attributes on <html> and the OS
+   * `prefers-color-scheme` setting.
+   */
+  useEffect(() => {
+    if (!loadedSpec || typeof window === 'undefined') return;
+
+    const maybeReinit = () => {
+      if (!(window as any).Redoc) return;
+      const next = readRedocThemeColors(window);
+      if (
+        lastThemeColorsRef.current &&
+        redocThemeColorsEqual(next, lastThemeColorsRef.current)
+      ) {
+        return;
+      }
+      renderRedoc();
+    };
+
+    const observer = new MutationObserver(maybeReinit);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'data-theme'],
+    });
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    mediaQuery.addEventListener?.('change', maybeReinit);
+
+    return () => {
+      observer.disconnect();
+      mediaQuery.removeEventListener?.('change', maybeReinit);
+    };
+  }, [loadedSpec, renderRedoc]);
 
   /**
    * Handle loading state
@@ -335,6 +402,20 @@ export default function RedocViewer({
    */
   return (
     <div className={styles.redocContainer}>
+      <Toast messages={messages} />
+      {enableAnchorCopy && window.location.hash && (
+        <div className={styles.copyButtonContainer} ref={copyButtonRef}>
+          <button
+            className={styles.copyButton}
+            onClick={copyAnchorLink}
+            title="Copy anchor link to clipboard"
+            aria-label="Copy anchor link"
+          >
+            <span className={styles.copyIcon}>🔗</span>
+            <span className={styles.copyText}>Copy Link</span>
+          </button>
+        </div>
+      )}
       <div ref={containerRef} className={styles.redoc} />
     </div>
   );

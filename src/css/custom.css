@@ -1281,6 +1281,41 @@ a[target='_blank']::after {
   text-decoration: underline;
 }
 
+.rate-limit-forecast-section {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 8px;
+  background: var(--ifm-background-surface-primary);
+}
+
+.rate-limit-forecast-section h3 {
+  margin: 0 0 0.5rem;
+}
+
+.rate-limit-forecast-summary {
+  margin: 0 0 0.75rem;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.api-endpoint-status {
+  display: inline-block;
+  margin-right: 0.5rem;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.api-endpoint-status-new { color: #176b3a; background: #e6f6ed; }
+.api-endpoint-status-deprecated { color: #a33a22; background: #fff0eb; }
+.api-endpoint-status-experimental { color: #805b00; background: #fff7d6; }
+.api-endpoint-status-stable { color: #315f91; background: #edf5ff; }
+
 /* ── Responsive ────────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
@@ -3223,4 +3258,84 @@ body {
   /* Prevent invisible text during web-font loading (production builds
      tend to hit this more than dev due to CDN round-trips). */
   font-display: swap; /* non-standard on body, but harmless; actual fix is on @font-face */
+}
+
+
+/* ============================================================
+   Contrast Validation Warnings (Theme Customizer)
+   ============================================================ */
+
+.theme-customizer__warnings {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: #fef3c7;
+  border: 2px solid #f59e0b;
+  border-radius: 8px;
+  color: #92400e;
+}
+
+[data-theme='dark'] .theme-customizer__warnings {
+  background-color: #78350f;
+  border-color: #f59e0b;
+  color: #fef3c7;
+}
+
+.theme-customizer__warnings h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.theme-customizer__warnings p {
+  margin: 0 0 1rem 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.theme-customizer__warnings ul {
+  margin: 0;
+  padding-left: 1.5rem;
+  list-style-type: none;
+  counter-reset: warning-counter;
+}
+
+.theme-customizer__warnings li {
+  margin-bottom: 1rem;
+  counter-increment: warning-counter;
+  list-style: none;
+}
+
+.theme-customizer__warnings li::before {
+  content: counter(warning-counter, decimal) '. ';
+  font-weight: 600;
+  margin-right: 0.25rem;
+}
+
+.theme-customizer__warnings strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.theme-customizer__warnings li > div {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+[data-theme='dark'] .theme-customizer__warnings li > div {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.theme-customizer__warnings li > div span:first-child {
+  white-space: nowrap;
+  margin-right: 0.5rem;
+}
+
+.theme-customizer__warnings li > div [style*='inline-block'] {
+  margin: 0 0.25rem;
 }

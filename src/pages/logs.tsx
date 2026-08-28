@@ -5,7 +5,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { AdvancedLogsDashboard } from '../components/AdvancedLogsDashboard';
-import { ExportControls } from '../components/ExportControls';
 import { SampleLogGenerator } from '../analytics/sample-logs';
 import { LogAnalyticsEngine } from '../analytics/analytics-engine';
 import { ParsedLogEntry } from '../analytics/log-parser';
@@ -37,10 +36,6 @@ export default function LogsPage() {
 
   return (
     <div>
-      <div style={{ padding: '20px', background: 'white', marginBottom: '20px', borderRadius: '8px' }}>
-        {analytics && <ExportControls analytics={analytics} />}
-      </div>
-
       {analytics && <AdvancedLogsDashboard logs={logs} initialAnalytics={analytics} />}
     </div>
   );
