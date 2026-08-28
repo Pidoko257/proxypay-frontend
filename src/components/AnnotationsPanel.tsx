@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { sanitizeAnnotationText } from '../utils/sanitize';
+import { pathField, requiredField } from '../utils/formValidation';
 
 interface Annotation {
   id: string;
@@ -103,6 +104,10 @@ export default function AnnotationsPanel(): React.JSX.Element {
   const [endpointMethod, setEndpointMethod] = useState('GET');
   const [annotationText, setAnnotationText] = useState('');
   const [annotationType, setAnnotationType] = useState<'tip' | 'gotcha' | 'note' | 'example'>('tip');
+  const annotationErrors = {
+    path: pathField(endpointPath),
+    text: requiredField(annotationText, 'Annotation text'),
+  };
 
   // Browse filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -515,7 +520,9 @@ export default function AnnotationsPanel(): React.JSX.Element {
                     onChange={(e) => setEndpointPath(e.target.value)}
                     placeholder="/api/v1/users"
                     className="mock-input"
+                    aria-invalid={!!annotationErrors.path}
                   />
+                  {annotationErrors.path && <div className="form-error">{annotationErrors.path}</div>}
                 </div>
                 <div className="mock-field">
                   <label>HTTP Method</label>
@@ -563,12 +570,14 @@ export default function AnnotationsPanel(): React.JSX.Element {
                   rows={4}
                   placeholder="Share a tip, gotcha, note, or example about this endpoint..."
                   className="mock-textarea"
+                  aria-invalid={!!annotationErrors.text}
                 />
+                {annotationErrors.text && <div className="form-error">{annotationErrors.text}</div>}
                 <datalist id="annotation-mention-suggestions">
                   {mentionSuggestions.map((user) => <option key={user} value={`@${user}`} />)}
                 </datalist>
               </div>
-              <button className="mock-btn mock-btn-primary" onClick={handleAddAnnotation}>
+              <button className="mock-btn mock-btn-primary" onClick={handleAddAnnotation} disabled={Object.values(annotationErrors).some(Boolean)}>
                 💬 Add Annotation
               </button>
             </div>

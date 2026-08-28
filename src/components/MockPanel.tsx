@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRequestHistory } from '../hooks/useRequestHistory';
 import { RequestHistory } from './RequestHistory';
+import { jsonField, pathField, requiredField } from '../utils/formValidation';
 
 interface MockConfig {
   id: string;
@@ -172,6 +173,15 @@ export default function MockPanel(): React.JSX.Element {
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [copyFeedback, setCopyFeedback] = useState('');
 
+  const formErrors = {
+    name: requiredField(name, 'Configuration name'),
+    path: pathField(path),
+    headers: jsonField(headers, 'Response headers'),
+    body: jsonField(body, 'Response body'),
+    errorBody: simulateError ? jsonField(errorBody, 'Error response body') : '',
+  };
+  const formIsValid = Object.values(formErrors).every((error) => !error);
+
   useEffect(() => {
     setConfigs(loadConfigs());
   }, []);
@@ -337,7 +347,9 @@ export default function MockPanel(): React.JSX.Element {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g., Get Users Success"
                 className="mock-input"
+                aria-invalid={!!formErrors.name}
               />
+              {formErrors.name && <div className="form-error">{formErrors.name}</div>}
             </div>
             <div className="mock-field">
               <label>Endpoint Path</label>
@@ -347,7 +359,9 @@ export default function MockPanel(): React.JSX.Element {
                 onChange={(e) => setPath(e.target.value)}
                 placeholder="/api/v1/users"
                 className="mock-input"
+                aria-invalid={!!formErrors.path}
               />
+              {formErrors.path && <div className="form-error">{formErrors.path}</div>}
             </div>
           </div>
 
@@ -393,7 +407,9 @@ export default function MockPanel(): React.JSX.Element {
               rows={3}
               className="mock-textarea mock-code"
               placeholder='{"Content-Type":"application/json"}'
+              aria-invalid={!!formErrors.headers}
             />
+            {formErrors.headers && <div className="form-error">{formErrors.headers}</div>}
           </div>
 
           <div className="mock-field">
@@ -407,7 +423,9 @@ export default function MockPanel(): React.JSX.Element {
               rows={8}
               className="mock-textarea mock-code"
               placeholder='{"success":true}'
+              aria-invalid={!!formErrors.body}
             />
+            {formErrors.body && <div className="form-error">{formErrors.body}</div>}
           </div>
 
           <div className="mock-template-bar">
@@ -435,12 +453,14 @@ export default function MockPanel(): React.JSX.Element {
                 rows={4}
                 className="mock-textarea mock-code mock-error-textarea"
                 placeholder="Error response body"
+                aria-invalid={!!formErrors.errorBody}
               />
             )}
+            {formErrors.errorBody && <div className="form-error">{formErrors.errorBody}</div>}
           </div>
 
           <div className="mock-actions">
-            <button className="mock-btn mock-btn-primary" onClick={saveConfig}>
+            <button className="mock-btn mock-btn-primary" onClick={saveConfig} disabled={!formIsValid}>
               💾 {selectedConfigId ? 'Update' : 'Save'} Configuration
             </button>
             <button className="mock-btn mock-btn-secondary" onClick={generatePreview}>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import LoadingSkeleton from './LoadingSkeleton';
 
 interface EndpointMetric {
   id: string;
@@ -20,6 +21,11 @@ interface FavoriteData {
 
 const METRICS_KEY = 'proxypay-metrics-data';
 const FAVORITES_KEY = 'proxypay-favorites';
+const SORT_KEY = 'proxypay-metrics-sort';
+
+export type SortCriterion = 'calls' | 'name' | 'trend' | 'recent';
+type SortDirection = 'asc' | 'desc';
+interface SortRule { key: SortCriterion; direction: SortDirection }
 
 // Simulated initial metrics data
 function getDefaultMetrics(): EndpointMetric[] {
@@ -197,6 +203,18 @@ function saveFavorites(favorites: FavoriteData[]): void {
   localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
 }
 
+export function sortMetrics(metrics: EndpointMetric[], rules: SortRule[]): EndpointMetric[] {
+  return [...metrics].sort((a, b) => {
+    for (const rule of rules) {
+      const left = rule.key === 'calls' ? a.callsPerDay : rule.key === 'trend' ? a.trend : rule.key === 'name' ? a.name : a.addedDate;
+      const right = rule.key === 'calls' ? b.callsPerDay : rule.key === 'trend' ? b.trend : rule.key === 'name' ? b.name : b.addedDate;
+      const comparison = typeof left === 'number' && typeof right === 'number' ? left - right : String(left).localeCompare(String(right));
+      if (comparison !== 0) return rule.direction === 'asc' ? comparison : -comparison;
+    }
+    return 0;
+  });
+}
+
 function formatCallsPerDay(n: number): string {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
   if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
@@ -219,11 +237,30 @@ function getBadgeConfig(badge: string) {
 export default function MetricsPanel(): React.JSX.Element {
   const [metrics, setMetrics] = useState<EndpointMetric[]>([]);
   const [favorites, setFavorites] = useState<FavoriteData[]>([]);
-  const [sortBy, setSortBy] = useState<'calls' | 'name' | 'trend' | 'recent'>('calls');
+  const [sortRules, setSortRules] = useState<SortRule[]>(() => {
+    if (typeof window === 'undefined') return [{ key: 'calls', direction: 'desc' }];
+    try {
+      const saved = localStorage.getItem(SORT_KEY);
+      return saved ? JSON.parse(saved) : [{ key: 'calls', direction: 'desc' }];
+    } catch {
+      return [{ key: 'calls', direction: 'desc' }];
+    }
+  });
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterBadge, setFilterBadge] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [toast, setToast] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
+  const handleSort = (key: SortCriterion, multiColumn: boolean) => {
+    const existing = sortRules.find((rule) => rule.key === key);
+    const nextDirection: SortDirection = existing?.direction === 'desc' ? 'asc' : 'desc';
+    const nextRules = multiColumn
+      ? [...sortRules.filter((rule) => rule.key !== key), { key, direction: nextDirection }]
+      : [{ key, direction: nextDirection }];
+    setSortRules(nextRules);
+    localStorage.setItem(SORT_KEY, JSON.stringify(nextRules));
+  };
 
   useEffect(() => {
     const saved = loadMetrics();
@@ -236,6 +273,7 @@ export default function MetricsPanel(): React.JSX.Element {
       setMetrics(saved);
     }
     setFavorites(loadFavorites());
+    setIsLoading(false);
   }, []);
 
   const categories = useMemo(() => {
@@ -295,23 +333,8 @@ export default function MetricsPanel(): React.JSX.Element {
       filtered = filtered.filter((m) => m.badge === filterBadge);
     }
 
-    switch (sortBy) {
-      case 'calls':
-        filtered.sort((a, b) => b.callsPerDay - a.callsPerDay);
-        break;
-      case 'name':
-        filtered.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case 'trend':
-        filtered.sort((a, b) => b.trend - a.trend);
-        break;
-      case 'recent':
-        filtered.sort((a, b) => b.addedDate.localeCompare(a.addedDate));
-        break;
-    }
-
-    return filtered;
-  }, [metrics, searchQuery, filterCategory, filterBadge, sortBy]);
+    return sortMetrics(filtered, sortRules);
+  }, [metrics, searchQuery, filterCategory, filterBadge, sortRules]);
 
   const totalCalls = metrics.reduce((sum, m) => sum + m.callsPerDay, 0);
   const trendingCount = metrics.filter((m) => m.badge === 'trending').length;
@@ -328,6 +351,8 @@ export default function MetricsPanel(): React.JSX.Element {
           Discover popular endpoints and see how the community uses the API. Data is simulated for demo purposes.
         </p>
       </div>
+
+      {isLoading && <LoadingSkeleton className="proxypay-skeleton-grid" />}
 
       {toast && <div className="mock-toast">{toast}</div>}
 
@@ -392,10 +417,10 @@ export default function MetricsPanel(): React.JSX.Element {
           ] as const).map((opt) => (
             <button
               key={opt.key}
-              className={`metrics-sort-btn ${sortBy === opt.key ? 'active' : ''}`}
-              onClick={() => setSortBy(opt.key)}
+              className={`metrics-sort-btn ${sortRules.some((rule) => rule.key === opt.key) ? 'active' : ''}`}
+              onClick={(event) => handleSort(opt.key, event.shiftKey)}
             >
-              {opt.label}
+              {opt.label} {sortRules.find((rule) => rule.key === opt.key)?.direction === 'asc' ? '↑' : sortRules.some((rule) => rule.key === opt.key) ? '↓' : ''}
             </button>
           ))}
           <button className="mock-btn mock-btn-ghost mock-btn-sm" onClick={refreshData} title="Refresh data">

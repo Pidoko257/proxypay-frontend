@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { validateContrast, suggestColors } from '../utils/contrastValidator';
+import { requiredField } from '../utils/formValidation';
 
 type ThemePalette = {
   primary: string;
@@ -271,6 +272,10 @@ export default function ThemeCustomizer(): React.JSX.Element {
   const [themeMode, setThemeMode] = useState<ThemeMode>('light');
   const [schemeLabel, setSchemeLabel] = useState('Light preview');
   const [contrastWarnings, setContrastWarnings] = useState<ContrastWarning[]>([]);
+  const themeErrors = {
+    name: requiredField(customTheme.name, 'Theme name'),
+    description: requiredField(customTheme.description, 'Description'),
+  };
 
   useEffect(() => {
     const storedPreference = readStoredTheme<ThemeDefinition>(STORAGE_KEYS.preference);
@@ -483,7 +488,9 @@ export default function ThemeCustomizer(): React.JSX.Element {
               type="text"
               value={customTheme.name}
               onChange={(event) => updateCustomField('name', event.target.value)}
+              aria-invalid={!!themeErrors.name}
             />
+            {themeErrors.name && <div className="form-error">{themeErrors.name}</div>}
           </label>
           <label>
             Description
@@ -491,7 +498,9 @@ export default function ThemeCustomizer(): React.JSX.Element {
               type="text"
               value={customTheme.description}
               onChange={(event) => updateCustomField('description', event.target.value)}
+              aria-invalid={!!themeErrors.description}
             />
+            {themeErrors.description && <div className="form-error">{themeErrors.description}</div>}
           </label>
           <div className="theme-customizer__controls">
             <label>
@@ -571,7 +580,7 @@ export default function ThemeCustomizer(): React.JSX.Element {
             </label>
           </div>
           <div className="theme-customizer__actions theme-customizer__actions--inline">
-            <button className="button button--primary" type="button" onClick={handleSaveCustomTheme}>
+            <button className="button button--primary" type="button" onClick={handleSaveCustomTheme} disabled={Object.values(themeErrors).some(Boolean)}>
               Save custom theme
             </button>
             <button className="button button--secondary" type="button" onClick={handleExportTheme}>
