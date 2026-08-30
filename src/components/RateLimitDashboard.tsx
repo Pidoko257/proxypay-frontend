@@ -68,7 +68,21 @@ const STATUS_COLORS = {
 };
 
 const POLLING_INTERVAL = 30000; // 30 seconds
-const DEMO_MODE = true; // Set to false when connecting to real API
+
+/**
+ * DEMO_MODE is controlled via the REACT_APP_DEMO_MODE environment variable.
+ * Set REACT_APP_DEMO_MODE=false in your .env to connect to the real API.
+ * Defaults to true so the dashboard works out-of-the-box without a backend.
+ * See docs/configuration.md for full setup instructions.
+ */
+const DEMO_MODE = process.env.REACT_APP_DEMO_MODE !== 'false';
+
+/**
+ * Base URL for the real rate-limit API.
+ * Configurable via REACT_APP_API_BASE_URL (defaults to empty string = same origin).
+ * Example: REACT_APP_API_BASE_URL=https://api.proxypay.io
+ */
+const API_BASE_URL = (process.env.REACT_APP_API_BASE_URL ?? '').replace(/\/$/, '');
 
 // ─── Mock Data Generator ──────────────────────────────────────────────────────
 
@@ -282,25 +296,55 @@ export default function RateLimitDashboard(): React.JSX.Element {
         }
         setAlerts(newAlerts);
       } else {
+        const apiEndpoint = `${API_BASE_URL}/api/rate-limit/status`;
         const response = await retryWithExponentialBackoff(
-          () => fetch('/api/rate-limit-status', {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('api_token')}`,
-              'Content-Type': 'application/json',
-            },
-          }).then((result) => {
-            if (!result.ok) throw new Error(`Failed to fetch rate limit status (${result.status})`);
-            return result;
-          }),
+          () =>
+            fetch(apiEndpoint, {
+              method: 'GET',
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem('api_token') ?? ''}`,
+                'Content-Type': 'application/json',
+              },
+            }).then((result) => {
+              if (!result.ok) {
+                throw new Error(
+                  `Failed to fetch rate limit status (HTTP ${result.status})`,
+                );
+              }
+              return result;
+            }),
           {
             maxAttempts: 3,
             initialDelayMs: 1000,
-            onRetry: (_error, attempt, delayMs) => console.warn(`Rate limit retry ${attempt} in ${delayMs}ms`),
-          }
+            onRetry: (_err, attempt, delayMs) =>
+              console.warn(`Rate limit fetch retry ${attempt} in ${delayMs}ms`),
+          },
         );
 
         const data = (await response.json()) as RateLimitStatus;
+
+        // Update alerts for real data, same logic as demo mode
+        const newAlerts: RateLimitAlert[] = [];
+        if (data.percentageUsed >= 90) {
+          newAlerts.push({
+            level: 'critical',
+            message: 'You have used 90% or more of your rate limit. Your requests may be throttled soon.',
+            timestamp: Date.now(),
+          });
+        } else if (data.percentageUsed >= 70) {
+          newAlerts.push({
+            level: 'warning',
+            message: 'You have used 70% of your rate limit. Consider optimizing your API usage.',
+            timestamp: Date.now(),
+          });
+        } else {
+          newAlerts.push({
+            level: 'ok',
+            message: `Your rate limit usage is healthy. You have ${data.requestsRemaining} requests remaining.`,
+            timestamp: Date.now(),
+          });
+        }
+        setAlerts(newAlerts);
         setStatus(data);
         setLastUpdated(Date.now());
       }
@@ -319,7 +363,6 @@ export default function RateLimitDashboard(): React.JSX.Element {
 
   // Auto-refresh polling
   useEffect(() => {
-                    <button type="button" onClick={fetchStatus} disabled={loading}>Retry</button>
     if (!autoRefresh) return;
 
     const intervalId = setInterval(() => {

@@ -253,8 +253,12 @@ export default function IntegratedApiReference({
       )}
 
       {/* Search bar */}
-      <div className={styles.searchBar}>
+      <div className={styles.searchBar} role="search" aria-label="Search API endpoints">
+        <label htmlFor="api-endpoint-search" className="visually-hidden">
+          Search API endpoints
+        </label>
         <input
+          id="api-endpoint-search"
           type="search"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -265,6 +269,7 @@ export default function IntegratedApiReference({
           list={SEARCH_HISTORY_DATALIST_ID}
           placeholder="Search endpoints by path, method, or tag..."
           aria-label="Search API endpoints"
+          aria-describedby="api-search-count"
           className={styles.searchInput}
         />
         <datalist id={SEARCH_HISTORY_DATALIST_ID}>
@@ -272,14 +277,14 @@ export default function IntegratedApiReference({
             <option key={term} value={term} />
           ))}
         </datalist>
-        <span className={styles.searchCount}>
+        <span id="api-search-count" className={styles.searchCount} aria-live="polite" aria-atomic="true">
           {filteredEndpoints.length} / {endpoints.length} endpoints
         </span>
         <button
+          type="button"
           className={`${styles.comparisonToggle} ${comparisonMode ? styles.active : ''}`}
           onClick={() => (comparisonMode ? handleCloseComparison() : setComparisonMode(true))}
-          title={comparisonMode ? 'Close comparison view' : 'Open comparison view'}
-          aria-label="Toggle endpoint comparison"
+          aria-label={comparisonMode ? 'Close endpoint comparison view' : 'Open endpoint comparison view'}
           aria-pressed={comparisonMode}
         >
           ⇄ Compare
