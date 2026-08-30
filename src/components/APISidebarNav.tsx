@@ -5,7 +5,7 @@
  * Supports per-tag search and HTTP method filtering
  */
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import {
   toEndpointLink,
   toTagLink,
@@ -51,6 +51,49 @@ function MethodBadge({ method }: { method: string }): React.JSX.Element {
 }
 
 /**
+ * Attempts to find a Redoc-rendered DOM element by trying a list of candidate
+ * selector strings in order, returning the first match or null.
+ *
+ * Selector compatibility notes:
+ *  - `[id="<id>"]`              — generic; works for most Redoc versions.
+ *  - `[data-section-id="<id>"]` — Redoc 2.x uses data-section-id attributes
+ *                                  on operation and tag section wrappers.
+ *  - `document.getElementById`  — plain fallback for simple id values.
+ *
+ * If no selector matches, a console.warn is emitted in development mode so
+ * developers can diagnose DOM structure differences between Redoc versions.
+ *
+ * @param candidates - Ordered list of id strings to try. Each id is tried
+ *   with three query strategies before moving to the next candidate.
+ * @returns The first matching Element, or null if nothing matched.
+ */
+export function resolveRedocElement(candidates: string[]): Element | null {
+  for (const candidateId of candidates) {
+    try {
+      const escaped = CSS.escape(candidateId);
+      const el =
+        document.querySelector(`[id="${escaped}"]`) ??
+        document.querySelector(`[data-section-id="${escaped}"]`) ??
+        document.getElementById(candidateId);
+      if (el) return el;
+    } catch {
+      // CSS.escape threw on a malformed value — skip this candidate.
+    }
+  }
+
+  if (process.env.NODE_ENV === 'development') {
+    console.warn(
+      '[APISidebarNav] resolveRedocElement: none of the following selectors matched the DOM.',
+      '\nTried candidates:', candidates,
+      '\nThis usually means the Redoc version has changed its internal id/attribute scheme.',
+      '\nCheck the Redoc changelog and update the selector arrays in handleEndpointClick / handleTagClick.',
+    );
+  }
+
+  return null;
+}
+
+/**
  * Filter endpoints by method
  */
 function filterEndpointsByMethod(endpoints: ParsedEndpoint[], methods: Set<string>): ParsedEndpoint[] {
@@ -92,6 +135,8 @@ export default function APISidebarNav({
   const [quickSearchOpen, setQuickSearchOpen] = useState(false);
   const [quickSearch, setQuickSearch] = useState('');
   const [quickSearchIndex, setQuickSearchIndex] = useState(0);
+  /** Non-null when a scroll navigation failed; auto-clears after 3 s. */
+  const [navError, setNavError] = useState<string | null>(null);
 
   /**
    * Group endpoints by tag if not provided
@@ -191,11 +236,24 @@ export default function APISidebarNav({
   };
 
   /**
+   * Show an auto-dismissing error toast when navigation fails.
+   */
+  const showNavError = useCallback((message: string) => {
+    setNavError(message);
+    setTimeout(() => setNavError(null), 3000);
+  }, []);
+
+  /**
    * Handle endpoint click — select, update hash, and scroll target into view.
    *
-   * Fix #228: After updating the hash, scan the page for the Redoc-rendered
-   * section element and scroll it into view so the TOC link actually
-   * navigates to the corresponding section.
+   * Fix #319: Uses resolveRedocElement() to attempt scrolling the Redoc-
+   * rendered section. When no element is found, logs a warning in dev mode,
+   * falls back to scrolling window to top, and shows a user-visible toast.
+   *
+   * Selector compatibility:
+   *  - endpoint.id            — direct id match (all Redoc versions)
+   *  - lowercased slug        — Redoc may normalise ids to lowercase
+   *  - tag/<Tag>/<method><Path> — Redoc ≤ 2.x internal id pattern
    */
   const handleEndpointClick = (endpoint: ParsedEndpoint) => {
     setSelectedEndpointId(endpoint.id);
@@ -204,29 +262,24 @@ export default function APISidebarNav({
       window.location.hash = toEndpointLink(endpoint.id);
     }
 
-    // Attempt a direct scroll to the Redoc-rendered section.
-    // Redoc may use several ID patterns; try each in order.
     requestAnimationFrame(() => {
+      // Selector candidates ordered from most specific to most generic.
+      // See resolveRedocElement() JSDoc for Redoc version compatibility notes.
       const candidates = [
         endpoint.id,
         endpoint.id.toLowerCase().replace(/\s+/g, '-'),
         // Redoc <= 2.x uses "tag/<Tag>/<method><Path>" patterns
-        `tag/${endpoint.tag || 'default'}/${endpoint.method.toLowerCase()}${endpoint.path}`,
+        `tag/${endpoint.tag ?? 'default'}/${endpoint.method.toLowerCase()}${endpoint.path}`,
       ];
 
-      for (const candidateId of candidates) {
-        try {
-          const el =
-            document.querySelector(`[id="${CSS.escape(candidateId)}"]`) ||
-            document.querySelector(`[data-section-id="${CSS.escape(candidateId)}"]`) ||
-            document.getElementById(candidateId);
-          if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            return;
-          }
-        } catch {
-          // Malformed selector — skip.
-        }
+      const el = resolveRedocElement(candidates);
+      if (el) {
+        setNavError(null);
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        // Fallback: scroll to top so the user at least sees the page start.
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        showNavError('Navigation target not found — scrolled to top.');
       }
     });
   };
@@ -234,8 +287,14 @@ export default function APISidebarNav({
   /**
    * Handle tag click — expand, update hash, and scroll tag heading into view.
    *
-   * Fix #228: After expanding the tag group and updating the hash, scroll
-   * the Redoc tag-section heading into view so the TOC link is functional.
+   * Fix #319: Uses resolveRedocElement() for robust selector resolution.
+   * Falls back to window.scrollTo(top) and shows a toast when not found.
+   *
+   * Selector candidates:
+   *  - tag           — raw tag name as id
+   *  - slugTag       — lowercased, hyphenated tag name
+   *  - tag/<tag>     — Redoc ≤ 2.x group section id pattern
+   *  - tag/<slugTag> — slugged variant of the above
    */
   const handleTagClick = (tag: string) => {
     // Expand the tag if not already expanded
@@ -247,34 +306,41 @@ export default function APISidebarNav({
       window.location.hash = toTagLink(tag);
     }
 
-    // Scroll to the Redoc-rendered tag section heading.
     requestAnimationFrame(() => {
       const slugTag = tag.toLowerCase().replace(/\s+/g, '-');
+      // Selector candidates ordered from most specific to most generic.
+      // See resolveRedocElement() JSDoc for Redoc version compatibility notes.
       const candidates = [
         tag,
         slugTag,
         `tag/${tag}`,
         `tag/${slugTag}`,
       ];
-      for (const candidateId of candidates) {
-        try {
-          const el =
-            document.querySelector(`[id="${CSS.escape(candidateId)}"]`) ||
-            document.querySelector(`[data-section-id="${CSS.escape(candidateId)}"]`) ||
-            document.getElementById(candidateId);
-          if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            return;
-          }
-        } catch {
-          // Malformed selector — skip.
-        }
+
+      const el = resolveRedocElement(candidates);
+      if (el) {
+        setNavError(null);
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        showNavError('Navigation target not found — scrolled to top.');
       }
     });
   };
 
   return (
     <nav className={styles.container}>
+      {/* Navigation error toast — auto-dismisses after 3 s */}
+      {navError && (
+        <div
+          className={styles.navErrorToast}
+          role="alert"
+          aria-live="polite"
+          data-testid="nav-error-toast"
+        >
+          ⚠️ {navError}
+        </div>
+      )}
       {quickSearchOpen && (
         <div className={styles.quickSearchOverlay} role="dialog" aria-label="Quick endpoint search">
           <div className={styles.quickSearch}>

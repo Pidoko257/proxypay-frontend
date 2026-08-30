@@ -3,7 +3,7 @@
  * React component for visualizing log analytics with timezone support
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AnalyticsResult, EndpointMetrics, ErrorAnalysis } from '../analytics/analytics-engine';
 import TimeZoneSelector, { formatDateInTimezone, detectUserTimezone } from './TimeZoneSelector';
 import '../css/logs-dashboard.css';
@@ -76,12 +76,19 @@ interface DashboardProps {
   analytics: AnalyticsResult;
   onDateRangeChange?: (start: Date, end: Date) => void;
   onFilterChange?: (filter: string) => void;
+  /**
+   * When true, always scroll to the top of the page on tab switch instead of
+   * restoring the previously saved scroll position for that tab.
+   * Default: false (restore saved position).
+   */
+  resetScrollOnTabChange?: boolean;
 }
 
 export const LogsDashboard: React.FC<DashboardProps> = ({
   analytics,
   onDateRangeChange,
   onFilterChange,
+  resetScrollOnTabChange = false,
 }) => {
   const [selectedTab, setSelectedTab] = useState('overview');
   const [filterText, setFilterText] = useState('');
@@ -91,12 +98,54 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
     return saved || detectUserTimezone();
   });
 
+  /**
+   * #353 — Per-tab scroll position map.
+   * Stores the last window.scrollY seen for each tab name so we can restore
+   * it after the DOM re-renders when switching back to a previously visited tab.
+   */
+  const scrollPositions = useRef<Record<string, number>>({});
+
+  /**
+   * #354 — Hourly usage data windowing.
+   * When the dataset exceeds 100 data points (e.g. monthly view), we show
+   * only the most recent 100 by default to keep rendering fast.
+   * The user can expand to see all data with the "Show older data" button.
+   */
+  const HOUR_WINDOW = 100;
+  const [showAllHours, setShowAllHours] = useState(false);
+  const visibleUsageByHour = showAllHours
+    ? analytics.usageByHour
+    : analytics.usageByHour.slice(-HOUR_WINDOW);
+  const hasMoreHours = analytics.usageByHour.length > HOUR_WINDOW;
+
   // Save timezone preference to localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('logsTimezone', timezone);
     }
   }, [timezone]);
+
+  /**
+   * #353 — Tab switch handler.
+   * 1. Saves the current window.scrollY under the outgoing tab name.
+   * 2. Changes the active tab.
+   * 3. After a rAF (so the new tab content is in the DOM) either:
+   *    - Restores the previously saved scroll position for the incoming tab, or
+   *    - Scrolls to the top if resetScrollOnTabChange is true.
+   */
+  const handleTabChange = (newTab: string) => {
+    // Save scroll position of the tab we are leaving
+    scrollPositions.current[selectedTab] = window.scrollY;
+
+    setSelectedTab(newTab);
+
+    requestAnimationFrame(() => {
+      const targetScroll = resetScrollOnTabChange
+        ? 0
+        : (scrollPositions.current[newTab] ?? 0);
+      window.scrollTo({ top: targetScroll, behavior: 'instant' });
+    });
+  };
 
   // Format date in selected timezone
   const formatDate = (date: Date) => {
@@ -164,31 +213,31 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
       <div className="dashboard-tabs">
         <button
           className={`tab ${selectedTab === 'overview' ? 'active' : ''}`}
-          onClick={() => setSelectedTab('overview')}
+          onClick={() => handleTabChange('overview')}
         >
           📈 Overview
         </button>
         <button
           className={`tab ${selectedTab === 'endpoints' ? 'active' : ''}`}
-          onClick={() => setSelectedTab('endpoints')}
+          onClick={() => handleTabChange('endpoints')}
         >
           🔗 Endpoints
         </button>
         <button
           className={`tab ${selectedTab === 'errors' ? 'active' : ''}`}
-          onClick={() => setSelectedTab('errors')}
+          onClick={() => handleTabChange('errors')}
         >
           ⚠️ Errors
         </button>
         <button
           className={`tab ${selectedTab === 'usage' ? 'active' : ''}`}
-          onClick={() => setSelectedTab('usage')}
+          onClick={() => handleTabChange('usage')}
         >
           📅 Usage
         </button>
         <button
           className={`tab ${selectedTab === 'users' ? 'active' : ''}`}
-          onClick={() => setSelectedTab('users')}
+          onClick={() => handleTabChange('users')}
         >
           👥 Users & IPs
         </button>
@@ -268,12 +317,14 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
             <div className="chart-section">
               <h3><MetricLabel name="Hourly Usage Pattern" /></h3>
               <div className="hourly-chart">
-                {analytics.usageByHour.map(pattern => (
+                {visibleUsageByHour.map(pattern => (
                   <div key={pattern.hour} className="hour-bar" title={`Hour ${pattern.hour}: ${pattern.count} requests`}>
                     <div
                       className="bar-fill"
                       style={{
-                        height: `${(pattern.count / Math.max(...analytics.usageByHour.map(p => p.count))) * 100}%`,
+                        height: `${visibleUsageByHour.length > 0 && Math.max(...visibleUsageByHour.map(p => p.count)) > 0
+                          ? (pattern.count / Math.max(...visibleUsageByHour.map(p => p.count))) * 100
+                          : 0}%`,
                         opacity: pattern.errorRate > 5 ? 0.7 : 1,
                         backgroundColor: pattern.errorRate > 5 ? '#ff6b6b' : '#4ecdc4',
                       }}
@@ -283,6 +334,28 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
                   </div>
                 ))}
               </div>
+              {/* #354 — Show older / Show less controls */}
+              {hasMoreHours && (
+                <div className="hourly-pagination" data-testid="hourly-pagination">
+                  {!showAllHours ? (
+                    <button
+                      className="hourly-more-btn"
+                      onClick={() => setShowAllHours(true)}
+                      data-testid="show-older-btn"
+                    >
+                      Show older data ({analytics.usageByHour.length - HOUR_WINDOW} more)
+                    </button>
+                  ) : (
+                    <button
+                      className="hourly-less-btn"
+                      onClick={() => setShowAllHours(false)}
+                      data-testid="show-less-btn"
+                    >
+                      Show less
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -380,7 +453,7 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
           <div className="tab-content usage-tab">
             <h3>Request Timeline</h3>
             <div className="timeline-chart">
-              {analytics.usageByHour.map(pattern => (
+              {visibleUsageByHour.map(pattern => (
                 <div key={pattern.hour} className="timeline-item">
                   <div className="time">{pattern.hour}:00</div>
                   <div className="requests" title={`${pattern.count} requests`}>
@@ -395,6 +468,28 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
                 </div>
               ))}
             </div>
+            {/* #354 — Show older / Show less controls */}
+            {hasMoreHours && (
+              <div className="hourly-pagination" data-testid="hourly-pagination-usage">
+                {!showAllHours ? (
+                  <button
+                    className="hourly-more-btn"
+                    onClick={() => setShowAllHours(true)}
+                    data-testid="show-older-btn-usage"
+                  >
+                    Show older data ({analytics.usageByHour.length - HOUR_WINDOW} more)
+                  </button>
+                ) : (
+                  <button
+                    className="hourly-less-btn"
+                    onClick={() => setShowAllHours(false)}
+                    data-testid="show-less-btn-usage"
+                  >
+                    Show less
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
 
