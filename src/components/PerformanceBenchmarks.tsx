@@ -23,28 +23,6 @@ interface HistoricalPoint {
   throughput: number;
 }
 
-export interface ProjectedMetrics {
-  throughput: number;
-  p50: number;
-  p95: number;
-  p99: number;
-}
-
-export function projectMetrics(
-  benchmark: Pick<EndpointBenchmark, 'throughput' | 'p50' | 'p95' | 'p99'>,
-  throughputMultiplier: number,
-  concurrencyMultiplier: number,
-): ProjectedMetrics {
-  const loadMultiplier = Math.max(0.1, throughputMultiplier * concurrencyMultiplier);
-  const latencyMultiplier = 1 + Math.max(0, loadMultiplier - 1) * 0.35;
-  return {
-    throughput: Math.round(benchmark.throughput * loadMultiplier),
-    p50: Math.round(benchmark.p50 * latencyMultiplier),
-    p95: Math.round(benchmark.p95 * latencyMultiplier),
-    p99: Math.round(benchmark.p99 * latencyMultiplier),
-  };
-}
-
 // ── Mock Data ──────────────────────────────────────────────────────
 const BENCHMARK_DATA: EndpointBenchmark[] = [
   {
@@ -197,7 +175,7 @@ function generateHistory(base: EndpointBenchmark): HistoricalPoint[] {
 }
 
 // ── Styles ─────────────────────────────────────────────────────────
-const styles: Record<string, any> = {
+const styles = {
   container: {
     maxWidth: 1100,
     margin: '0 auto',
@@ -471,8 +449,6 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [slaFilter, setSlaFilter] = useState('all');
   const [selectedEndpoint, setSelectedEndpoint] = useState<EndpointBenchmark | null>(null);
-  const [throughputChange, setThroughputChange] = useState(50);
-  const [concurrencyChange, setConcurrencyChange] = useState(0);
 
   const categories = useMemo(
     () => [...new Set(BENCHMARK_DATA.map((b) => b.category))],
@@ -492,13 +468,6 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
   const history = useMemo(
     () => (selectedEndpoint ? generateHistory(selectedEndpoint) : []),
     [selectedEndpoint]
-  );
-
-  const projected = useMemo(
-    () => selectedEndpoint
-      ? projectMetrics(selectedEndpoint, 1 + throughputChange / 100, 1 + concurrencyChange / 100)
-      : null,
-    [selectedEndpoint, throughputChange, concurrencyChange],
   );
 
   const summaries = useMemo(() => {
@@ -678,31 +647,6 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
             <span><span style={{ color: '#22c55e', fontWeight: 700 }}>— p50</span> median</span>
             <span><span style={{ color: '#f59e0b', fontWeight: 700 }}>- - p95</span> 95th</span>
             <span><span style={{ color: '#ef4444', fontWeight: 700 }}>- - p99</span> 99th</span>
-          </div>
-          <div style={{ marginTop: '1.5rem', borderTop: '1px solid #e8ecf0', paddingTop: '1.25rem' }}>
-            <div style={styles.trendHeader}>What-if simulator</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '1rem', alignItems: 'center' }}>
-              <label>
-                Throughput change: <strong>{throughputChange}%</strong>{' '}
-                <input type="range" min="-50" max="200" step="10" value={throughputChange}
-                  aria-label="Throughput change"
-                  onChange={(e) => setThroughputChange(Number(e.target.value))} />
-              </label>
-              <label>
-                Concurrency change: <strong>{concurrencyChange}%</strong>{' '}
-                <input type="range" min="-50" max="200" step="10" value={concurrencyChange}
-                  aria-label="Concurrency change"
-                  onChange={(e) => setConcurrencyChange(Number(e.target.value))} />
-              </label>
-            </div>
-            {projected && (
-              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '1.5rem', marginTop: '1rem', color: '#334155' }}>
-                <span><strong>{projected.throughput.toLocaleString()}</strong> req/s projected throughput</span>
-                <span><strong>{projected.p50}ms</strong> projected p50</span>
-                <span><strong>{projected.p95}ms</strong> projected p95</span>
-                <span><strong>{projected.p99}ms</strong> projected p99</span>
-              </div>
-            )}
           </div>
         </div>
       )}

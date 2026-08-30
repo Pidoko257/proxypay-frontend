@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, ReactNode } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 
 // ── Types ──────────────────────────────────────────────────────────
 type EntryType = 'new' | 'fix' | 'deprecation';
@@ -15,97 +15,6 @@ interface ChangelogEntry {
   impact: ImpactLevel;
   endpoints: string[];
   tags: string[];
-}
-
-interface HighlightMatch {
-  start: number;
-  end: number;
-}
-
-export function isValidSemanticVersion(version: string): boolean {
-  return /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.test(version);
-}
-
-// ── Utility: Search & Highlight ────────────────────────────────────
-/**
- * Finds all case-insensitive matches of searchTerm in text.
- * Returns array of { start, end } positions.
- */
-export function findMatches(text: string, searchTerm: string): HighlightMatch[] {
-  if (!searchTerm.trim()) return [];
-  
-  const matches: HighlightMatch[] = [];
-  const lowerText = text.toLowerCase();
-  const lowerTerm = searchTerm.toLowerCase();
-  
-  let startIndex = 0;
-  while (true) {
-    const index = lowerText.indexOf(lowerTerm, startIndex);
-    if (index === -1) break;
-    matches.push({ start: index, end: index + searchTerm.length });
-    startIndex = index + 1;
-  }
-  
-  return matches;
-}
-
-/**
- * Renders text with highlighted matches.
- * Returns a React fragment with alternating text and <mark> elements.
- */
-export function highlightText(text: string, matches: HighlightMatch[]): ReactNode {
-  if (matches.length === 0) return text;
-  
-  const segments: Array<{ type: 'text' | 'match'; content: string; index: number }> = [];
-  let lastEnd = 0;
-  
-  // Sort matches by start position and merge overlaps
-  const sortedMatches = [...matches].sort((a, b) => a.start - b.start);
-  const mergedMatches: HighlightMatch[] = [];
-  for (const match of sortedMatches) {
-    const last = mergedMatches[mergedMatches.length - 1];
-    if (last && last.end >= match.start) {
-      last.end = Math.max(last.end, match.end);
-    } else {
-      mergedMatches.push({ ...match });
-    }
-  }
-  
-  // Build segments
-  for (const match of mergedMatches) {
-    if (match.start > lastEnd) {
-      segments.push({ type: 'text', content: text.slice(lastEnd, match.start), index: lastEnd });
-    }
-    segments.push({ type: 'match', content: text.slice(match.start, match.end), index: match.start });
-    lastEnd = match.end;
-  }
-  
-  if (lastEnd < text.length) {
-    segments.push({ type: 'text', content: text.slice(lastEnd), index: lastEnd });
-  }
-  
-  return (
-    <>
-      {segments.map((seg, i) =>
-        seg.type === 'match' ? (
-          <mark
-            key={`highlight-${i}-${seg.index}`}
-            style={{
-              background: '#fef08a',
-              color: '#854d0e',
-              fontWeight: 600,
-              borderRadius: 2,
-              padding: '0 2px',
-            }}
-          >
-            {seg.content}
-          </mark>
-        ) : (
-          <span key={`text-${i}-${seg.index}`}>{seg.content}</span>
-        )
-      )}
-    </>
-  );
 }
 
 // ── Mock Data ──────────────────────────────────────────────────────
@@ -223,77 +132,7 @@ const CHANGELOG_DATA: ChangelogEntry[] = [
 ];
 
 // ── Styles ─────────────────────────────────────────────────────────
-const getViewBtnStyle = (active: boolean): React.CSSProperties => ({
-  padding: '0.45rem 1rem',
-  fontSize: '0.85rem',
-  fontWeight: 600,
-  cursor: 'pointer',
-  border: 'none',
-  background: active ? 'var(--ifm-color-primary, #2e8555)' : '#fff',
-  color: active ? '#fff' : '#555',
-  transition: 'background 0.2s, color 0.2s',
-});
-
-const getTimelineDotStyle = (type: EntryType): React.CSSProperties => {
-  const colors: Record<EntryType, string> = {
-    new: '#22c55e',
-    fix: '#f59e0b',
-    deprecation: '#ef4444',
-  };
-  return {
-    position: 'absolute' as const,
-    left: -36,
-    top: '1.5rem',
-    width: 14,
-    height: 14,
-    borderRadius: '50%',
-    background: colors[type],
-    border: '3px solid #fff',
-    boxShadow: `0 0 0 2px ${colors[type]}`,
-    zIndex: 1,
-  };
-};
-
-const getTypeBadgeStyle = (type: EntryType): React.CSSProperties => {
-  const colors: Record<EntryType, { bg: string; fg: string }> = {
-    new: { bg: '#dcfce7', fg: '#166534' },
-    fix: { bg: '#fef9c3', fg: '#854d0e' },
-    deprecation: { bg: '#fee2e2', fg: '#991b1b' },
-  };
-  return {
-    display: 'inline-block',
-    padding: '0.2rem 0.6rem',
-    borderRadius: 6,
-    fontSize: '0.75rem',
-    fontWeight: 700,
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.04em',
-    background: colors[type].bg,
-    color: colors[type].fg,
-  };
-};
-
-const getImpactBadgeStyle = (impact: ImpactLevel): React.CSSProperties => {
-  const colors: Record<ImpactLevel, { bg: string; fg: string }> = {
-    low: { bg: '#e0e7ff', fg: '#3730a3' },
-    medium: { bg: '#fef3c7', fg: '#92400e' },
-    high: { bg: '#fed7aa', fg: '#9a3412' },
-    critical: { bg: '#fecaca', fg: '#7f1d1d' },
-  };
-  return {
-    display: 'inline-block',
-    padding: '0.18rem 0.55rem',
-    borderRadius: 5,
-    fontSize: '0.72rem',
-    fontWeight: 600,
-    background: colors[impact].bg,
-    color: colors[impact].fg,
-    marginLeft: 8,
-  };
-};
-
-// ── Styles ─────────────────────────────────────────────────────────
-const styles: Record<string, React.CSSProperties> = {
+const styles = {
   container: {
     maxWidth: 1100,
     margin: '0 auto',
@@ -357,6 +196,16 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
     border: '1px solid #d0d5dd',
   },
+  viewBtn: (active: boolean): React.CSSProperties => ({
+    padding: '0.45rem 1rem',
+    fontSize: '0.85rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    border: 'none',
+    background: active ? 'var(--ifm-color-primary, #2e8555)' : '#fff',
+    color: active ? '#fff' : '#555',
+    transition: 'background 0.2s, color 0.2s',
+  }),
   timeline: {
     position: 'relative' as const,
     paddingLeft: '2.5rem',
@@ -380,6 +229,61 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
     transition: 'box-shadow 0.2s, transform 0.15s',
     cursor: 'default',
+  },
+  timelineDot: (type: EntryType): React.CSSProperties => {
+    const colors: Record<EntryType, string> = {
+      new: '#22c55e',
+      fix: '#f59e0b',
+      deprecation: '#ef4444',
+    };
+    return {
+      position: 'absolute' as const,
+      left: -36,
+      top: '1.5rem',
+      width: 14,
+      height: 14,
+      borderRadius: '50%',
+      background: colors[type],
+      border: '3px solid #fff',
+      boxShadow: `0 0 0 2px ${colors[type]}`,
+      zIndex: 1,
+    };
+  },
+  typeBadge: (type: EntryType): React.CSSProperties => {
+    const colors: Record<EntryType, { bg: string; fg: string }> = {
+      new: { bg: '#dcfce7', fg: '#166534' },
+      fix: { bg: '#fef9c3', fg: '#854d0e' },
+      deprecation: { bg: '#fee2e2', fg: '#991b1b' },
+    };
+    return {
+      display: 'inline-block',
+      padding: '0.2rem 0.6rem',
+      borderRadius: 6,
+      fontSize: '0.75rem',
+      fontWeight: 700,
+      textTransform: 'uppercase' as const,
+      letterSpacing: '0.04em',
+      background: colors[type].bg,
+      color: colors[type].fg,
+    };
+  },
+  impactBadge: (impact: ImpactLevel): React.CSSProperties => {
+    const colors: Record<ImpactLevel, { bg: string; fg: string }> = {
+      low: { bg: '#e0e7ff', fg: '#3730a3' },
+      medium: { bg: '#fef3c7', fg: '#92400e' },
+      high: { bg: '#fed7aa', fg: '#9a3412' },
+      critical: { bg: '#fecaca', fg: '#7f1d1d' },
+    };
+    return {
+      display: 'inline-block',
+      padding: '0.18rem 0.55rem',
+      borderRadius: 5,
+      fontSize: '0.72rem',
+      fontWeight: 600,
+      background: colors[impact].bg,
+      color: colors[impact].fg,
+      marginLeft: 8,
+    };
   },
   endpointTag: {
     display: 'inline-block',
@@ -655,13 +559,13 @@ export default function ChangelogViewer(): React.JSX.Element {
         </select>
         <div style={styles.viewToggle}>
           <button
-            style={getViewBtnStyle(viewMode === 'timeline')}
+            style={styles.viewBtn(viewMode === 'timeline')}
             onClick={() => setViewMode('timeline')}
           >
             Timeline
           </button>
           <button
-            style={getViewBtnStyle(viewMode === 'compact')}
+            style={styles.viewBtn(viewMode === 'compact')}
             onClick={() => setViewMode('compact')}
           >
             Compact
@@ -675,117 +579,95 @@ export default function ChangelogViewer(): React.JSX.Element {
       ) : viewMode === 'timeline' ? (
         <div style={styles.timeline}>
           <div style={styles.timelineLine} />
-          {filtered.map((entry) => {
-            const titleMatches = findMatches(entry.title, search);
-            const descMatches = findMatches(entry.description, search);
-            
-            return (
-              <div
-                key={entry.id}
-                id={entry.id}
-                style={styles.entryCard}
-                onClick={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.boxShadow =
-                    '0 4px 16px rgba(0,0,0,0.08)';
-                  (e.currentTarget as HTMLElement).style.transform = 'translateX(4px)';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.boxShadow =
-                    '0 1px 4px rgba(0,0,0,0.04)';
-                  (e.currentTarget as HTMLElement).style.transform = 'translateX(0)';
-                }}
-              >
-                <div style={getTimelineDotStyle(entry.type)} />
-                <div style={styles.entryMeta}>
-                  <span style={getTypeBadgeStyle(entry.type)}>{entry.type}</span>
-                  <span style={styles.entryVersion}>{entry.version}</span>
-                  {!isValidSemanticVersion(entry.version) && (
-                    <span
-                      role="alert"
-                      style={{ background: '#fef3c7', color: '#92400e', marginLeft: 8, padding: '0.18rem 0.55rem', borderRadius: 5, fontSize: '0.72rem', fontWeight: 600 }}
-                    >
-                      Invalid semantic version
-                    </span>
-                  )}
-                  <span style={styles.entryDate}>{entry.date}</span>
-                  <span style={getImpactBadgeStyle(entry.impact)}>{entry.impact} impact</span>
-                </div>
-                <h3 style={styles.entryTitle}>{highlightText(entry.title, titleMatches)}</h3>
-                <p style={styles.entryDesc}>{highlightText(entry.description, descMatches)}</p>
-                <div>
-                  {entry.endpoints.map((ep) => {
-                    const epMatches = findMatches(ep, search);
-                    return (
-                      <code key={ep} style={styles.endpointTag}>
-                        {highlightText(ep, epMatches)}
-                      </code>
-                    );
-                  })}
-                </div>
-                {expandedId === entry.id && (
-                  <div
-                    style={{
-                      marginTop: '0.75rem',
-                      padding: '0.75rem',
-                      background: '#f8fafc',
-                      borderRadius: 8,
-                      fontSize: '0.85rem',
-                      color: '#475569',
-                    }}
-                  >
-                    <strong>Tags:</strong>{' '}
-                    {entry.tags.map((t) => {
-                      const tagMatches = findMatches(t, search);
-                      return (
-                        <span
-                          key={t}
-                          style={{
-                            display: 'inline-block',
-                            background: '#e2e8f0',
-                            borderRadius: 4,
-                            padding: '0.1rem 0.45rem',
-                            margin: '0 3px',
-                            fontSize: '0.78rem',
-                          }}
-                        >
-                          {highlightText(t, tagMatches)}
-                        </span>
-                      );
-                    })}
-                    <br />
-                    <strong>ID:</strong> {entry.id}
-                  </div>
-                )}
+          {filtered.map((entry) => (
+            <div
+              key={entry.id}
+              id={entry.id}
+              style={styles.entryCard}
+              onClick={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.boxShadow =
+                  '0 4px 16px rgba(0,0,0,0.08)';
+                (e.currentTarget as HTMLElement).style.transform = 'translateX(4px)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.boxShadow =
+                  '0 1px 4px rgba(0,0,0,0.04)';
+                (e.currentTarget as HTMLElement).style.transform = 'translateX(0)';
+              }}
+            >
+              <div style={styles.timelineDot(entry.type)} />
+              <div style={styles.entryMeta}>
+                <span style={styles.typeBadge(entry.type)}>{entry.type}</span>
+                <span style={styles.entryVersion}>{entry.version}</span>
+                <span style={styles.entryDate}>{entry.date}</span>
+                <span style={styles.impactBadge(entry.impact)}>{entry.impact} impact</span>
               </div>
-            );
-          })}
+              <h3 style={styles.entryTitle}>{entry.title}</h3>
+              <p style={styles.entryDesc}>{entry.description}</p>
+              <div>
+                {entry.endpoints.map((ep) => (
+                  <code key={ep} style={styles.endpointTag}>
+                    {ep}
+                  </code>
+                ))}
+              </div>
+              {expandedId === entry.id && (
+                <div
+                  style={{
+                    marginTop: '0.75rem',
+                    padding: '0.75rem',
+                    background: '#f8fafc',
+                    borderRadius: 8,
+                    fontSize: '0.85rem',
+                    color: '#475569',
+                  }}
+                >
+                  <strong>Tags:</strong>{' '}
+                  {entry.tags.map((t) => (
+                    <span
+                      key={t}
+                      style={{
+                        display: 'inline-block',
+                        background: '#e2e8f0',
+                        borderRadius: 4,
+                        padding: '0.1rem 0.45rem',
+                        margin: '0 3px',
+                        fontSize: '0.78rem',
+                      }}
+                    >
+                      {t}
+                    </span>
+                  ))}
+                  <br />
+                  <strong>ID:</strong> {entry.id}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       ) : (
         <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid #e8ecf0' }}>
-          {filtered.map((entry) => {
-            const titleMatches = findMatches(entry.title, search);
-            return (
-              <div
-                key={entry.id}
-                style={styles.compactRow}
-                onClick={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.background = '#f8fafc';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.background = '#fff';
-                }}
-              >
-                <span style={getTypeBadgeStyle(entry.type)}>{entry.type}</span>
-                <span style={{ fontWeight: 600, fontSize: '0.9rem', flex: 1 }}>
-                  {highlightText(entry.title, titleMatches)}
-                </span>
-                <span style={{ fontSize: '0.8rem', color: '#999' }}>{entry.version}</span>
-                <span style={{ fontSize: '0.8rem', color: '#999' }}>{entry.date}</span>
-              </div>
-            );
-          })}
+          {filtered.map((entry) => (
+            <div
+              key={entry.id}
+              style={styles.compactRow}
+              onClick={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.background = '#f8fafc';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.background = '#fff';
+              }}
+            >
+              <span style={styles.typeBadge(entry.type)}>{entry.type}</span>
+              <span style={{ fontWeight: 600, fontSize: '0.9rem', flex: 1 }}>
+                {entry.title}
+              </span>
+              <span style={{ fontSize: '0.8rem', color: '#999' }}>{entry.version}</span>
+              <span style={{ fontSize: '0.8rem', color: '#999' }}>{entry.date}</span>
+            </div>
+          ))}
         </div>
       )}
 

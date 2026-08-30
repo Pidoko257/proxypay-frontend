@@ -248,7 +248,7 @@ function verifyWebhook(req) {
 ];
 
 // ── Styles ─────────────────────────────────────────────────────────
-const styles: Record<string, any> = {
+const styles = {
   container: {
     maxWidth: 1100,
     margin: '0 auto',
@@ -450,41 +450,9 @@ const styles: Record<string, any> = {
 };
 
 // ── Main Component ─────────────────────────────────────────────────
-// A change is treated as "deprecated" when it is flagged as a deprecation
-// severity or its endpoint has entered the deprecated sunset phase.
-const isDeprecated = (d: EndpointDiff): boolean =>
-  d.severity === 'deprecation' || d.sunsetStatus === 'deprecated';
-
-function downloadArtifact(filename: string, content: string, type: string): void {
-  const url = URL.createObjectURL(new Blob([content], { type }));
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
-export function generatePostmanCollection(): string {
-  return JSON.stringify({
-    info: { name: 'ProxyPay Migration Validation', schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json' },
-    variable: [{ key: 'baseUrl', value: 'https://api.proxypay.dev' }, { key: 'apiKey', value: 'pp_live_xxxxxxxxxxxxxxxx' }],
-    item: MIGRATION_DATA.flatMap((migration) => migration.diffs.map((diff) => ({
-      name: `${diff.method} ${diff.path}`,
-      request: { method: diff.method === 'ALL' ? 'GET' : diff.method, header: [{ key: 'X-API-Key', value: '{{apiKey}}' }], url: { raw: `{{baseUrl}}${diff.path}`, host: ['{{baseUrl}}'], path: diff.path.split('/').filter(Boolean) } },
-      event: [{ listen: 'test', script: { exec: [`pm.test("${migration.to} ${diff.path} responds", function () {`, '  pm.expect(pm.response.code).to.be.oneOf([200, 201, 204, 400, 401, 404]);', '});'] } }],
-    }))),
-  }, null, 2);
-}
-
-export function generateMigrationTestSuite(): string {
-  const paths = MIGRATION_DATA.flatMap((migration) => migration.diffs.map((diff) => `  { method: '${diff.method === 'ALL' ? 'GET' : diff.method}', path: '${diff.path}' },`)).join('\n');
-  return `const cases = [\n${paths}\n];\n\n(async () => {\n  const failures = [];\n  for (const testCase of cases) {\n    const response = await fetch(process.env.PROXYPAY_BASE_URL + testCase.path, { method: testCase.method, headers: { 'X-API-Key': process.env.PROXYPAY_API_KEY } });\n    if (!response.ok && ![400, 401, 404].includes(response.status)) failures.push(testCase);\n    console.log(testCase.method, testCase.path, response.status);\n  }\n  if (failures.length) process.exitCode = 1;\n})();\n`;
-}
-
 export default function MigrationGuide(): React.JSX.Element {
   const [expandedMigration, setExpandedMigration] = useState<string | null>(MIGRATION_DATA[0]?.to || null);
   const [expandedDiffs, setExpandedDiffs] = useState<Set<string>>(new Set());
-  const [deprecatedOnly, setDeprecatedOnly] = useState(false);
 
   const toggleMigration = (to: string) => {
     setExpandedMigration((prev) => (prev === to ? null : to));
@@ -508,19 +476,6 @@ export default function MigrationGuide(): React.JSX.Element {
   const deprecationCount = allDiffs.filter((d) => d.severity === 'deprecation').length;
   const additionCount = allDiffs.filter((d) => d.severity === 'addition').length;
 
-  const deprecatedDiffs = useMemo(() => allDiffs.filter(isDeprecated), [allDiffs]);
-  const hasDeprecated = deprecatedDiffs.length > 0;
-
-  // When the deprecated-only filter is active, keep only migrations that still
-  // contain a deprecated change.
-  const visibleMigrations = useMemo(
-    () =>
-      deprecatedOnly
-        ? MIGRATION_DATA.filter((m) => m.diffs.some(isDeprecated))
-        : MIGRATION_DATA,
-    [deprecatedOnly]
-  );
-
   return (
     <div style={styles.container}>
       <div style={styles.header}>
@@ -531,67 +486,11 @@ export default function MigrationGuide(): React.JSX.Element {
           <strong style={{ color: '#92400e' }}>{deprecationCount} deprecations</strong>,{' '}
           <strong style={{ color: '#1e40af' }}>{additionCount} additions</strong>.
         </p>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <button type="button" style={styles.toggleBtn} onClick={() => downloadArtifact('proxypay-migration.postman_collection.json', generatePostmanCollection(), 'application/json')}>
-            Download Postman collection
-          </button>
-          <button type="button" style={styles.toggleBtn} onClick={() => downloadArtifact('proxypay-migration-validation.js', generateMigrationTestSuite(), 'text/javascript')}>
-            Download validation test suite
-          </button>
-        </div>
       </div>
 
-      {/* Deprecation banner — shown whenever any deprecated change exists */}
-      {hasDeprecated && (
-        <div
-          data-testid="deprecation-banner"
-          role="alert"
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            gap: '0.75rem',
-            padding: '0.9rem 1.25rem',
-            marginBottom: '1.5rem',
-            background: '#fef3c7',
-            border: '1px solid #fcd34d',
-            borderLeft: '5px solid #d97706',
-            borderRadius: 10,
-            color: '#92400e',
-            fontSize: '0.9rem',
-          }}
-        >
-          <span style={{ fontSize: '1.1rem' }}>⚠️</span>
-          <span style={{ flex: '1 1 260px' }}>
-            <strong>
-              {deprecatedDiffs.length} deprecated{' '}
-              {deprecatedDiffs.length === 1 ? 'endpoint/change' : 'endpoints/changes'} found.
-            </strong>{' '}
-            Deprecated items are still available but will be removed at their sunset date — migrate
-            before then.
-          </span>
-          <button
-            type="button"
-            onClick={() => setDeprecatedOnly((v) => !v)}
-            style={{
-              ...styles.toggleBtn,
-              borderColor: deprecatedOnly ? '#d97706' : '#d0d5dd',
-              background: deprecatedOnly ? '#d97706' : '#fff',
-              color: deprecatedOnly ? '#fff' : '#92400e',
-            }}
-          >
-            {deprecatedOnly ? '↺ Show all changes' : '⚠ Show deprecated only'}
-          </button>
-        </div>
-      )}
-
       {/* Per-version Migrations */}
-      {visibleMigrations.map((migration) => {
-        // While the deprecated-only filter is active, force-expand any migration
-        // that still has a deprecated change so the highlighted cards are visible.
-        const isExpanded =
-          expandedMigration === migration.to ||
-          (deprecatedOnly && migration.diffs.some(isDeprecated));
+      {MIGRATION_DATA.map((migration) => {
+        const isExpanded = expandedMigration === migration.to;
         return (
           <div
             key={migration.to}
@@ -629,55 +528,21 @@ export default function MigrationGuide(): React.JSX.Element {
                   <strong>Overview:</strong> {migration.overview}
                 </div>
 
-                {migration.diffs
-                  .filter((diff) => !deprecatedOnly || isDeprecated(diff))
-                  .map((diff) => {
+                {migration.diffs.map((diff) => {
                   const diffKey = `${migration.to}-${diff.path}-${diff.method}`;
                   const isDiffExpanded = expandedDiffs.has(diffKey);
-                  const deprecated = isDeprecated(diff);
-                  const baseBg = deprecated ? '#fffbeb' : 'transparent';
                   return (
                     <div
                       key={diffKey}
-                      data-testid={deprecated ? 'diff-card-deprecated' : 'diff-card'}
-                      data-deprecated={deprecated ? 'true' : 'false'}
-                      style={{
-                        ...styles.diffCard,
-                        background: baseBg,
-                        ...(deprecated
-                          ? { borderLeft: '4px solid #d97706', paddingLeft: 'calc(1.5rem - 4px)' }
-                          : {}),
-                      }}
+                      style={styles.diffCard}
                       onMouseEnter={(e) => {
-                        (e.currentTarget as HTMLElement).style.background = deprecated
-                          ? '#fef3c7'
-                          : '#f8fafc';
+                        (e.currentTarget as HTMLElement).style.background = '#f8fafc';
                       }}
                       onMouseLeave={(e) => {
-                        (e.currentTarget as HTMLElement).style.background = baseBg;
+                        (e.currentTarget as HTMLElement).style.background = 'transparent';
                       }}
                     >
                       <div style={styles.diffHeader}>
-                        {deprecated && (
-                          <span
-                            data-testid="deprecated-flag"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 4,
-                              padding: '0.2rem 0.6rem',
-                              borderRadius: 6,
-                              fontSize: '0.72rem',
-                              fontWeight: 700,
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.04em',
-                              background: '#d97706',
-                              color: '#fff',
-                            }}
-                          >
-                            ⚠ Deprecated
-                          </span>
-                        )}
                         <span style={styles.severityBadge(diff.severity)}>{diff.severity}</span>
                         <code style={styles.endpointTag}>
                           {diff.method} {diff.path}
