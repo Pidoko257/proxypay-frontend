@@ -271,6 +271,17 @@ function validateThemeContrast(theme: ThemeDefinition, mode: ThemeMode): Contras
   return warnings;
 }
 
+function isBuiltInTheme(theme: ThemeDefinition): boolean {
+  return [...presetThemes, ...communityThemes].some((builtIn) => builtIn.id === theme.id);
+}
+
+function hasThemeContrastIssues(theme: ThemeDefinition): boolean {
+  return (
+    validateThemeContrast(theme, 'light').length > 0 ||
+    validateThemeContrast(theme, 'dark').length > 0
+  );
+}
+
 interface ContrastWarning {
   field: string;
   colors: string;
@@ -286,6 +297,9 @@ export default function ThemeCustomizer(): React.JSX.Element {
   const [themeMode, setThemeMode] = useState<ThemeMode>('light');
   const [schemeLabel, setSchemeLabel] = useState('Light preview');
   const [contrastWarnings, setContrastWarnings] = useState<ContrastWarning[]>([]);
+  const previewHasContrastIssues =
+    !isBuiltInTheme(previewTheme) && hasThemeContrastIssues(previewTheme);
+  const customThemeHasContrastIssues = hasThemeContrastIssues(customTheme);
 
   useEffect(() => {
     const storedPreference = readStoredTheme<ThemeDefinition>(STORAGE_KEYS.preference);
@@ -353,6 +367,10 @@ export default function ThemeCustomizer(): React.JSX.Element {
   };
 
   const handleSaveCustomTheme = () => {
+    if (customThemeHasContrastIssues) {
+      return;
+    }
+
     const nextTheme = {
       ...customTheme,
       id: `${customTheme.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
@@ -367,6 +385,10 @@ export default function ThemeCustomizer(): React.JSX.Element {
   };
 
   const handleApplyTheme = () => {
+    if (previewHasContrastIssues) {
+      return;
+    }
+
     setAppliedTheme(previewTheme);
     saveStoredTheme(STORAGE_KEYS.preference, previewTheme);
     applyThemeToDocument(previewTheme, themeMode);
@@ -445,7 +467,17 @@ export default function ThemeCustomizer(): React.JSX.Element {
           </p>
         </div>
         <div className="theme-customizer__actions">
-          <button className="button button--primary" type="button" onClick={handleApplyTheme}>
+          <button
+            className="button button--primary"
+            type="button"
+            onClick={handleApplyTheme}
+            disabled={previewHasContrastIssues}
+            title={
+              previewHasContrastIssues
+                ? 'Resolve WCAG AA contrast issues before applying this custom theme.'
+                : undefined
+            }
+          >
             Apply theme
           </button>
           <button className="button button--secondary" type="button" onClick={toggleThemeMode}>
@@ -608,7 +640,17 @@ export default function ThemeCustomizer(): React.JSX.Element {
             </label>
           </div>
           <div className="theme-customizer__actions theme-customizer__actions--inline">
-            <button className="button button--primary" type="button" onClick={handleSaveCustomTheme}>
+            <button
+              className="button button--primary"
+              type="button"
+              onClick={handleSaveCustomTheme}
+              disabled={customThemeHasContrastIssues}
+              title={
+                customThemeHasContrastIssues
+                  ? 'Resolve WCAG AA contrast issues in both light and dark mode before saving.'
+                  : undefined
+              }
+            >
               Save custom theme
             </button>
             <button className="button button--secondary" type="button" onClick={handleExportTheme}>
