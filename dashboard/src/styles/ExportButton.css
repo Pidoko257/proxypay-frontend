@@ -171,6 +171,36 @@
   background-color: var(--color-neutral-200);
 }
 
+.action-button.schedule {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.action-button.schedule:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.schedule-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  color: var(--color-neutral-700);
+  font-size: 0.85rem;
+}
+
+.schedule-field input {
+  border: 1px solid var(--color-neutral-300);
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+  color: var(--color-neutral-900);
+}
+
 @media (max-width: 768px) {
   .export-options {
     position: fixed;

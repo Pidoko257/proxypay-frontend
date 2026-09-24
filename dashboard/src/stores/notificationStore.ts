@@ -1,11 +1,17 @@
 import { create } from 'zustand'
-import { NotificationSettings, proxyPayAPI } from '../services/api'
+import {
+  DashboardNotification,
+  NotificationSettings,
+  proxyPayAPI,
+} from '../services/api'
 
 interface NotificationStore {
   settings: NotificationSettings[]
   loading: boolean
   error: string | null
   optimisticUpdates: Map<string, NotificationSettings>
+  notifications: DashboardNotification[]
+  notificationsLoading: boolean
 
   // Actions
   fetchSettings: () => Promise<void>
@@ -15,6 +21,8 @@ interface NotificationStore {
     webhookEnabled: boolean
   ) => Promise<void>
   clearError: () => void
+  fetchNotifications: () => Promise<void>
+  markNotificationRead: (id: string) => Promise<void>
 }
 
 export const useNotificationStore = create<NotificationStore>((set, get) => ({
@@ -22,6 +30,8 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
   loading: false,
   error: null,
   optimisticUpdates: new Map(),
+  notifications: [],
+  notificationsLoading: false,
 
   fetchSettings: async () => {
     set({ loading: true, error: null })
@@ -95,6 +105,36 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
         error:
           error instanceof Error ? error.message : 'Failed to update setting',
       }))
+    }
+  },
+
+  fetchNotifications: async () => {
+    set({ notificationsLoading: true })
+    try {
+      const notifications = await proxyPayAPI.getNotifications()
+      set({ notifications, notificationsLoading: false })
+    } catch (error) {
+      set({
+        notificationsLoading: false,
+        error:
+          error instanceof Error ? error.message : 'Failed to fetch notifications',
+      })
+    }
+  },
+
+  markNotificationRead: async (id: string) => {
+    try {
+      await proxyPayAPI.markNotificationRead(id)
+      set((state) => ({
+        notifications: state.notifications.map((notification) =>
+          notification.id === id ? { ...notification, read: true } : notification
+        ),
+      }))
+    } catch (error) {
+      set({
+        error:
+          error instanceof Error ? error.message : 'Failed to update notification',
+      })
     }
   },
 

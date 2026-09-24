@@ -4,6 +4,7 @@ import { TransactionsTable } from './components/TransactionsTable'
 import { TransactionDrawer } from './components/TransactionDrawer'
 import { ExportButton } from './components/ExportButton'
 import { NotificationSettings } from './components/NotificationSettings'
+import { NotificationCenter } from './components/NotificationCenter'
 import './App.css'
 
 type Page = 'transactions' | 'settings'
@@ -35,6 +36,7 @@ export default function App() {
       <header className="app-header">
         <div className="header-content">
           <h1 className="app-title">ProxyPay Dashboard</h1>
+          <NotificationCenter />
           <nav className="nav-tabs">
             <button
               className={`nav-tab ${currentPage === 'transactions' ? 'active' : ''}`}

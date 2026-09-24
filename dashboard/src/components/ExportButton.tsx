@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
-import { Download, Loader } from 'lucide-react'
+import { CalendarClock, Download, Loader } from 'lucide-react'
 import { useTransactionStore } from '../stores/transactionStore'
+import { proxyPayAPI } from '../services/api'
 import { CSVExporter } from '../services/csv'
 import '../styles/ExportButton.css'
 
@@ -10,11 +11,37 @@ export const ExportButton: React.FC = () => {
   const [progress, setProgress] = useState(0)
   const [includeAudit, setIncludeAudit] = useState(false)
   const [showOptions, setShowOptions] = useState(false)
+  const [scheduledFor, setScheduledFor] = useState('')
+  const [scheduling, setScheduling] = useState(false)
 
   const handleExport = async () => {
     if (transactions.length === 0) {
       alert('No transactions to export')
       return
+    }
+
+    const handleSchedule = async () => {
+      if (!scheduledFor) {
+        alert('Choose when the export should be ready')
+        return
+      }
+
+      setScheduling(true)
+      try {
+        await proxyPayAPI.scheduleExport({
+          includeAuditTrail: includeAudit,
+          scheduledFor: new Date(scheduledFor).toISOString(),
+          filters: useTransactionStore.getState().filters,
+        })
+        alert('Export scheduled. You will be notified when it is ready.')
+        setScheduledFor('')
+        setShowOptions(false)
+      } catch (error) {
+        console.error('Scheduling export failed:', error)
+        alert('Failed to schedule export')
+      } finally {
+        setScheduling(false)
+      }
     }
 
     setExporting(true)
@@ -111,6 +138,25 @@ export const ExportButton: React.FC = () => {
 
           <button className="action-button primary" onClick={handleExport}>
             Download CSV
+          </button>
+
+          <label className="schedule-field">
+            <span>Notify me when ready</span>
+            <input
+              type="datetime-local"
+              value={scheduledFor}
+              min={new Date().toISOString().slice(0, 16)}
+              onChange={(event) => setScheduledFor(event.target.value)}
+              disabled={scheduling}
+            />
+          </label>
+          <button
+            className="action-button schedule"
+            onClick={handleSchedule}
+            disabled={scheduling || !scheduledFor}
+          >
+            <CalendarClock size={16} />
+            {scheduling ? 'Scheduling...' : 'Schedule Export'}
           </button>
 
           <button
