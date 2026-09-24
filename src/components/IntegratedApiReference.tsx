@@ -173,6 +173,7 @@ export default function IntegratedApiReference({
             <APISidebarNav
               endpoints={filteredEndpoints}
               tagGroups={tagGroups}
+              searchQuery={searchQuery}
               onEndpointClick={handleEndpointClick}
               onTagClick={handleTagClick}
               selectedEndpointId={selectedEndpointId}
