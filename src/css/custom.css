@@ -3339,3 +3339,40 @@ body {
 .theme-customizer__warnings li > div [style*='inline-block'] {
   margin: 0 0.25rem;
 }
+
+/* ============================================================
+   ProxyPay custom design tokens
+   ============================================================ */
+
+/* Light mode defaults */
+:root {
+  --pp-bg: #f7fafc;
+  --pp-surface: #ffffff;
+  --pp-text: #1a202c;
+  --pp-text-muted: #718096;
+  --pp-border: #e2e8f0;
+  --pp-primary: #2e8555;
+  --pp-danger: #e53e3e;
+}
+
+/* Dark mode — Docusaurus data-theme attribute */
+[data-theme='dark'] {
+  --pp-bg: #0f1117;
+  --pp-surface: #1a1f2e;
+  --pp-text: #e2e8f0;
+  --pp-text-muted: #a0aec0;
+  --pp-border: #2d3748;
+  --pp-primary: #48bb78;
+  --pp-danger: #fc8181;
+}
+
+/* Dark mode — class-based toggle (applied to document.documentElement) */
+.dark-mode {
+  --pp-bg: #0f1117;
+  --pp-surface: #1a1f2e;
+  --pp-text: #e2e8f0;
+  --pp-text-muted: #a0aec0;
+  --pp-border: #2d3748;
+  --pp-primary: #48bb78;
+  --pp-danger: #fc8181;
+}
