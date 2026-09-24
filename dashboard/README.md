@@ -104,6 +104,7 @@ The dashboard connects to a ProxyPay backend API at `/api`. Update the base URL 
 - `GET /api/transactions/:id` - Get transaction detail
 - `GET /api/notifications/settings` - Fetch notification config
 - `PUT /api/notifications/settings/:eventType` - Update notification setting
+- `POST /api/notifications/webhook/test` - Send a test webhook for an event type
 - `GET /api/health` - Health check
 
 ### Transaction Data Model
