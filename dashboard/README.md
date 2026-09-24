@@ -20,6 +20,11 @@ A modern React-based dashboard for viewing transaction history, exporting data a
 - Progress indication for large datasets (10,000+ rows)
 - No backend round-trip for client-side exports
 
+### 🧾 Receipts & PDF Reports
+- Print a professional receipt for any transaction from its detail drawer
+- Generate a printable report for all transactions currently loaded
+- Use the browser print dialog's “Save as PDF” option to create a PDF file
+
 ### 🔔 Notification Settings
 - Configure which events trigger notifications
 - Independent email and webhook toggles per event type
@@ -137,6 +142,11 @@ interface Transaction {
 - **Optional Audit Trail**: Include full audit history in export
 - **Proper Escaping**: Handles commas, quotes, and newlines in data
 - **Timestamp-based Filenames**: Auto-generated filenames include date and time
+
+## Receipts & PDF Reports
+
+Receipt and report generation is client-side and uses a print-optimized document. The
+browser's print dialog supports physical printing and PDF output via “Save as PDF”.
 
 ## Notification Settings
 

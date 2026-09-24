@@ -162,6 +162,19 @@
   box-shadow: var(--shadow-md);
 }
 
+.action-button.report {
+  align-items: center;
+  background-color: #eff6ff;
+  color: var(--color-primary-dark);
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.action-button.report:hover {
+  background-color: #dbeafe;
+}
+
 .action-button.secondary {
   background-color: var(--color-neutral-100);
   color: var(--color-neutral-900);
