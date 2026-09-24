@@ -14,6 +14,7 @@ export default function App() {
   const { selectedTransaction, setSelectedTransaction, fetchTransactions, filters } =
     useTransactionStore()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [fullPageTransaction, setFullPageTransaction] = useState(false)
 
   // Initialize transactions on mount
   useEffect(() => {
@@ -22,11 +23,13 @@ export default function App() {
 
   const handleRowClick = (tx: any) => {
     setSelectedTransaction(tx)
+    setFullPageTransaction(false)
     setDrawerOpen(true)
   }
 
   const handleDrawerClose = () => {
     setDrawerOpen(false)
+    setFullPageTransaction(false)
     setTimeout(() => setSelectedTransaction(null), 300) // Delay to allow animation
   }
 
@@ -76,6 +79,8 @@ export default function App() {
         transaction={selectedTransaction}
         isOpen={drawerOpen}
         onClose={handleDrawerClose}
+        fullPage={fullPageTransaction}
+        onOpenFullPage={() => setFullPageTransaction(true)}
       />
     </div>
   )
