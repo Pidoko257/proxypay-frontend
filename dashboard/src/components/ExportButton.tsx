@@ -2,6 +2,11 @@ import React, { useState } from 'react'
 import { Download, Loader } from 'lucide-react'
 import { useTransactionStore } from '../stores/transactionStore'
 import { CSVExporter } from '../services/csv'
+import {
+  accountingFilename,
+  AccountingPlatform,
+  generateAccountingCSV,
+} from '../services/accounting'
 import '../styles/ExportButton.css'
 
 export const ExportButton: React.FC = () => {
@@ -9,6 +14,7 @@ export const ExportButton: React.FC = () => {
   const [exporting, setExporting] = useState(false)
   const [progress, setProgress] = useState(0)
   const [includeAudit, setIncludeAudit] = useState(false)
+  const [platform, setPlatform] = useState<AccountingPlatform>('generic')
   const [showOptions, setShowOptions] = useState(false)
 
   const handleExport = async () => {
@@ -34,9 +40,14 @@ export const ExportButton: React.FC = () => {
         }
       }
 
-      // Generate CSV
-      const csv = CSVExporter.generateCSV(transactions, includeAudit)
-      const filename = CSVExporter.generateFilename('transactions')
+      const csv =
+        platform === 'generic'
+          ? CSVExporter.generateCSV(transactions, includeAudit)
+          : generateAccountingCSV(transactions, platform)
+      const filename =
+        platform === 'generic'
+          ? CSVExporter.generateFilename('transactions')
+          : accountingFilename(platform)
 
       // Download
       CSVExporter.downloadCSV(csv, filename)
@@ -73,7 +84,7 @@ export const ExportButton: React.FC = () => {
         ) : (
           <>
             <Download size={18} />
-            Export CSV
+            Export for accounting
           </>
         )}
       </button>
@@ -88,20 +99,41 @@ export const ExportButton: React.FC = () => {
       {/* Options Menu */}
       {showOptions && !exporting && (
         <div className="export-options">
-          <label className="option-item">
-            <input
-              type="checkbox"
-              checked={includeAudit}
-              onChange={(e) => setIncludeAudit(e.target.checked)}
-            />
-            <span>Include Audit Trail</span>
+          <label className="option-label" htmlFor="accounting-platform">
+            Export format
           </label>
+          <select
+            id="accounting-platform"
+            className="platform-select"
+            value={platform}
+            onChange={(e) => setPlatform(e.target.value as AccountingPlatform)}
+          >
+            <option value="generic">Generic CSV</option>
+            <option value="quickbooks">QuickBooks Online</option>
+            <option value="xero">Xero</option>
+          </select>
+
+          {platform === 'generic' && (
+            <label className="option-item">
+              <input
+                type="checkbox"
+                checked={includeAudit}
+                onChange={(e) => setIncludeAudit(e.target.checked)}
+              />
+              <span>Include Audit Trail</span>
+            </label>
+          )}
 
           <div className="option-info">
             <p>
               <strong>{transactions.length}</strong> transaction
               {transactions.length !== 1 ? 's' : ''} will be exported
             </p>
+            {platform !== 'generic' && (
+              <p className="format-help">
+                Formatted for import into {platform === 'quickbooks' ? 'QuickBooks Online' : 'Xero'}.
+              </p>
+            )}
             {transactions.length > 10000 && (
               <p className="warning">
                 Progress will be shown for large exports
@@ -110,7 +142,7 @@ export const ExportButton: React.FC = () => {
           </div>
 
           <button className="action-button primary" onClick={handleExport}>
-            Download CSV
+            Download {platform === 'generic' ? 'CSV' : 'import file'}
           </button>
 
           <button
