@@ -4,12 +4,10 @@
  * Integrates with Redoc for synchronized navigation
  */
 
-import React, { useMemo, useState, useEffect } from 'react';
-import Link from '@docusaurus/Link';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import {
   toEndpointLink,
   toTagLink,
-  parseDeepLink,
   onHashChange,
 } from '../utils/redocDeepLink';
 import type { ParsedEndpoint, TagGroup } from '../utils/apiSpecParser';
@@ -18,12 +16,32 @@ import styles from './APISidebarNav.module.css';
 export interface APISidebarNavProps {
   endpoints: ParsedEndpoint[];
   tagGroups?: TagGroup[];
+  searchQuery?: string;
   onEndpointClick?: (endpoint: ParsedEndpoint) => void;
   onTagClick?: (tagName: string) => void;
   selectedEndpointId?: string;
   expandedTags?: string[];
   onTagToggle?: (tag: string) => void;
   enableDeepLinking?: boolean;
+}
+
+function highlightMatch(text: string, query: string): React.ReactNode {
+  if (!query.trim()) return text;
+
+  const safeQuery = query.trim();
+  const regex = new RegExp(`(${escapeRegExp(safeQuery)})`, 'gi');
+  const parts = text.split(regex);
+
+  return parts.map((part, index) => {
+    if (part.toLowerCase() === safeQuery.toLowerCase()) {
+      return <mark key={`${part}-${index}`}>{part}</mark>;
+    }
+    return <React.Fragment key={`${part}-${index}`}>{part}</React.Fragment>;
+  });
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /**
@@ -56,6 +74,7 @@ function MethodBadge({ method }: { method: string }): React.JSX.Element {
 export default function APISidebarNav({
   endpoints,
   tagGroups: providedTagGroups,
+  searchQuery = '',
   onEndpointClick,
   onTagClick,
   selectedEndpointId: propSelectedEndpointId,
@@ -69,6 +88,7 @@ export default function APISidebarNav({
   const [selectedEndpointId, setSelectedEndpointId] = useState<string | undefined>(
     propSelectedEndpointId
   );
+  const endpointRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   /**
    * Group endpoints by tag if not provided
@@ -222,6 +242,66 @@ export default function APISidebarNav({
     });
   };
 
+  const handleEndpointKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    endpoint: ParsedEndpoint,
+    index: number,
+  ) => {
+    const visibleEndpoints = tagGroups.flatMap((group) =>
+      localExpandedTags.has(group.name) ? group.endpoints : [],
+    );
+    const currentIndex = visibleEndpoints.findIndex((item) => item.id === endpoint.id);
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      const next = visibleEndpoints[currentIndex + 1] ?? visibleEndpoints[0];
+      if (next) {
+        const nextRef = endpointRefs.current.find((ref) => ref?.dataset.endpointId === next.id);
+        nextRef?.focus();
+        handleEndpointClick(next);
+      }
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      const previous = visibleEndpoints[currentIndex - 1] ?? visibleEndpoints[visibleEndpoints.length - 1];
+      if (previous) {
+        const previousRef = endpointRefs.current.find((ref) => ref?.dataset.endpointId === previous.id);
+        previousRef?.focus();
+        handleEndpointClick(previous);
+      }
+    }
+
+    if (event.key === 'Home') {
+      event.preventDefault();
+      const first = visibleEndpoints[0];
+      if (first) {
+        const firstRef = endpointRefs.current.find((ref) => ref?.dataset.endpointId === first.id);
+        firstRef?.focus();
+        handleEndpointClick(first);
+      }
+    }
+
+    if (event.key === 'End') {
+      event.preventDefault();
+      const last = visibleEndpoints[visibleEndpoints.length - 1];
+      if (last) {
+        const lastRef = endpointRefs.current.find((ref) => ref?.dataset.endpointId === last.id);
+        lastRef?.focus();
+        handleEndpointClick(last);
+      }
+    }
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleEndpointClick(endpoint);
+    }
+
+    if (event.key === 'Tab') {
+      endpointRefs.current[index] = event.currentTarget;
+    }
+  };
+
   return (
     <nav className={styles.container}>
       <div className={styles.header}>
@@ -237,30 +317,37 @@ export default function APISidebarNav({
               className={styles.tagHeader}
               onClick={() => handleTagClick(group.name)}
               aria-expanded={localExpandedTags.has(group.name)}
+              aria-label={`Toggle ${group.name} endpoints`}
               data-tag-name={group.name}
             >
               <span className={styles.tagToggle}>
                 {localExpandedTags.has(group.name) ? '▼' : '▶'}
               </span>
-              <span className={styles.tagName}>{group.name}</span>
+              <span className={styles.tagName}>{highlightMatch(group.name, searchQuery)}</span>
               <span className={styles.tagCount}>{group.endpoints.length}</span>
             </button>
 
             {/* Endpoints List */}
             {localExpandedTags.has(group.name) && (
-              <div className={styles.endpointsList}>
-                {group.endpoints.map((endpoint) => (
+              <div className={styles.endpointsList} role="list" aria-label={`${group.name} endpoints`}>
+                {group.endpoints.map((endpoint, listIndex) => (
                   <button
                     key={endpoint.id}
+                    ref={(node) => {
+                      endpointRefs.current[listIndex] = node;
+                    }}
                     className={`${styles.endpointItem} ${
                       selectedEndpointId === endpoint.id ? styles.selected : ''
                     }`}
                     onClick={() => handleEndpointClick(endpoint)}
+                    onKeyDown={(event) => handleEndpointKeyDown(event, endpoint, listIndex)}
                     title={endpoint.summary}
                     data-endpoint-id={endpoint.id}
+                    aria-current={selectedEndpointId === endpoint.id ? 'true' : undefined}
+                    aria-label={`${endpoint.method.toUpperCase()} ${endpoint.path}`}
                   >
                     <MethodBadge method={endpoint.method} />
-                    <span className={styles.endpointPath}>{endpoint.path}</span>
+                    <span className={styles.endpointPath}>{highlightMatch(endpoint.path, searchQuery)}</span>
                   </button>
                 ))}
               </div>
