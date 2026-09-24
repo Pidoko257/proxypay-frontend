@@ -126,6 +126,27 @@ Update notification settings for a specific event type.
 }
 ```
 
+#### POST /api/notifications/webhook/test
+Send a sample webhook to the configured endpoint. The dashboard retries transient
+network and server errors up to two times.
+
+**Request Body:**
+```json
+{
+  "id": "webhook-test-1720000000000",
+  "eventType": "payment.settled",
+  "createdAt": "2024-07-03T12:00:00.000Z",
+  "data": {
+    "test": true,
+    "message": "This is a test webhook from ProxyPay."
+  }
+}
+```
+
+The endpoint response status and body are shown in the dashboard, along with
+request and response timestamps. Test results are retained in the current
+settings-page session.
+
 ---
 
 ### 3. Health Check Endpoint
