@@ -47,6 +47,21 @@ export interface NotificationConfig {
   settings: NotificationSettings[]
 }
 
+export interface ScheduledExport {
+  id: string
+  scheduledFor: string
+  status: 'scheduled' | 'processing' | 'ready' | 'failed'
+}
+
+export interface DashboardNotification {
+  id: string
+  title: string
+  message: string
+  createdAt: string
+  read: boolean
+  actionUrl?: string
+}
+
 class ProxyPayAPI {
   private client: AxiosInstance
 
@@ -98,6 +113,24 @@ class ProxyPayAPI {
       }
     )
     return data
+  }
+
+  async scheduleExport(options: {
+    includeAuditTrail: boolean
+    scheduledFor: string
+    filters?: TransactionFilters
+  }): Promise<ScheduledExport> {
+    const { data } = await this.client.post('/exports', options)
+    return data
+  }
+
+  async getNotifications(): Promise<DashboardNotification[]> {
+    const { data } = await this.client.get('/notifications')
+    return data.notifications ?? data
+  }
+
+  async markNotificationRead(id: string): Promise<void> {
+    await this.client.patch(`/notifications/${encodeURIComponent(id)}`, { read: true })
   }
 
   // Health check

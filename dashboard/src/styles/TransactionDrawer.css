@@ -18,6 +18,44 @@
   transform: translateX(0);
 }
 
+.transaction-drawer.full-page {
+  width: 100%;
+  left: 0;
+  right: 0;
+  transform: none;
+  box-shadow: none;
+}
+
+.drawer-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+@media print {
+  .transaction-drawer {
+    position: static;
+    width: 100%;
+    height: auto;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .drawer-header {
+    padding: 0 0 1rem;
+  }
+
+  .drawer-actions,
+  .drawer-overlay {
+    display: none;
+  }
+
+  .drawer-content {
+    overflow: visible;
+    padding: 0;
+  }
+}
+
 .drawer-overlay {
   position: fixed;
   inset: 0;

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { format } from 'date-fns'
-import { X } from 'lucide-react'
+import { ExternalLink, Printer, X } from 'lucide-react'
 import { Transaction } from '../services/api'
 import '../styles/TransactionDrawer.css'
 
@@ -8,12 +8,16 @@ interface TransactionDrawerProps {
   transaction: Transaction | null
   isOpen: boolean
   onClose: () => void
+  fullPage?: boolean
+  onOpenFullPage?: () => void
 }
 
 export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
   transaction,
   isOpen,
   onClose,
+  fullPage = false,
+  onOpenFullPage,
 }) => {
   // Handle Escape key
   useEffect(() => {
@@ -32,22 +36,35 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
   return (
     <>
       {/* Overlay */}
-      {isOpen && (
+      {isOpen && !fullPage && (
         <div className="drawer-overlay" onClick={onClose} aria-hidden="true" />
       )}
 
       {/* Drawer */}
-      <div className={`transaction-drawer ${isOpen ? 'open' : ''}`}>
+      <div className={`transaction-drawer ${isOpen ? 'open' : ''} ${fullPage ? 'full-page' : ''}`}>
         {/* Header */}
         <div className="drawer-header">
           <h2>Transaction Details</h2>
-          <button
-            className="close-button"
-            onClick={onClose}
-            aria-label="Close drawer"
-          >
-            <X size={24} />
-          </button>
+          <div className="drawer-actions">
+            {!fullPage && onOpenFullPage && (
+              <button
+                className="close-button"
+                onClick={onOpenFullPage}
+                aria-label="Open full-page transaction view"
+                title="Open full-page view"
+              >
+                <ExternalLink size={20} />
+              </button>
+            )}
+            {fullPage && (
+              <button className="close-button" onClick={() => window.print()} aria-label="Print transaction">
+                <Printer size={20} />
+              </button>
+            )}
+            <button className="close-button" onClick={onClose} aria-label="Close transaction">
+              <X size={24} />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
