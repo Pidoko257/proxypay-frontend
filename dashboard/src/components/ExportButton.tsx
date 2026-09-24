@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
-import { Download, Loader } from 'lucide-react'
+import { Download, FileText, Loader } from 'lucide-react'
 import { useTransactionStore } from '../stores/transactionStore'
 import { CSVExporter } from '../services/csv'
+import { printTransactionReport } from '../services/print'
 import '../styles/ExportButton.css'
 
 export const ExportButton: React.FC = () => {
@@ -54,6 +55,16 @@ export const ExportButton: React.FC = () => {
       alert('Failed to export transactions')
       setExporting(false)
       setProgress(0)
+    }
+  }
+
+  const handleReport = () => {
+    try {
+      printTransactionReport(transactions)
+      setShowOptions(false)
+    } catch (error) {
+      console.error('Report generation failed:', error)
+      alert(error instanceof Error ? error.message : 'Failed to generate report')
     }
   }
 
@@ -111,6 +122,11 @@ export const ExportButton: React.FC = () => {
 
           <button className="action-button primary" onClick={handleExport}>
             Download CSV
+          </button>
+
+          <button className="action-button report" onClick={handleReport}>
+            <FileText size={16} />
+            Print / Save PDF Report
           </button>
 
           <button
