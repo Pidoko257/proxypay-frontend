@@ -27,19 +27,39 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
 
+  // Prevent body scroll when drawer is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isOpen])
+
   if (!transaction) return null
 
   return (
     <>
-      {/* Overlay */}
-      {isOpen && (
-        <div className="drawer-overlay" onClick={onClose} aria-hidden="true" />
-      )}
+      {/* Overlay — rendered before drawer in DOM; use .visible class instead of
+          the broken `~ sibling` combinator which would require overlay after drawer */}
+      <div
+        className={`drawer-overlay${isOpen ? ' visible' : ''}`}
+        onClick={onClose}
+        aria-hidden="true"
+      />
 
       {/* Drawer */}
-      <div className={`transaction-drawer ${isOpen ? 'open' : ''}`}>
-        {/* Header */}
-        <div className="drawer-header">
+      <div
+        className={`transaction-drawer ${isOpen ? 'open' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Transaction Details"
+      >
+        {/* Fixed Header — always visible */}
+        <header className="drawer-header">
           <h2>Transaction Details</h2>
           <button
             className="close-button"
@@ -48,9 +68,9 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
           >
             <X size={24} />
           </button>
-        </div>
+        </header>
 
-        {/* Content */}
+        {/* Scrollable Content */}
         <div className="drawer-content">
           {/* Basic Info */}
           <section className="detail-section">
@@ -79,7 +99,7 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
 
           {/* Blockchain Info */}
           <section className="detail-section">
-            <h3>Blockchain & Mobile Money</h3>
+            <h3>Blockchain &amp; Mobile Money</h3>
             <div className="detail-grid">
               <div className="detail-item">
                 <label>Stellar Transaction Hash</label>
@@ -96,7 +116,7 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
 
           {/* Amount & Fees */}
           <section className="detail-section">
-            <h3>Amount & Fees</h3>
+            <h3>Amount &amp; Fees</h3>
             <div className="detail-grid">
               <div className="detail-item">
                 <label>Amount</label>
@@ -178,6 +198,17 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
             </div>
           </section>
         </div>
+
+        {/* Fixed Footer — action buttons always accessible */}
+        <footer className="drawer-footer">
+          <button
+            className="close-footer-button"
+            onClick={onClose}
+            aria-label="Close transaction details"
+          >
+            Close
+          </button>
+        </footer>
       </div>
     </>
   )
