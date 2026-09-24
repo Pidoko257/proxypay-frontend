@@ -227,6 +227,33 @@ export default function RedocViewer({
     renderRedoc();
   }, [loadedSpec]);
 
+  const createSyntaxHighlighter = useCallback(() => {
+    const root = containerRef.current;
+    if (!root) return;
+
+    const blocks = root.querySelectorAll('pre code, code[class*="language-"]');
+    for (const block of Array.from(blocks)) {
+      if ((block as HTMLElement).dataset.syntaxHighlighted === 'true') continue;
+      const code = (block as HTMLElement).textContent ?? '';
+      if (!code.trim()) continue;
+
+      const escaped = code
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      const highlighted = escaped
+        .replace(/("(?:\\u[\da-fA-F]{4}|\\[^u]|[^\\"]) *")/g, '<span class="token-string">$1</span>')
+        .replace(/(\btrue\b|\bfalse\b|\bnull\b)/g, '<span class="token-boolean">$1</span>')
+        .replace(/(\b\d+(?:\.\d+)?(?:e[+-]?\d+)?\b)/gi, '<span class="token-number">$1</span>')
+        .replace(/([{}\[\],:])/g, '<span class="token-punctuation">$1</span>')
+        .replace(/([A-Za-z_][A-Za-z0-9_-]*)(?=\s*:)/g, '<span class="token-key">$1</span>');
+
+      (block as HTMLElement).dataset.syntaxHighlighted = 'true';
+      (block as HTMLElement).innerHTML = highlighted;
+    }
+  }, []);
+
   /**
    * Render Redoc instance
    */
@@ -285,6 +312,8 @@ export default function RedocViewer({
         },
         containerRef.current,
       );
+
+      requestAnimationFrame(() => createSyntaxHighlighter());
 
       // Handle current hash if deep-linking is enabled
       if (enableDeepLinking && window.location.hash) {

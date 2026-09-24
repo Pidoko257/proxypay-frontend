@@ -248,6 +248,45 @@ button[class*='copyButton'] {
   fill: var(--ifm-color-primary);
 }
 
+.redoc-wrap pre,
+.redoc-wrap code {
+  font-family: var(--ifm-font-family-monospace);
+  line-height: 1.6;
+}
+
+.redoc-wrap .token-string {
+  color: #0ea5e9;
+}
+
+.redoc-wrap .token-key,
+.redoc-wrap .token-boolean,
+.redoc-wrap .token-number,
+.redoc-wrap .token-punctuation {
+  color: var(--ifm-color-primary-dark);
+}
+
+.redoc-wrap .token-boolean {
+  color: #7c3aed;
+}
+
+.redoc-wrap .token-number {
+  color: #ea580c;
+}
+
+.redoc-wrap .token-punctuation {
+  color: var(--ifm-color-emphasis-600);
+}
+
+.redoc-wrap mark,
+.api-search-match,
+.tagName mark,
+.endpointPath mark {
+  background: rgba(250, 204, 21, 0.35);
+  color: inherit;
+  border-radius: 0.2rem;
+  padding: 0 0.1rem;
+}
+
 /* Redoc container should not cause horizontal overflow */
 .redoc-wrap {
   max-width: 100%;
