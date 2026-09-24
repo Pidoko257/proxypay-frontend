@@ -4,8 +4,13 @@ import { useTransactionStore } from '../stores/transactionStore'
 import { proxyPayAPI } from '../services/api'
 import { CSVExporter } from '../services/csv'
 import '../styles/ExportButton.css'
+import { canAccess } from '../auth/access'
 
 export const ExportButton: React.FC = () => {
+  if (!canAccess('transaction-export')) {
+    return null
+  }
+
   const { transactions } = useTransactionStore()
   const [exporting, setExporting] = useState(false)
   const [progress, setProgress] = useState(0)

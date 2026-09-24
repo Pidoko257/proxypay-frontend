@@ -5,6 +5,7 @@ import { TransactionDrawer } from './components/TransactionDrawer'
 import { ExportButton } from './components/ExportButton'
 import { NotificationSettings } from './components/NotificationSettings'
 import { NotificationCenter } from './components/NotificationCenter'
+import { canAccess } from './auth/access'
 import './App.css'
 
 type Page = 'transactions' | 'settings'
@@ -15,6 +16,7 @@ export default function App() {
     useTransactionStore()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [fullPageTransaction, setFullPageTransaction] = useState(false)
+  const canManageNotifications = canAccess('notification-settings')
 
   // Initialize transactions on mount
   useEffect(() => {
@@ -47,12 +49,14 @@ export default function App() {
             >
               Transactions
             </button>
-            <button
-              className={`nav-tab ${currentPage === 'settings' ? 'active' : ''}`}
-              onClick={() => setCurrentPage('settings')}
-            >
-              Notification Settings
-            </button>
+            {canManageNotifications && (
+              <button
+                className={`nav-tab ${currentPage === 'settings' ? 'active' : ''}`}
+                onClick={() => setCurrentPage('settings')}
+              >
+                Notification Settings
+              </button>
+            )}
           </nav>
         </div>
       </header>
@@ -67,10 +71,11 @@ export default function App() {
             </div>
             <TransactionsTable onRowClick={handleRowClick} />
           </div>
-        ) : (
+        ) : canManageNotifications ? (
           <div className="settings-page">
             <NotificationSettings />
           </div>
+        ) : null
         )}
       </main>
 
