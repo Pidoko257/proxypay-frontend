@@ -26,3 +26,753 @@ button.copyButton_node_modules-\@docusaurus-theme-classic-src-theme-CodeBlock-st
 pre code {
   position: relative;
 }
+
+/* =============================================================================
+   Issue #500 — ExportButton
+   ============================================================================= */
+
+.export-button-wrapper {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+}
+
+.export-button-group {
+  display: inline-flex;
+  gap: 0;
+}
+
+.export-button-group .button {
+  border-radius: 0;
+}
+
+.export-button-group .button:first-child {
+  border-top-left-radius: var(--ifm-button-border-radius);
+  border-bottom-left-radius: var(--ifm-button-border-radius);
+  border-right: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.export-button-caret {
+  border-top-right-radius: var(--ifm-button-border-radius) !important;
+  border-bottom-right-radius: var(--ifm-button-border-radius) !important;
+  padding: 0 0.6rem;
+  min-width: unset;
+}
+
+.export-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 200;
+  background: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: var(--ifm-card-border-radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  min-width: 220px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.export-panel-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ifm-color-emphasis-600);
+  margin-bottom: 0.4rem;
+}
+
+.export-panel-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.export-format-options {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.export-format-option {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: var(--ifm-global-radius);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.export-format-option input[type='radio'] {
+  display: none;
+}
+
+.export-format-option--active {
+  border-color: var(--ifm-color-primary);
+  background: color-mix(in srgb, var(--ifm-color-primary) 10%, transparent);
+  color: var(--ifm-color-primary-darkest);
+  font-weight: 600;
+}
+
+.export-option-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.export-panel-footer {
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+  padding-top: 0.5rem;
+}
+
+.export-panel-confirm {
+  width: 100%;
+  justify-content: center;
+}
+
+/* =============================================================================
+   Issue #501 — AuditTrailDrawer
+   ============================================================================= */
+
+.audit-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.audit-backdrop--visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.audit-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 401;
+  width: min(480px, 100vw);
+  background: var(--ifm-background-surface-color);
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.audit-drawer--open {
+  transform: translateX(0);
+}
+
+.audit-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+  flex-shrink: 0;
+}
+
+.audit-drawer-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.audit-drawer-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: var(--ifm-color-emphasis-600);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--ifm-global-radius);
+  transition: background 0.15s;
+  line-height: 1;
+}
+
+.audit-drawer-close:hover {
+  background: var(--ifm-color-emphasis-100);
+}
+
+/* Filter bar */
+.audit-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+  flex-shrink: 0;
+}
+
+.audit-filter-chip {
+  background: none;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 2rem;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.audit-filter-chip--active,
+.audit-filter-chip:hover {
+  border-color: var(--ifm-color-primary);
+  background: color-mix(in srgb, var(--ifm-color-primary) 10%, transparent);
+  color: var(--ifm-color-primary-darkest);
+}
+
+/* Event list */
+.audit-event-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.audit-empty {
+  text-align: center;
+  color: var(--ifm-color-emphasis-500);
+  margin-top: 2rem;
+  font-size: 0.9rem;
+}
+
+/* Individual event */
+.audit-event {
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: var(--ifm-card-border-radius);
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.audit-event--expanded {
+  border-color: var(--ifm-color-primary);
+}
+
+.audit-event-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0.6rem 0.75rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.audit-event-header:hover {
+  background: var(--ifm-color-emphasis-50);
+}
+
+.audit-event-header:disabled {
+  cursor: default;
+}
+
+.audit-event-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.25rem;
+  flex-shrink: 0;
+}
+
+.audit-event-badge--created  { background: #d1fae5; color: #065f46; }
+.audit-event-badge--updated  { background: #dbeafe; color: #1e40af; }
+.audit-event-badge--failed   { background: #fee2e2; color: #991b1b; }
+.audit-event-badge--deleted  { background: #fef3c7; color: #92400e; }
+.audit-event-badge--approved { background: #d1fae5; color: #065f46; }
+.audit-event-badge--rejected { background: #fee2e2; color: #991b1b; }
+
+.audit-event-action {
+  flex: 1;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.audit-event-time {
+  font-size: 0.75rem;
+  color: var(--ifm-color-emphasis-600);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.audit-event-chevron {
+  font-size: 0.65rem;
+  color: var(--ifm-color-emphasis-500);
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+/* Expandable details */
+.audit-event-details {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.audit-event-details--visible {
+  max-height: 600px;
+}
+
+.audit-event-details-inner {
+  padding: 0.75rem;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--ifm-color-emphasis-50);
+}
+
+.audit-detail-row {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  align-items: baseline;
+}
+
+.audit-detail-row--block {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.audit-detail-key {
+  font-weight: 600;
+  color: var(--ifm-color-emphasis-700);
+  min-width: 90px;
+  flex-shrink: 0;
+}
+
+.audit-detail-value {
+  color: var(--ifm-color-emphasis-900);
+  word-break: break-all;
+}
+
+.audit-detail-value--mono {
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.78rem;
+}
+
+.audit-detail-description {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: var(--ifm-color-emphasis-800);
+}
+
+/* State changes table */
+.audit-changes,
+.audit-metadata {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.audit-changes-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ifm-color-emphasis-600);
+}
+
+.audit-changes-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.audit-changes-table th,
+.audit-changes-table td {
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  text-align: left;
+  vertical-align: top;
+}
+
+.audit-changes-table th {
+  background: var(--ifm-color-emphasis-100);
+  font-weight: 600;
+  font-size: 0.72rem;
+}
+
+.audit-changes-field {
+  font-weight: 600;
+  font-family: var(--ifm-font-family-monospace);
+}
+
+.audit-changes-before {
+  color: #991b1b;
+  font-family: var(--ifm-font-family-monospace);
+  word-break: break-all;
+}
+
+.audit-changes-after {
+  color: #065f46;
+  font-family: var(--ifm-font-family-monospace);
+  word-break: break-all;
+}
+
+/* =============================================================================
+   Issue #502 — CopyButton & ToastContainer & TransactionIdField
+   ============================================================================= */
+
+/* Toast container */
+.toast-container {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  padding: 0.55rem 1.1rem;
+  border-radius: 2rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  animation: toast-in 0.2s ease forwards;
+}
+
+.toast--success {
+  background: var(--ifm-color-primary);
+  color: #fff;
+}
+
+.toast--error {
+  background: #dc2626;
+  color: #fff;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Copy button */
+.copy-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: var(--ifm-global-radius);
+  padding: 0.2rem 0.35rem;
+  cursor: pointer;
+  color: var(--ifm-color-emphasis-600);
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.copy-button:hover {
+  color: var(--ifm-color-primary);
+  border-color: var(--ifm-color-primary);
+  background: color-mix(in srgb, var(--ifm-color-primary) 8%, transparent);
+}
+
+.copy-button--copied {
+  color: var(--ifm-color-primary);
+  border-color: var(--ifm-color-primary);
+}
+
+.copy-button-icon {
+  display: flex;
+  align-items: center;
+}
+
+.copy-button-icon--success {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+/* Transaction ID field */
+.txid-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.txid-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.txid-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ifm-color-emphasis-600);
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+.txid-value-group {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.txid-value {
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.8rem;
+  background: var(--ifm-code-background);
+  padding: 0.15rem 0.4rem;
+  border-radius: var(--ifm-global-radius);
+  word-break: break-all;
+}
+
+/* =============================================================================
+   Issue #503 — FeeBreakdownTooltip & FeeBreakdownTitle
+   ============================================================================= */
+
+.fee-breakdown-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.fee-tooltip-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.fee-tooltip-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ifm-color-primary);
+  padding: 0.1rem;
+  border-radius: 50%;
+  transition: color 0.15s, background 0.15s;
+  line-height: 1;
+}
+
+.fee-tooltip-trigger:hover,
+.fee-tooltip-trigger:focus-visible {
+  color: var(--ifm-color-primary-dark);
+  background: color-mix(in srgb, var(--ifm-color-primary) 10%, transparent);
+}
+
+.fee-tooltip-trigger:focus-visible {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: 2px;
+}
+
+.fee-tooltip-icon-svg {
+  display: block;
+}
+
+/* Panel */
+.fee-tooltip-panel {
+  position: absolute;
+  z-index: 300;
+  width: 280px;
+  background: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: var(--ifm-card-border-radius);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.13);
+  padding: 0.85rem;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(6px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.fee-tooltip-panel--visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+/* Placement */
+.fee-tooltip-panel--bottom {
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+}
+.fee-tooltip-panel--bottom.fee-tooltip-panel--visible {
+  transform: translateX(-50%) translateY(0);
+}
+
+.fee-tooltip-panel--top {
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-6px);
+}
+.fee-tooltip-panel--top.fee-tooltip-panel--visible {
+  transform: translateX(-50%) translateY(0);
+}
+
+.fee-tooltip-panel--right {
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%) translateX(6px);
+}
+.fee-tooltip-panel--right.fee-tooltip-panel--visible {
+  transform: translateY(-50%) translateX(0);
+}
+
+.fee-tooltip-panel--left {
+  right: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-6px);
+}
+.fee-tooltip-panel--left.fee-tooltip-panel--visible {
+  transform: translateY(-50%) translateX(0);
+}
+
+/* Arrow */
+.fee-tooltip-arrow {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-color-emphasis-300);
+  transform: rotate(45deg);
+}
+
+.fee-tooltip-panel--bottom .fee-tooltip-arrow {
+  top: -5px;
+  left: 50%;
+  margin-left: -4px;
+  border-bottom-color: transparent;
+  border-right-color: transparent;
+}
+
+.fee-tooltip-panel--top .fee-tooltip-arrow {
+  bottom: -5px;
+  left: 50%;
+  margin-left: -4px;
+  border-top-color: transparent;
+  border-left-color: transparent;
+}
+
+.fee-tooltip-panel--right .fee-tooltip-arrow {
+  left: -5px;
+  top: 50%;
+  margin-top: -4px;
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+}
+
+.fee-tooltip-panel--left .fee-tooltip-arrow {
+  right: -5px;
+  top: 50%;
+  margin-top: -4px;
+  border-left-color: transparent;
+  border-top-color: transparent;
+}
+
+/* Content */
+.fee-tooltip-heading {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ifm-color-emphasis-600);
+  margin: 0 0 0.5rem;
+}
+
+.fee-tooltip-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.fee-tooltip-table th,
+.fee-tooltip-table td {
+  padding: 0.3rem 0.35rem;
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+  text-align: left;
+  vertical-align: top;
+}
+
+.fee-tooltip-table th {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ifm-color-emphasis-600);
+}
+
+.fee-tooltip-fee-label {
+  display: block;
+  font-weight: 500;
+}
+
+.fee-tooltip-fee-desc {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--ifm-color-emphasis-500);
+  margin-top: 0.15rem;
+}
+
+.fee-tooltip-fee-amount {
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--ifm-color-primary-darkest);
+}
+
+.fee-tooltip-total-row td {
+  font-weight: 700;
+  border-top: 2px solid var(--ifm-color-emphasis-400);
+  border-bottom: none;
+}
+
+.fee-tooltip-docs-link {
+  display: block;
+  margin-top: 0.65rem;
+  font-size: 0.78rem;
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.fee-tooltip-docs-link:hover {
+  color: var(--ifm-color-primary-dark);
+  text-decoration: underline;
+}
+
+/* Mobile tap behaviour: ensure tooltip panel doesn't go off-screen */
+@media (max-width: 480px) {
+  .fee-tooltip-panel {
+    width: calc(100vw - 2rem);
+    left: 0 !important;
+    right: unset;
+    transform: none !important;
+  }
+  .fee-tooltip-panel--visible {
+    transform: none !important;
+  }
+}
