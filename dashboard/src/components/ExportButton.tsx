@@ -7,10 +7,6 @@ import '../styles/ExportButton.css'
 import { canAccess } from '../auth/access'
 
 export const ExportButton: React.FC = () => {
-  if (!canAccess('transaction-export')) {
-    return null
-  }
-
   const { transactions } = useTransactionStore()
   const [exporting, setExporting] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -19,34 +15,14 @@ export const ExportButton: React.FC = () => {
   const [scheduledFor, setScheduledFor] = useState('')
   const [scheduling, setScheduling] = useState(false)
 
+  if (!canAccess('transaction-export')) {
+    return null
+  }
+
   const handleExport = async () => {
     if (transactions.length === 0) {
       alert('No transactions to export')
       return
-    }
-
-    const handleSchedule = async () => {
-      if (!scheduledFor) {
-        alert('Choose when the export should be ready')
-        return
-      }
-
-      setScheduling(true)
-      try {
-        await proxyPayAPI.scheduleExport({
-          includeAuditTrail: includeAudit,
-          scheduledFor: new Date(scheduledFor).toISOString(),
-          filters: useTransactionStore.getState().filters,
-        })
-        alert('Export scheduled. You will be notified when it is ready.')
-        setScheduledFor('')
-        setShowOptions(false)
-      } catch (error) {
-        console.error('Scheduling export failed:', error)
-        alert('Failed to schedule export')
-      } finally {
-        setScheduling(false)
-      }
     }
 
     setExporting(true)
@@ -86,6 +62,30 @@ export const ExportButton: React.FC = () => {
       alert('Failed to export transactions')
       setExporting(false)
       setProgress(0)
+    }
+  }
+
+  const handleSchedule = async () => {
+    if (!scheduledFor) {
+      alert('Choose when the export should be ready')
+      return
+    }
+
+    setScheduling(true)
+    try {
+      await proxyPayAPI.scheduleExport({
+        includeAuditTrail: includeAudit,
+        scheduledFor: new Date(scheduledFor).toISOString(),
+        filters: useTransactionStore.getState().filters,
+      })
+      alert('Export scheduled. You will be notified when it is ready.')
+      setScheduledFor('')
+      setShowOptions(false)
+    } catch (error) {
+      console.error('Scheduling export failed:', error)
+      alert('Failed to schedule export')
+    } finally {
+      setScheduling(false)
     }
   }
 

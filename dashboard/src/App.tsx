@@ -75,8 +75,7 @@ export default function App() {
           <div className="settings-page">
             <NotificationSettings />
           </div>
-        ) : null
-        )}
+        ) : null}
       </main>
 
       {/* Transaction Detail Drawer */}

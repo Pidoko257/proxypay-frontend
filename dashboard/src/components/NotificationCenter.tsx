@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import { Bell, Check } from 'lucide-react'
 import { useNotificationStore } from '../stores/notificationStore'
+import { getSafeNotificationUrl } from '../utils/safeNavigation'
 
 export const NotificationCenter: React.FC = () => {
   const { notifications, fetchNotifications, markNotificationRead } =
@@ -33,8 +34,12 @@ export const NotificationCenter: React.FC = () => {
               <div>
                 <strong>{notification.title}</strong>
                 <p>{notification.message}</p>
-                {notification.actionUrl && (
-                  <a href={notification.actionUrl} onClick={() => markNotificationRead(notification.id)}>
+                {notification.actionUrl &&
+                  getSafeNotificationUrl(notification.actionUrl) && (
+                  <a
+                    href={getSafeNotificationUrl(notification.actionUrl) ?? '#'}
+                    onClick={() => markNotificationRead(notification.id)}
+                  >
                     Open export
                   </a>
                 )}
