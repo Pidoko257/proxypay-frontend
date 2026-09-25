@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { format } from 'date-fns'
-import { X } from 'lucide-react'
+import { Printer, X } from 'lucide-react'
 import { Transaction } from '../services/api'
 import '../styles/TransactionDrawer.css'
 
@@ -15,6 +15,12 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
   isOpen,
   onClose,
 }) => {
+  const handlePrint = () => {
+    if (window.confirm('Open the print dialog for this transaction?')) {
+      window.print()
+    }
+  }
+
   // Handle Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -40,14 +46,23 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
       <div className={`transaction-drawer ${isOpen ? 'open' : ''}`}>
         {/* Header */}
         <div className="drawer-header">
-          <h2>Transaction Details</h2>
-          <button
-            className="close-button"
-            onClick={onClose}
-            aria-label="Close drawer"
-          >
-            <X size={24} />
-          </button>
+          <div>
+            <p className="print-company-header">ProxyPay</p>
+            <h2>Transaction Details</h2>
+          </div>
+          <div className="drawer-actions">
+            <button className="print-button" onClick={handlePrint}>
+              <Printer size={18} />
+              Print
+            </button>
+            <button
+              className="close-button"
+              onClick={onClose}
+              aria-label="Close drawer"
+            >
+              <X size={24} />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -74,6 +89,7 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
                 <label>Provider</label>
                 <p>{transaction.provider.toUpperCase()}</p>
               </div>
+              <p className="print-company-footer">ProxyPay transaction record</p>
             </div>
           </section>
 
