@@ -182,6 +182,48 @@ function matchesSearch(ep: Endpoint, query: string): boolean {
   );
 }
 
+export function validateOpenApiSpec(value: unknown): string[] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return ['The specification must be a YAML or JSON object.'];
+  }
+
+  const document = value as Record<string, unknown>;
+  const errors: string[] = [];
+
+  if (typeof document.openapi !== 'string' || !/^3\.(0|1)(\.\d+)?$/.test(document.openapi)) {
+    errors.push('The `openapi` field must be an OpenAPI 3.0 or 3.1 version.');
+  }
+
+  const info = document.info;
+  if (!info || typeof info !== 'object' || Array.isArray(info)) {
+    errors.push('The `info` object is required.');
+  } else {
+    const infoObject = info as Record<string, unknown>;
+    if (typeof infoObject.title !== 'string' || !infoObject.title.trim()) {
+      errors.push('The `info.title` field is required.');
+    }
+    if (typeof infoObject.version !== 'string' || !infoObject.version.trim()) {
+      errors.push('The `info.version` field is required.');
+    }
+  }
+
+  const paths = document.paths;
+  if (!paths || typeof paths !== 'object' || Array.isArray(paths)) {
+    errors.push('The `paths` object is required and must contain API paths.');
+  } else {
+    for (const [path, pathItem] of Object.entries(paths)) {
+      if (!path.startsWith('/')) {
+        errors.push(`Path \`${path}\` must start with "/".`);
+      }
+      if (!pathItem || typeof pathItem !== 'object' || Array.isArray(pathItem)) {
+        errors.push(`Path \`${path}\` must be an object.`);
+      }
+    }
+  }
+
+  return errors;
+}
+
 // ─── Hooks ────────────────────────────────────────────────────────────────────
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -558,14 +600,22 @@ export default function ApiReference(): React.JSX.Element {
   // Fetch + parse spec; bump specVersion to invalidate cache
   useEffect(() => {
     fetch('/openapi.yaml')
-      .then((r) => r.text())
+      .then((r) => {
+        if (!r.ok) throw new Error(`Unable to load the OpenAPI document (HTTP ${r.status}).`);
+        return r.text();
+      })
       .then((text) => {
-        const parsed = jsYaml.load(text) as Record<string, unknown>;
-        setSpec(parsed);
+        const parsed = jsYaml.load(text);
+        const validationErrors = validateOpenApiSpec(parsed);
+        if (validationErrors.length > 0) {
+          throw new Error(`The OpenAPI document is invalid:\n${validationErrors.map((item) => `- ${item}`).join('\n')}`);
+        }
+        const validSpec = parsed as Record<string, unknown>;
+        setSpec(validSpec);
         setSpecVersion((v) => v + 1);
         searchCache.current.clear();
       })
-      .catch((e) => setError(String(e)));
+      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
   }, []);
 
   const allEndpoints = useMemo(() => (spec ? extractEndpoints(spec) : []), [spec]);
@@ -626,7 +676,21 @@ export default function ApiReference(): React.JSX.Element {
     }));
   }
 
-  if (error) return <div className="api-error">Failed to load spec: {error}</div>;
+  if (error) {
+    return (
+      <div className="api-error" role="alert">
+        <h2>Unable to display the API reference</h2>
+        <p>Fix the following issue{error.includes('\n- ') ? 's' : ''} in <code>static/openapi.yaml</code> and reload:</p>
+        {error.includes('\n- ') ? (
+          <ul>
+            {error.split('\n- ').slice(1).map((message) => <li key={message}>{message}</li>)}
+          </ul>
+        ) : (
+          <p>{error}</p>
+        )}
+      </div>
+    );
+  }
   if (!spec) return <div className="api-loading">Loading API reference…</div>;
 
   return (
