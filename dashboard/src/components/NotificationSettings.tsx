@@ -5,12 +5,36 @@ import { SkeletonCard } from './Skeleton'
 import '../styles/NotificationSettings.css'
 
 export const NotificationSettings: React.FC = () => {
-  const { settings, loading, error, optimisticUpdates, fetchSettings, updateSetting, clearError } =
-    useNotificationStore()
+  const {
+    settings,
+    loading,
+    error,
+    optimisticUpdates,
+    pastChanges,
+    futureChanges,
+    fetchSettings,
+    updateSetting,
+    undo,
+    redo,
+    clearError,
+  } = useNotificationStore()
 
   useEffect(() => {
     fetchSettings()
   }, [fetchSettings])
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey)) return
+      if (event.key.toLowerCase() !== 'z') return
+
+      event.preventDefault()
+      void (event.shiftKey ? redo() : undo())
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [redo, undo])
 
   const handleToggle = (
     eventType: string,
@@ -32,9 +56,38 @@ export const NotificationSettings: React.FC = () => {
   return (
     <div className="notification-settings">
       <header className="settings-header">
-        <h1>Notification Settings</h1>
-        <p>Configure which events trigger email and webhook notifications</p>
+        <div>
+          <h1>Notification Settings</h1>
+          <p>Configure which events trigger email and webhook notifications</p>
+        </div>
+        <div className="settings-history-actions">
+          <button onClick={() => void undo()} disabled={pastChanges.length === 0}>
+            Undo
+          </button>
+          <button onClick={() => void redo()} disabled={futureChanges.length === 0}>
+            Redo
+          </button>
+        </div>
       </header>
+
+      {pastChanges.length > 0 && (
+        <section className="change-history" aria-label="Notification change history">
+          <h2>Recent changes</h2>
+          <ol>
+            {pastChanges.map((change, index) => (
+              <li key={`${change.eventType}-${index}`}>
+                <span>{formatEventType(change.eventType)}</span>
+                <span>
+                  Email {change.previous.emailEnabled ? 'on' : 'off'} →{' '}
+                  {change.next.emailEnabled ? 'on' : 'off'},{' '}
+                  Webhook {change.previous.webhookEnabled ? 'on' : 'off'} →{' '}
+                  {change.next.webhookEnabled ? 'on' : 'off'}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
       {error && (
         <div className="alert alert-error">
