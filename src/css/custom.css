@@ -41,6 +41,23 @@ pre code {
   margin-bottom: 2rem;
 }
 
+.dashboard__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.dashboard__actions label {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.dashboard__actions select {
+  padding: 0.45rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 0.35rem;
+}
+
 .dashboard__eyebrow {
   color: var(--ifm-color-primary);
   font-weight: 700;
@@ -93,5 +110,5 @@ pre code {
 
 @media (max-width: 600px) {
   .dashboard__header { display: block; }
-  .dashboard__header .button { margin-top: 1rem; }
+  .dashboard__actions { flex-wrap: wrap; margin-top: 1rem; }
 }
