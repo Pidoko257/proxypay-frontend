@@ -4,6 +4,8 @@ import { TransactionsTable } from './components/TransactionsTable'
 import { TransactionDrawer } from './components/TransactionDrawer'
 import { ExportButton } from './components/ExportButton'
 import { NotificationSettings } from './components/NotificationSettings'
+import { SessionExpirationDialog } from './components/SessionExpirationDialog'
+import { useSessionExpiration } from './hooks/useSessionExpiration'
 import './App.css'
 
 type Page = 'transactions' | 'settings'
@@ -13,6 +15,11 @@ export default function App() {
   const { selectedTransaction, setSelectedTransaction, fetchTransactions, filters } =
     useTransactionStore()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const handleSessionExpired = () => {
+    window.location.reload()
+  }
+  const { showWarning, secondsRemaining, extendSession, signOut } =
+    useSessionExpiration(handleSessionExpired)
 
   // Initialize transactions on mount
   useEffect(() => {
@@ -75,6 +82,13 @@ export default function App() {
         isOpen={drawerOpen}
         onClose={handleDrawerClose}
       />
+      {showWarning && (
+        <SessionExpirationDialog
+          secondsRemaining={secondsRemaining}
+          onExtend={() => void extendSession()}
+          onSignOut={signOut}
+        />
+      )}
     </div>
   )
 }
