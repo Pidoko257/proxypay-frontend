@@ -79,6 +79,12 @@
   gap: 2rem;
 }
 
+.reconciliation-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
 .page-header {
   display: flex;
   justify-content: space-between;

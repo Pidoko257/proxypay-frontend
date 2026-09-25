@@ -1,0 +1,476 @@
+/* ─── Reconciliation Tab ──────────────────────────────────────────────────── */
+
+.recon-tab {
+  padding: 0 0 2rem;
+}
+
+/* Page header */
+.recon-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+  flex-wrap: wrap;
+}
+
+.recon-page-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+  color: var(--text-primary, #111827);
+}
+
+.recon-subtitle {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted, #6b7280);
+}
+
+.recon-header-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Buttons */
+.recon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.recon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.recon-btn-primary {
+  background: #6366f1;
+  color: #fff;
+}
+
+.recon-btn-primary:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.recon-btn-outline {
+  background: transparent;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.recon-btn-outline:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+/* ─── Upload section ──────────────────────────────────────────────────────── */
+
+.recon-upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.recon-dropzone {
+  border: 2px dashed #c4b5fd;
+  border-radius: 12px;
+  background: #faf5ff;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  position: relative;
+}
+
+.recon-dropzone:hover,
+.recon-dropzone:focus-visible {
+  border-color: #7c3aed;
+  background: #f3e8ff;
+  outline: none;
+}
+
+.recon-dropzone-loading {
+  cursor: default;
+  pointer-events: none;
+}
+
+.recon-file-input {
+  display: none;
+}
+
+.recon-upload-icon {
+  color: #7c3aed;
+  margin-bottom: 0.75rem;
+}
+
+.recon-drop-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.35rem;
+}
+
+.recon-drop-hint {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0 0 0.75rem;
+}
+
+.recon-link {
+  color: #7c3aed;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.recon-drop-note {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.recon-drop-note code {
+  background: #ede9fe;
+  color: #5b21b6;
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+  font-size: 0.8rem;
+}
+
+/* Spinner */
+.recon-uploading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: #6b7280;
+}
+
+.recon-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #ddd6fe;
+  border-top-color: #7c3aed;
+  border-radius: 50%;
+  animation: recon-spin 0.7s linear infinite;
+}
+
+@keyframes recon-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* File info panel */
+.recon-file-info {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.recon-file-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.95rem;
+  color: #374151;
+}
+
+.recon-icon-success {
+  color: #22c55e;
+  flex-shrink: 0;
+}
+
+.recon-parse-errors {
+  display: flex;
+  gap: 0.5rem;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: #92400e;
+  font-size: 0.85rem;
+}
+
+.recon-parse-errors ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.recon-compare-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.recon-compare-info {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+/* ─── Summary cards ───────────────────────────────────────────────────────── */
+
+.recon-summary-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .recon-summary-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.recon-summary-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 1.1rem 0.75rem;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.15s, box-shadow 0.15s;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.recon-summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.recon-card-active {
+  border-color: currentColor !important;
+}
+
+.recon-card-count {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.recon-card-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.recon-card-icon {
+  opacity: 0.8;
+}
+
+/* Variants */
+.recon-card-success { color: #16a34a; }
+.recon-card-success .recon-card-count { color: #15803d; }
+
+.recon-card-warning { color: #d97706; }
+.recon-card-warning .recon-card-count { color: #b45309; }
+
+.recon-card-danger { color: #dc2626; }
+.recon-card-danger .recon-card-count { color: #b91c1c; }
+
+.recon-card-info { color: #2563eb; }
+.recon-card-info .recon-card-count { color: #1d4ed8; }
+
+/* ─── Filter bar ──────────────────────────────────────────────────────────── */
+
+.recon-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.recon-filter-icon {
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.recon-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  font-size: 0.825rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.recon-filter-btn:hover {
+  background: #f3f4f6;
+}
+
+.recon-filter-btn.active {
+  background: #ede9fe;
+  border-color: #7c3aed;
+  color: #5b21b6;
+}
+
+.recon-filter-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e5e7eb;
+  border-radius: 999px;
+  min-width: 1.4em;
+  height: 1.4em;
+  padding: 0 0.35em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.recon-filter-btn.active .recon-filter-count {
+  background: #c4b5fd;
+  color: #3b0764;
+}
+
+.recon-results-meta {
+  font-size: 0.825rem;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+}
+
+.recon-results-file {
+  font-style: normal;
+}
+
+/* ─── Results table ───────────────────────────────────────────────────────── */
+
+.recon-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.recon-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  background: #fff;
+}
+
+.recon-table thead {
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.recon-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.recon-table td {
+  padding: 0.7rem 1rem;
+  color: #374151;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: top;
+}
+
+.recon-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.recon-row-matched {
+  background: #f0fdf4;
+}
+
+.recon-row-discrepancy {
+  background: #fffbeb;
+}
+
+.recon-row-unmatched_external {
+  background: #fef2f2;
+}
+
+.recon-row-unmatched_dashboard {
+  background: #eff6ff;
+}
+
+.recon-ref {
+  font-family: monospace;
+  font-size: 0.82rem;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recon-discrepancies ul {
+  margin: 0;
+  padding-left: 1rem;
+  color: #b45309;
+  font-size: 0.8rem;
+}
+
+.recon-ok {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+/* Status badges (reuse existing + reconciliation-specific) */
+.recon-status-badge {
+  display: inline-block;
+  padding: 0.2em 0.65em;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-transform: capitalize;
+}
+
+.recon-status-matched {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.recon-status-discrepancy {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.recon-status-external {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.recon-status-dashboard {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+/* Empty state */
+.recon-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #9ca3af;
+  font-size: 0.95rem;
+}
