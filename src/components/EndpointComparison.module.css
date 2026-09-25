@@ -1,0 +1,344 @@
+/**
+ * EndpointComparison Component Styles
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--ifm-background-color);
+  color: var(--ifm-font-color-base);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+  background: var(--ifm-background-surface-primary);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.5rem;
+  color: var(--ifm-color-emphasis-600);
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.closeButton:hover {
+  color: var(--ifm-font-color-base);
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--ifm-color-emphasis-500);
+  font-size: 1.1rem;
+}
+
+/* Comparison Grid */
+.comparisonGrid {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) 1fr 1fr;
+  gap: 0;
+  flex: 1;
+  overflow-y: auto;
+  font-size: 0.9rem;
+}
+
+.columnHeader {
+  position: sticky;
+  top: 0;
+  padding: 0.75rem;
+  background: var(--ifm-background-surface-secondary);
+  border-bottom: 2px solid var(--ifm-color-emphasis-300);
+  font-weight: 600;
+  text-align: center;
+  z-index: 10;
+}
+
+.columnHeader.column1 {
+  border-right: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.endpointBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.methodBadge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 3px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.85em;
+}
+
+.methodBadge.get {
+  background: #339af0;
+}
+
+.methodBadge.post {
+  background: #51cf66;
+}
+
+.methodBadge.put {
+  background: #ffa94d;
+}
+
+.methodBadge.patch {
+  background: #ffa94d;
+}
+
+.methodBadge.delete {
+  background: #ff6b6b;
+}
+
+.selectButton {
+  padding: 0.25rem 0.5rem;
+  background: var(--ifm-color-primary);
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background 0.2s ease;
+}
+
+.selectButton:hover {
+  background: var(--ifm-color-primary-dark);
+}
+
+.rowLabel {
+  padding: 0.75rem;
+  background: var(--ifm-background-surface-secondary);
+  font-weight: 500;
+  border-right: 1px solid var(--ifm-color-emphasis-200);
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+  min-height: 3.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rowLabel.sectionHeader {
+  font-weight: 600;
+  font-size: 0.95em;
+  background: var(--ifm-background-surface-primary);
+  border-bottom: 2px solid var(--ifm-color-emphasis-300);
+}
+
+.rowCell {
+  padding: 0.75rem;
+  border-right: 1px solid var(--ifm-color-emphasis-200);
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+  background: var(--ifm-background-color);
+  min-height: 3.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-content: flex-start;
+}
+
+.rowCell.column1 {
+  border-right: 2px solid var(--ifm-color-emphasis-300);
+}
+
+.rowCell.different {
+  background: rgba(255, 193, 7, 0.1);
+  border-left: 3px solid #ffc107;
+}
+
+.columnHeader.column1 {
+  border-right: 2px solid var(--ifm-color-emphasis-300);
+}
+
+/* Parameter Styling */
+.parameterItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+}
+
+.paramName {
+  font-weight: 600;
+  color: var(--ifm-font-color-base);
+}
+
+.paramLocation {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  background: var(--ifm-color-emphasis-200);
+  color: var(--ifm-font-color-base);
+  border-radius: 3px;
+  font-size: 0.8em;
+  font-weight: 500;
+}
+
+.paramType {
+  font-family: monospace;
+  font-size: 0.85em;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.paramDesc {
+  font-size: 0.85em;
+  color: var(--ifm-color-emphasis-600);
+  margin-top: 0.25rem;
+}
+
+.empty {
+  color: var(--ifm-color-emphasis-500);
+  font-style: italic;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 3px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.85em;
+}
+
+.statusBadge.success {
+  background: #51cf66;
+}
+
+.statusBadge.info {
+  background: #339af0;
+}
+
+.statusBadge.clientError {
+  background: #ffa94d;
+}
+
+.statusBadge.serverError {
+  background: #ff6b6b;
+}
+
+.deprecated {
+  color: #ff6b6b;
+  font-weight: 600;
+}
+
+/* Code styling */
+.rowCell code,
+.rowLabel code {
+  padding: 0.2rem 0.4rem;
+  background: var(--ifm-background-surface-secondary);
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 0.9em;
+  color: var(--ifm-color-emphasis-900);
+}
+
+/* Scrollbar styling */
+.comparisonGrid::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.comparisonGrid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.comparisonGrid::-webkit-scrollbar-thumb {
+  background: var(--ifm-color-emphasis-300);
+  border-radius: 4px;
+}
+
+.comparisonGrid::-webkit-scrollbar-thumb:hover {
+  background: var(--ifm-color-emphasis-400);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .comparisonGrid {
+    grid-template-columns: minmax(150px, 0.8fr) 1fr 1fr;
+  }
+
+  .rowLabel,
+  .columnHeader {
+    font-size: 0.85em;
+    padding: 0.5rem;
+  }
+
+  .rowCell {
+    padding: 0.5rem;
+    min-height: 3rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .comparisonGrid {
+    grid-template-columns: minmax(120px, 0.6fr) 1fr 1fr;
+  }
+
+  .methodBadge {
+    font-size: 0.75em;
+  }
+
+  .selectButton {
+    font-size: 0.8em;
+    padding: 0.2rem 0.4rem;
+  }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .rowCell code,
+  .rowLabel code {
+    background: var(--ifm-background-surface-secondary);
+    color: var(--ifm-color-emphasis-100);
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .selectButton,
+  .closeButton {
+    transition: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .rowCell.different {
+    border-left-width: 4px;
+  }
+
+  .columnHeader,
+  .rowLabel.sectionHeader {
+    border-width: 2px;
+  }
+}

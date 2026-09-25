@@ -1,0 +1,261 @@
+.notification-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.settings-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.settings-header h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--color-neutral-900);
+}
+
+.settings-header p {
+  font-size: 1rem;
+  color: var(--color-neutral-600);
+}
+
+.alert {
+  padding: 1rem 1.5rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.95rem;
+  animation: slideDown 300ms ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.alert-error {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.alert button {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.25rem;
+  transition: all var(--transition-fast);
+}
+
+.alert button:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 3rem;
+  color: var(--color-neutral-600);
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.setting-card {
+  background: white;
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.setting-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-neutral-300);
+}
+
+.setting-card.optimistic {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.optimistic-indicator {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 1.5rem;
+}
+
+.card-header h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-neutral-900);
+  flex: 1;
+}
+
+.check-icon {
+  flex-shrink: 0;
+  color: var(--color-success);
+  transition: opacity var(--transition-fast);
+}
+
+.toggle-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.toggle-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.toggle-label {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.toggle-input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-track {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--color-neutral-300);
+  border-radius: 24px;
+  transition: all var(--transition-fast);
+}
+
+.toggle-input:checked + .toggle-track {
+  background-color: var(--color-success);
+}
+
+.toggle-thumb {
+  position: absolute;
+  content: '';
+  height: 20px;
+  width: 20px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  border-radius: 50%;
+  transition: all var(--transition-fast);
+}
+
+.toggle-input:checked + .toggle-track .toggle-thumb {
+  transform: translateX(20px);
+}
+
+.toggle-input:disabled + .toggle-track {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.toggle-text {
+  font-size: 0.95rem;
+  color: var(--color-neutral-700);
+  user-select: none;
+}
+
+.toggle-input:disabled ~ .toggle-text {
+  opacity: 0.6;
+}
+
+.update-status {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-neutral-200);
+  font-size: 0.85rem;
+  color: var(--color-primary);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: var(--color-neutral-600);
+  background: white;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-neutral-200);
+}
+
+@media (max-width: 768px) {
+  .settings-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-header {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .setting-card,
+  .alert,
+  .toggle-track,
+  .toggle-thumb {
+    transition: none;
+  }
+}

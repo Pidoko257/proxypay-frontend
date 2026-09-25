@@ -1,4 +1,39 @@
+# ── Dependencies ──────────────────────────────────────────────────────────────
 node_modules/
+
+# ── Docusaurus generated files ────────────────────────────────────────────────
 .docusaurus/
 build/
+
+# ── Test artifacts ────────────────────────────────────────────────────────────
+# Jest / Vitest snapshots
+**/__snapshots__/
+*.snap
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# ── OS / Editor artefacts ──────────────────────────────────────────────────────
 .DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ── Environment / secrets ──────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+*.tsbuildinfo
+.cache/

@@ -1,0 +1,550 @@
+/**
+ * Server Logs Analytics Dashboard
+ * React component for visualizing log analytics with timezone support
+ */
+
+import React, { useState, useEffect, useRef } from 'react';
+import { AnalyticsResult, EndpointMetrics, ErrorAnalysis } from '../analytics/analytics-engine';
+import TimeZoneSelector, { formatDateInTimezone, detectUserTimezone } from './TimeZoneSelector';
+import '../css/logs-dashboard.css';
+
+/**
+ * Plain-language definitions for every metric shown on the dashboard.
+ * Surfaced as hover/focus tooltips and collected on the /logs-glossary page.
+ */
+export const METRIC_DEFINITIONS: Record<string, string> = {
+  'Total Requests': 'The total number of HTTP requests received in the selected period.',
+  'Total Errors':
+    'Count of requests that returned a 4xx or 5xx status code in the selected period.',
+  'Error Rate':
+    'Percentage of requests that failed (4xx/5xx) out of all requests. Lower is better; sustained values above 5% usually indicate a problem.',
+  'Avg Response Time':
+    'The mean time (in milliseconds) the server took to respond, averaged across every request. Sensitive to outliers.',
+  'P95 Response Time':
+    '95th percentile latency: 95% of requests were faster than this value. A better indicator of typical worst-case experience than the average.',
+  'P99 Response Time':
+    '99th percentile latency: only 1% of requests were slower. Highlights tail latency that affects your least-lucky users.',
+  'Status Code Distribution':
+    'Breakdown of responses by HTTP status class (2xx success, 3xx redirect, 4xx client error, 5xx server error).',
+  'Hourly Usage Pattern':
+    'Request volume grouped by hour of day, used to spot peak traffic windows and error spikes.',
+};
+
+/** Where readers can learn more about these metrics. */
+export const METRICS_DOC_URL = '/logs-glossary';
+
+/**
+ * A metric name with an info affordance: native `title` tooltip for quick
+ * reference plus a link to the full glossary.
+ */
+export const MetricLabel: React.FC<{ name: string; className?: string }> = ({
+  name,
+  className,
+}) => {
+  const definition = METRIC_DEFINITIONS[name];
+  return (
+    <span className={className}>
+      {name}
+      {definition && (
+        <>
+          {' '}
+          <span
+            className="metric-info"
+            role="img"
+            aria-label={`${name}: ${definition}`}
+            title={definition}
+            tabIndex={0}
+            data-testid={`metric-tooltip-${name}`}
+          >
+            ⓘ
+          </span>
+          <a
+            className="metric-doc-link"
+            href={METRICS_DOC_URL}
+            title={`Read the full definition of "${name}" in the metrics glossary`}
+            aria-label={`Documentation for ${name}`}
+          >
+            docs
+          </a>
+        </>
+      )}
+    </span>
+  );
+};
+
+interface DashboardProps {
+  analytics: AnalyticsResult;
+  onDateRangeChange?: (start: Date, end: Date) => void;
+  onFilterChange?: (filter: string) => void;
+  /**
+   * When true, always scroll to the top of the page on tab switch instead of
+   * restoring the previously saved scroll position for that tab.
+   * Default: false (restore saved position).
+   */
+  resetScrollOnTabChange?: boolean;
+}
+
+export const LogsDashboard: React.FC<DashboardProps> = ({
+  analytics,
+  onDateRangeChange,
+  onFilterChange,
+  resetScrollOnTabChange = false,
+}) => {
+  const [selectedTab, setSelectedTab] = useState('overview');
+  const [filterText, setFilterText] = useState('');
+  const [timezone, setTimezone] = useState(() => {
+    // Try to get from localStorage, fallback to detected timezone
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('logsTimezone') : null;
+    return saved || detectUserTimezone();
+  });
+
+  /**
+   * #353 — Per-tab scroll position map.
+   * Stores the last window.scrollY seen for each tab name so we can restore
+   * it after the DOM re-renders when switching back to a previously visited tab.
+   */
+  const scrollPositions = useRef<Record<string, number>>({});
+
+  /**
+   * #354 — Hourly usage data windowing.
+   * When the dataset exceeds 100 data points (e.g. monthly view), we show
+   * only the most recent 100 by default to keep rendering fast.
+   * The user can expand to see all data with the "Show older data" button.
+   */
+  const HOUR_WINDOW = 100;
+  const [showAllHours, setShowAllHours] = useState(false);
+  const visibleUsageByHour = showAllHours
+    ? analytics.usageByHour
+    : analytics.usageByHour.slice(-HOUR_WINDOW);
+  const hasMoreHours = analytics.usageByHour.length > HOUR_WINDOW;
+
+  // Save timezone preference to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('logsTimezone', timezone);
+    }
+  }, [timezone]);
+
+  /**
+   * #353 — Tab switch handler.
+   * 1. Saves the current window.scrollY under the outgoing tab name.
+   * 2. Changes the active tab.
+   * 3. After a rAF (so the new tab content is in the DOM) either:
+   *    - Restores the previously saved scroll position for the incoming tab, or
+   *    - Scrolls to the top if resetScrollOnTabChange is true.
+   */
+  const handleTabChange = (newTab: string) => {
+    // Save scroll position of the tab we are leaving
+    scrollPositions.current[selectedTab] = window.scrollY;
+
+    setSelectedTab(newTab);
+
+    requestAnimationFrame(() => {
+      const targetScroll = resetScrollOnTabChange
+        ? 0
+        : (scrollPositions.current[newTab] ?? 0);
+      window.scrollTo({ top: targetScroll, behavior: 'instant' });
+    });
+  };
+
+  // Format date in selected timezone
+  const formatDate = (date: Date) => {
+    return formatDateInTimezone(date, timezone, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  // Format numbers with commas
+  const formatNumber = (num: number) => {
+    return Math.round(num).toLocaleString();
+  };
+
+  // Format percentage
+  const formatPercent = (num: number) => {
+    return num.toFixed(2) + '%';
+  };
+
+  // Get status code color
+  const getStatusColor = (code: number) => {
+    if (code >= 200 && code < 300) return 'status-success';
+    if (code >= 300 && code < 400) return 'status-redirect';
+    if (code >= 400 && code < 500) return 'status-client-error';
+    if (code >= 500 && code < 600) return 'status-server-error';
+    return 'status-unknown';
+  };
+
+  return (
+    <div className="logs-dashboard">
+      {/* Header */}
+      <div className="dashboard-header">
+        <h1>📊 Server Logs Analytics</h1>
+        <div className="header-info">
+          <div className="info-item">
+            <span className="label">Period:</span>
+            <span className="value">{formatDate(analytics.dateRange.start)} - {formatDate(analytics.dateRange.end)}</span>
+          </div>
+          <div className="info-item">
+            <span className="label">Total Requests:</span>
+            <span className="value">{formatNumber(analytics.totalRequests)}</span>
+          </div>
+          <div className="info-item">
+            <span className="label">
+              <MetricLabel name="Error Rate" />:
+            </span>
+            <span className={`value ${analytics.errorRate > 5 ? 'error' : 'success'}`}>
+              {formatPercent(analytics.errorRate)}
+            </span>
+          </div>
+          <div className="info-item timezone-selector-item">
+            <TimeZoneSelector 
+              selectedTimezone={timezone}
+              onTimezoneChange={setTimezone}
+              compact={true}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="dashboard-tabs">
+        <button
+          className={`tab ${selectedTab === 'overview' ? 'active' : ''}`}
+          onClick={() => handleTabChange('overview')}
+        >
+          📈 Overview
+        </button>
+        <button
+          className={`tab ${selectedTab === 'endpoints' ? 'active' : ''}`}
+          onClick={() => handleTabChange('endpoints')}
+        >
+          🔗 Endpoints
+        </button>
+        <button
+          className={`tab ${selectedTab === 'errors' ? 'active' : ''}`}
+          onClick={() => handleTabChange('errors')}
+        >
+          ⚠️ Errors
+        </button>
+        <button
+          className={`tab ${selectedTab === 'usage' ? 'active' : ''}`}
+          onClick={() => handleTabChange('usage')}
+        >
+          📅 Usage
+        </button>
+        <button
+          className={`tab ${selectedTab === 'users' ? 'active' : ''}`}
+          onClick={() => handleTabChange('users')}
+        >
+          👥 Users & IPs
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="dashboard-content">
+        {/* Overview Tab */}
+        {selectedTab === 'overview' && (
+          <div className="tab-content overview-tab">
+            {/* Key Metrics */}
+            <div className="metrics-grid">
+              <div className="metric-card">
+                <div className="metric-icon">📊</div>
+                <div className="metric-title"><MetricLabel name="Total Requests" /></div>
+                <div className="metric-value">{formatNumber(analytics.totalRequests)}</div>
+              </div>
+
+              <div className="metric-card">
+                <div className="metric-icon">❌</div>
+                <div className="metric-title"><MetricLabel name="Total Errors" /></div>
+                <div className="metric-value">{formatNumber(analytics.totalErrors)}</div>
+              </div>
+
+              <div className="metric-card">
+                <div className={`metric-icon ${analytics.errorRate > 5 ? 'warn' : ''}`}>⚠️</div>
+                <div className="metric-title"><MetricLabel name="Error Rate" /></div>
+                <div className="metric-value">{formatPercent(analytics.errorRate)}</div>
+              </div>
+
+              <div className="metric-card">
+                <div className="metric-icon">⏱️</div>
+                <div className="metric-title"><MetricLabel name="Avg Response Time" /></div>
+                <div className="metric-value">{formatNumber(analytics.avgResponseTime)}ms</div>
+              </div>
+
+              <div className="metric-card">
+                <div className="metric-icon">📈</div>
+                <div className="metric-title"><MetricLabel name="P95 Response Time" /></div>
+                <div className="metric-value">{formatNumber(analytics.p95ResponseTime)}ms</div>
+              </div>
+
+              <div className="metric-card">
+                <div className="metric-icon">📊</div>
+                <div className="metric-title"><MetricLabel name="P99 Response Time" /></div>
+                <div className="metric-value">{formatNumber(analytics.p99ResponseTime)}ms</div>
+              </div>
+            </div>
+
+            {/* Status Code Distribution */}
+            <div className="chart-section">
+              <h3><MetricLabel name="Status Code Distribution" /></h3>
+              <div className="status-code-bars">
+                {analytics.statusCodeBreakdown.map(status => (
+                  <div key={status.code} className="status-bar">
+                    <div className="status-header">
+                      <span className={`status-badge ${getStatusColor(status.code)}`}>
+                        {status.code}
+                      </span>
+                      <span className="count">{formatNumber(status.count)}</span>
+                    </div>
+                    <div className="bar">
+                      <div
+                        className={`bar-fill ${getStatusColor(status.code)}`}
+                        style={{
+                          width: `${(status.count / analytics.totalRequests) * 100}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="status-info">{formatPercent(status.percentage)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Hourly Usage */}
+            <div className="chart-section">
+              <h3><MetricLabel name="Hourly Usage Pattern" /></h3>
+              <div className="hourly-chart">
+                {visibleUsageByHour.map(pattern => (
+                  <div key={pattern.hour} className="hour-bar" title={`Hour ${pattern.hour}: ${pattern.count} requests`}>
+                    <div
+                      className="bar-fill"
+                      style={{
+                        height: `${visibleUsageByHour.length > 0 && Math.max(...visibleUsageByHour.map(p => p.count)) > 0
+                          ? (pattern.count / Math.max(...visibleUsageByHour.map(p => p.count))) * 100
+                          : 0}%`,
+                        opacity: pattern.errorRate > 5 ? 0.7 : 1,
+                        backgroundColor: pattern.errorRate > 5 ? '#ff6b6b' : '#4ecdc4',
+                      }}
+                    >
+                      <span className="hour-label">{pattern.hour}h</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* #354 — Show older / Show less controls */}
+              {hasMoreHours && (
+                <div className="hourly-pagination" data-testid="hourly-pagination">
+                  {!showAllHours ? (
+                    <button
+                      className="hourly-more-btn"
+                      onClick={() => setShowAllHours(true)}
+                      data-testid="show-older-btn"
+                    >
+                      Show older data ({analytics.usageByHour.length - HOUR_WINDOW} more)
+                    </button>
+                  ) : (
+                    <button
+                      className="hourly-less-btn"
+                      onClick={() => setShowAllHours(false)}
+                      data-testid="show-less-btn"
+                    >
+                      Show less
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Endpoints Tab */}
+        {selectedTab === 'endpoints' && (
+          <div className="tab-content endpoints-tab">
+            <div className="filter-bar">
+              <input
+                type="text"
+                placeholder="Filter endpoints..."
+                value={filterText}
+                onChange={(e) => {
+                  setFilterText(e.target.value);
+                  onFilterChange?.(e.target.value);
+                }}
+                className="filter-input"
+              />
+            </div>
+
+            <div className="endpoints-list">
+              {analytics.topEndpoints.map((endpoint, idx) => (
+                <div key={`${endpoint.method}-${endpoint.endpoint}`} className="endpoint-item">
+                  <div className="endpoint-rank">{idx + 1}</div>
+                  <div className="endpoint-details">
+                    <div className="endpoint-path">
+                      <span className="method-badge">{endpoint.method}</span>
+                      <span className="path">{endpoint.endpoint}</span>
+                    </div>
+                    <div className="endpoint-stats">
+                      <span className="stat">Requests: {formatNumber(endpoint.count)}</span>
+                      <span className="stat">Avg: {formatNumber(endpoint.avgResponseTime)}ms</span>
+                      <span className="stat">Error: {formatPercent(endpoint.errorRate)}</span>
+                    </div>
+                  </div>
+                  <div className="endpoint-performance">
+                    <div className="perf-indicator">
+                      <div
+                        className="perf-bar"
+                        style={{
+                          width: `${Math.min((endpoint.avgResponseTime / 1000) * 100, 100)}%`,
+                          backgroundColor: endpoint.avgResponseTime > 500 ? '#ff6b6b' : '#51cf66',
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Errors Tab */}
+        {selectedTab === 'errors' && (
+          <div className="tab-content errors-tab">
+            <div className="errors-list">
+              {analytics.topErrors.map((error, idx) => (
+                <div key={error.error} className="error-item">
+                  <div className="error-rank">{idx + 1}</div>
+                  <div className="error-details">
+                    <div className="error-message">{error.error}</div>
+                    <div className="error-meta">
+                      <span className="count">Count: {formatNumber(error.count)}</span>
+                      <span className="percentage">{formatPercent(error.percentage)}</span>
+                      <span className="first">First: {formatDate(error.firstOccurrence)}</span>
+                      <span className="last">Last: {formatDate(error.lastOccurrence)}</span>
+                    </div>
+                    <div className="affected-endpoints">
+                      <span className="label">Endpoints:</span>
+                      {error.endpoints.slice(0, 3).map(endpoint => (
+                        <span key={endpoint} className="endpoint-tag">{endpoint}</span>
+                      ))}
+                      {error.endpoints.length > 3 && (
+                        <span className="more">+{error.endpoints.length - 3}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="error-severity">
+                    <div
+                      className="severity-bar"
+                      style={{
+                        width: `${(error.count / analytics.totalErrors) * 100}%`,
+                        backgroundColor: '#ff6b6b',
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Usage Tab */}
+        {selectedTab === 'usage' && (
+          <div className="tab-content usage-tab">
+            <h3>Request Timeline</h3>
+            <div className="timeline-chart">
+              {visibleUsageByHour.map(pattern => (
+                <div key={pattern.hour} className="timeline-item">
+                  <div className="time">{pattern.hour}:00</div>
+                  <div className="requests" title={`${pattern.count} requests`}>
+                    {Array.from({ length: Math.min(Math.ceil(pattern.count / 100), 10) }).map((_, i) => (
+                      <span key={i} className="dot">●</span>
+                    ))}
+                  </div>
+                  <div className="avg-time">{formatNumber(pattern.avgResponseTime)}ms</div>
+                  <div className={`error-rate ${pattern.errorRate > 5 ? 'high' : 'low'}`}>
+                    {formatPercent(pattern.errorRate)}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* #354 — Show older / Show less controls */}
+            {hasMoreHours && (
+              <div className="hourly-pagination" data-testid="hourly-pagination-usage">
+                {!showAllHours ? (
+                  <button
+                    className="hourly-more-btn"
+                    onClick={() => setShowAllHours(true)}
+                    data-testid="show-older-btn-usage"
+                  >
+                    Show older data ({analytics.usageByHour.length - HOUR_WINDOW} more)
+                  </button>
+                ) : (
+                  <button
+                    className="hourly-less-btn"
+                    onClick={() => setShowAllHours(false)}
+                    data-testid="show-less-btn-usage"
+                  >
+                    Show less
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Users & IPs Tab */}
+        {selectedTab === 'users' && (
+          <div className="tab-content users-tab">
+            <div className="users-ips-grid">
+              <div className="users-section">
+                <h3>Top Users</h3>
+                <div className="users-list">
+                  {analytics.topUsers.map((user, idx) => (
+                    <div key={user.userId} className="user-item">
+                      <div className="user-rank">{idx + 1}</div>
+                      <div className="user-info">
+                        <div className="user-id">{user.userId || 'Anonymous'}</div>
+                        <div className="user-stats">
+                          <span>{formatNumber(user.requestCount)} requests</span>
+                          <span>{user.uniqueEndpoints} endpoints</span>
+                          <span>{user.errorCount} errors</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="ips-section">
+                <h3>Top IPs</h3>
+                <div className="ips-list">
+                  {analytics.topIPs.map((ip, idx) => (
+                    <div key={ip.ip} className="ip-item">
+                      <div className="ip-rank">{idx + 1}</div>
+                      <div className="ip-info">
+                        <div className="ip-address">{ip.ip || 'Unknown'}</div>
+                        <div className="ip-stats">
+                          <span>{formatNumber(ip.requestCount)} requests</span>
+                          <span>{ip.uniqueEndpoints} endpoints</span>
+                          <span className={ip.errorCount > 0 ? 'has-errors' : ''}>{ip.errorCount} errors</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="dashboard-footer">
+        <span>Generated: {new Date().toLocaleString()}</span>
+      </div>
+    </div>
+  );
+};
+
+export default LogsDashboard;

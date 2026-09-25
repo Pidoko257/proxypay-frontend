@@ -1,0 +1,140 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--color-neutral-50);
+}
+
+/* Header */
+.app-header {
+  background: white;
+  border-bottom: 1px solid var(--color-neutral-200);
+  padding: 0 2rem;
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.5rem 0;
+}
+
+.app-title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 1.5rem;
+}
+
+.nav-tabs {
+  display: flex;
+  gap: 1rem;
+  border-bottom: 1px solid var(--color-neutral-200);
+  margin: 0 -2rem;
+  padding: 0 2rem;
+}
+
+.nav-tab {
+  background: none;
+  border: none;
+  padding: 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-neutral-600);
+  border-bottom: 3px solid transparent;
+  transition: all var(--transition-fast);
+  margin-bottom: -1px;
+}
+
+.nav-tab:hover {
+  color: var(--color-primary);
+}
+
+.nav-tab.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+/* Main Content */
+.app-main {
+  flex: 1;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.transactions-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.settings-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-neutral-900);
+}
+
+/* Loading and Error States */
+.error-message {
+  padding: 1.5rem;
+  background-color: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+  color: #991b1b;
+  font-size: 0.95rem;
+}
+
+.loading-cell,
+.empty-cell {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--color-neutral-500);
+  font-size: 0.95rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .app-header {
+    padding: 0 1rem;
+  }
+
+  .header-content {
+    padding: 1rem 0;
+  }
+
+  .app-title {
+    font-size: 1.5rem;
+  }
+
+  .nav-tabs {
+    margin: 0 -1rem;
+    padding: 0 1rem;
+  }
+
+  .app-main {
+    padding: 1rem;
+  }
+
+  .page-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+}
