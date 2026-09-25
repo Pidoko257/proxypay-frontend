@@ -6,6 +6,7 @@ import React, {
   useState,
 } from 'react';
 import jsYaml from 'js-yaml';
+import FormattedMessage from './FormattedMessage';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -620,10 +621,10 @@ export default function ApiReference(): React.JSX.Element {
         <p>Fix the following issue{error.includes('\n- ') ? 's' : ''} in <code>static/openapi.yaml</code> and reload:</p>
         {error.includes('\n- ') ? (
           <ul>
-            {error.split('\n- ').slice(1).map((message) => <li key={message}>{message}</li>)}
+            {error.split('\n- ').slice(1).map((message) => <li key={message}><FormattedMessage message={message} /></li>)}
           </ul>
         ) : (
-          <p>{error}</p>
+          <p><FormattedMessage message={error} /></p>
         )}
       </div>
     );
