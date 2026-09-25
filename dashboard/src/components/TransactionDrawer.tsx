@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { format } from 'date-fns'
-import { X } from 'lucide-react'
+import { Printer, X } from 'lucide-react'
 import { Transaction } from '../services/api'
 import { StatusTimeline } from './StatusTimeline'
 import '../styles/TransactionDrawer.css'
@@ -8,6 +8,8 @@ import '../styles/TransactionDrawer.css'
 interface TransactionDrawerProps {
   transaction: Transaction | null
   isOpen: boolean
+  loading: boolean
+  error: string | null
   onClose: () => void
   loading?: boolean
 }
@@ -15,9 +17,17 @@ interface TransactionDrawerProps {
 export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
   transaction,
   isOpen,
+  loading,
+  error,
   onClose,
   loading = false,
 }) => {
+  const handlePrint = () => {
+    if (window.confirm('Open the print dialog for this transaction?')) {
+      window.print()
+    }
+  }
+
   // Handle Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -61,6 +71,14 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
 
         {/* Content */}
         <div className="drawer-content">
+          {loading ? (
+            <TransactionDetailSkeleton />
+          ) : error ? (
+            <div className="drawer-error" role="alert">
+              {error}
+            </div>
+          ) : (
+            <>
           {/* Basic Info */}
           <section className="detail-section">
             <h3>Basic Information</h3>
@@ -191,8 +209,31 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
               )}
             </div>
           </section>
+            </>
+          )}
         </div>
+        <p className="print-company-footer">ProxyPay transaction record</p>
       </div>
     </>
   )
 }
+
+const TransactionDetailSkeleton: React.FC = () => (
+  <div className="transaction-detail-skeleton" aria-label="Loading transaction details">
+    {['Basic Information', 'Blockchain & Mobile Money', 'Amount & Fees', 'Timestamps', 'Audit Trail'].map(
+      (section) => (
+        <section className="detail-section" key={section}>
+          <div className="skeleton-block skeleton-heading" />
+          <div className="skeleton-block skeleton-line" />
+          <div className="skeleton-block skeleton-line skeleton-line-short" />
+          {section === 'Audit Trail' && (
+            <>
+              <div className="skeleton-block skeleton-line" />
+              <div className="skeleton-block skeleton-line skeleton-line-short" />
+            </>
+          )}
+        </section>
+      )
+    )}
+  </div>
+)

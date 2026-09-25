@@ -23,6 +23,11 @@ export default function App() {
     transactions,
   } = useTransactionStore()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const handleSessionExpired = () => {
+    window.location.reload()
+  }
+  const { showWarning, secondsRemaining, extendSession, signOut } =
+    useSessionExpiration(handleSessionExpired)
 
   // Initialize transactions on mount
   useEffect(() => {
@@ -90,9 +95,18 @@ export default function App() {
       <TransactionDrawer
         transaction={selectedTransaction}
         isOpen={drawerOpen}
+        loading={detailLoading}
+        error={detailError}
         onClose={handleDrawerClose}
         loading={detailLoading}
       />
+      {showWarning && (
+        <SessionExpirationDialog
+          secondsRemaining={secondsRemaining}
+          onExtend={() => void extendSession()}
+          onSignOut={signOut}
+        />
+      )}
     </div>
   )
 }
