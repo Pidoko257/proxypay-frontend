@@ -7,12 +7,16 @@ import '../styles/TransactionDrawer.css'
 interface TransactionDrawerProps {
   transaction: Transaction | null
   isOpen: boolean
+  loading: boolean
+  error: string | null
   onClose: () => void
 }
 
 export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
   transaction,
   isOpen,
+  loading,
+  error,
   onClose,
 }) => {
   const handlePrint = () => {
@@ -67,6 +71,14 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
 
         {/* Content */}
         <div className="drawer-content">
+          {loading ? (
+            <TransactionDetailSkeleton />
+          ) : error ? (
+            <div className="drawer-error" role="alert">
+              {error}
+            </div>
+          ) : (
+            <>
           {/* Basic Info */}
           <section className="detail-section">
             <h3>Basic Information</h3>
@@ -89,7 +101,6 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
                 <label>Provider</label>
                 <p>{transaction.provider.toUpperCase()}</p>
               </div>
-              <p className="print-company-footer">ProxyPay transaction record</p>
             </div>
           </section>
 
@@ -193,8 +204,31 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
               )}
             </div>
           </section>
+            </>
+          )}
         </div>
+        <p className="print-company-footer">ProxyPay transaction record</p>
       </div>
     </>
   )
 }
+
+const TransactionDetailSkeleton: React.FC = () => (
+  <div className="transaction-detail-skeleton" aria-label="Loading transaction details">
+    {['Basic Information', 'Blockchain & Mobile Money', 'Amount & Fees', 'Timestamps', 'Audit Trail'].map(
+      (section) => (
+        <section className="detail-section" key={section}>
+          <div className="skeleton-block skeleton-heading" />
+          <div className="skeleton-block skeleton-line" />
+          <div className="skeleton-block skeleton-line skeleton-line-short" />
+          {section === 'Audit Trail' && (
+            <>
+              <div className="skeleton-block skeleton-line" />
+              <div className="skeleton-block skeleton-line skeleton-line-short" />
+            </>
+          )}
+        </section>
+      )
+    )}
+  </div>
+)

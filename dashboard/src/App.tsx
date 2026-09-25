@@ -12,8 +12,15 @@ type Page = 'transactions' | 'settings'
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('transactions')
-  const { selectedTransaction, setSelectedTransaction, fetchTransactions, filters } =
-    useTransactionStore()
+  const {
+    selectedTransaction,
+    detailLoading,
+    detailError,
+    setSelectedTransaction,
+    fetchTransactionDetail,
+    fetchTransactions,
+    filters,
+  } = useTransactionStore()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const handleSessionExpired = () => {
     window.location.reload()
@@ -26,9 +33,11 @@ export default function App() {
     fetchTransactions(filters)
   }, [])
 
-  const handleRowClick = (tx: any) => {
+  const handleRowClick = (tx: Parameters<typeof setSelectedTransaction>[0]) => {
+    if (!tx) return
     setSelectedTransaction(tx)
     setDrawerOpen(true)
+    void fetchTransactionDetail(tx.id)
   }
 
   const handleDrawerClose = () => {
@@ -80,6 +89,8 @@ export default function App() {
       <TransactionDrawer
         transaction={selectedTransaction}
         isOpen={drawerOpen}
+        loading={detailLoading}
+        error={detailError}
         onClose={handleDrawerClose}
       />
       {showWarning && (
