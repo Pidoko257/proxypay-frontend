@@ -1,0 +1,166 @@
+/**
+ * ErrorBoundary Component Styles
+ */
+
+/* ── Fallback container ─────────────────────────────────────────────────────── */
+.fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+  margin: 0.5rem 0;
+  border: 1px solid var(--ifm-color-danger-light, #f5c2c7);
+  border-radius: 6px;
+  background: var(--ifm-color-danger-lightest, #fff5f5);
+  text-align: center;
+  min-height: 160px;
+  gap: 0.75rem;
+}
+
+[data-theme='dark'] .fallback {
+  background: rgba(220, 53, 69, 0.08);
+  border-color: rgba(220, 53, 69, 0.35);
+}
+
+/* ── Icon ───────────────────────────────────────────────────────────────────── */
+.icon {
+  font-size: 2.25rem;
+  line-height: 1;
+  user-select: none;
+  aria-hidden: true;
+}
+
+/* ── Heading ────────────────────────────────────────────────────────────────── */
+.heading {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ifm-color-danger, #dc3545);
+}
+
+/* ── Message ────────────────────────────────────────────────────────────────── */
+.message {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--ifm-color-emphasis-700);
+  max-width: 520px;
+  line-height: 1.5;
+}
+
+/* ── Error details (collapsible) ────────────────────────────────────────────── */
+.details {
+  width: 100%;
+  max-width: 640px;
+  text-align: left;
+}
+
+.detailsSummary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--ifm-color-emphasis-600);
+  user-select: none;
+  padding: 0.25rem 0;
+}
+
+.detailsSummary:hover {
+  color: var(--ifm-color-emphasis-800);
+}
+
+.detailsContent {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: var(--ifm-background-surface-secondary);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 4px;
+  font-family: var(--ifm-font-family-monospace, monospace);
+  font-size: 0.775rem;
+  line-height: 1.5;
+  color: var(--ifm-color-emphasis-700);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+/* ── Actions ────────────────────────────────────────────────────────────────── */
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 0.25rem;
+}
+
+.retryBtn {
+  padding: 0.45rem 1.1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background: var(--ifm-color-primary);
+  color: #fff;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.retryBtn:hover {
+  opacity: 0.88;
+}
+
+.reportBtn {
+  padding: 0.45rem 1.1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 4px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--ifm-font-color-base);
+  transition: background 0.15s ease;
+}
+
+.reportBtn:hover {
+  background: var(--ifm-background-surface-secondary);
+}
+
+/* ── Compact variant ────────────────────────────────────────────────────────── */
+.fallbackCompact {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0.75rem 1rem;
+  min-height: unset;
+  gap: 0.6rem;
+  text-align: left;
+}
+
+.fallbackCompact .icon {
+  font-size: 1.3rem;
+}
+
+.fallbackCompact .heading {
+  font-size: 0.9rem;
+}
+
+.fallbackCompact .message {
+  font-size: 0.8rem;
+}
+
+/* ── Accessibility ──────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .retryBtn,
+  .reportBtn {
+    transition: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .fallback {
+    border-width: 2px;
+  }
+
+  .heading {
+    text-decoration: underline;
+  }
+}
