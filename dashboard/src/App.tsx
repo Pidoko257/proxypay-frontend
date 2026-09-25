@@ -4,9 +4,10 @@ import { TransactionsTable } from './components/TransactionsTable'
 import { TransactionDrawer } from './components/TransactionDrawer'
 import { ExportButton } from './components/ExportButton'
 import { NotificationSettings } from './components/NotificationSettings'
+import { ReconciliationTab } from './components/ReconciliationTab'
 import './App.css'
 
-type Page = 'transactions' | 'settings'
+type Page = 'transactions' | 'reconciliation' | 'settings'
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('transactions')
@@ -43,6 +44,12 @@ export default function App() {
               Transactions
             </button>
             <button
+              className={`nav-tab ${currentPage === 'reconciliation' ? 'active' : ''}`}
+              onClick={() => setCurrentPage('reconciliation')}
+            >
+              Reconciliation
+            </button>
+            <button
               className={`nav-tab ${currentPage === 'settings' ? 'active' : ''}`}
               onClick={() => setCurrentPage('settings')}
             >
@@ -61,6 +68,10 @@ export default function App() {
               <ExportButton />
             </div>
             <TransactionsTable onRowClick={handleRowClick} />
+          </div>
+        ) : currentPage === 'reconciliation' ? (
+          <div className="reconciliation-page">
+            <ReconciliationTab />
           </div>
         ) : (
           <div className="settings-page">
