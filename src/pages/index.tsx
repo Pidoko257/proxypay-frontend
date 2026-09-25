@@ -15,6 +15,10 @@ export default function Home(): React.JSX.Element {
           <Link className="button button--primary button--lg" to="/api">
             Open API Reference
           </Link>
+          {' '}
+          <Link className="button button--secondary button--lg" to="/dashboard">
+            Open Dashboard
+          </Link>
         </p>
       </main>
     </Layout>
