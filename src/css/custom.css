@@ -33,6 +33,29 @@ pre code {
   padding: 3rem 1.5rem 5rem;
 }
 
+.dashboard__toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.25rem;
+  color: #5c3b00;
+  background: #fff2c7;
+  border: 1px solid #e5bd4e;
+  border-radius: 0.5rem;
+}
+
+.dashboard__toast-close {
+  padding: 0.35rem 0.65rem;
+  color: inherit;
+  font-weight: 700;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 0.35rem;
+  cursor: pointer;
+}
+
 .dashboard__header {
   display: flex;
   align-items: flex-start;

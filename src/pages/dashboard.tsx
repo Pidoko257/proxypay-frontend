@@ -4,10 +4,12 @@ import { filterTransactions } from '../utils/transactionSearch';
 import { transactions } from '../data/transactions';
 import { dashboardMessages, type DashboardLocale } from '../i18n/dashboard';
 import { getTransactionAnalytics } from '../utils/transactionAnalytics';
+import Toast from '../components/Toast';
 
 export default function DashboardPage(): React.JSX.Element {
   const [query, setQuery] = useState('');
   const [locale, setLocale] = useState<DashboardLocale>('en');
+  const [showFailureNotice, setShowFailureNotice] = useState(true);
   const messages = dashboardMessages[locale];
   const filteredTransactions = useMemo(() => filterTransactions(transactions, query), [query]);
   const analytics = useMemo(() => getTransactionAnalytics(filteredTransactions), [filteredTransactions]);
@@ -16,6 +18,11 @@ export default function DashboardPage(): React.JSX.Element {
   return (
     <Layout title="Transaction Dashboard" description="ProxyPay transaction dashboard">
       <main className="dashboard">
+        {showFailureNotice && (
+          <Toast onDismiss={() => setShowFailureNotice(false)}>
+            {transactions.filter((transaction) => transaction.status === 'Failed').length} transactions require attention.
+          </Toast>
+        )}
         <div className="dashboard__header">
           <div>
             <p className="dashboard__eyebrow">{messages.eyebrow}</p>
