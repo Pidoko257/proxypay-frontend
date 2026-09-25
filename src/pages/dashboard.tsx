@@ -3,12 +3,15 @@ import Layout from '@theme/Layout';
 import { filterTransactions } from '../utils/transactionSearch';
 import { transactions } from '../data/transactions';
 import { dashboardMessages, type DashboardLocale } from '../i18n/dashboard';
+import { getTransactionAnalytics } from '../utils/transactionAnalytics';
 
 export default function DashboardPage(): React.JSX.Element {
   const [query, setQuery] = useState('');
   const [locale, setLocale] = useState<DashboardLocale>('en');
   const messages = dashboardMessages[locale];
   const filteredTransactions = useMemo(() => filterTransactions(transactions, query), [query]);
+  const analytics = useMemo(() => getTransactionAnalytics(filteredTransactions), [filteredTransactions]);
+  const maxDailyVolume = Math.max(...analytics.volumeByDay.map(([, volume]) => volume), 1);
 
   return (
     <Layout title="Transaction Dashboard" description="ProxyPay transaction dashboard">
@@ -54,6 +57,25 @@ export default function DashboardPage(): React.JSX.Element {
               </tbody>
             </table>
             {filteredTransactions.length === 0 && <p className="dashboard__empty">{messages.noResults}</p>}
+          </div>
+        </section>
+        <section className="dashboard__analytics" aria-labelledby="analytics-title">
+          <h2 id="analytics-title">Analytics</h2>
+          <div className="dashboard__metrics">
+            <article><strong>{analytics.averageProcessingTime} ms</strong><span>Average processing time</span></article>
+            <article><strong>{analytics.failureRate}%</strong><span>Failure rate</span></article>
+            <article><strong>${analytics.totalVolume.toLocaleString()}</strong><span>Transaction volume</span></article>
+          </div>
+          <div className="dashboard__trend">
+            <h3>Volume trend</h3>
+            <div className="dashboard__bars" aria-label="Transaction volume by day">
+              {analytics.volumeByDay.map(([day, volume]) => (
+                <div className="dashboard__bar-group" key={day}>
+                  <div className="dashboard__bar" style={{ height: `${(volume / maxDailyVolume) * 100}%` }} title={`${volume} transactions`} />
+                  <small>{day.slice(5)}</small>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       </main>
