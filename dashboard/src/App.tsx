@@ -4,8 +4,9 @@ import { TransactionsTable } from './components/TransactionsTable'
 import { TransactionDrawer } from './components/TransactionDrawer'
 import { ExportButton } from './components/ExportButton'
 import { NotificationSettings } from './components/NotificationSettings'
-import { SessionExpirationDialog } from './components/SessionExpirationDialog'
-import { useSessionExpiration } from './hooks/useSessionExpiration'
+import { DuplicateReview } from './components/DuplicateReview'
+import { Transaction } from './services/api'
+import { TransactionMergeResult } from './services/duplicateDetection'
 import './App.css'
 
 type Page = 'transactions' | 'settings'
@@ -14,12 +15,12 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('transactions')
   const {
     selectedTransaction,
-    detailLoading,
-    detailError,
     setSelectedTransaction,
+    detailLoading,
     fetchTransactionDetail,
     fetchTransactions,
     filters,
+    transactions,
   } = useTransactionStore()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const handleSessionExpired = () => {
@@ -33,8 +34,7 @@ export default function App() {
     fetchTransactions(filters)
   }, [])
 
-  const handleRowClick = (tx: Parameters<typeof setSelectedTransaction>[0]) => {
-    if (!tx) return
+  const handleRowClick = (tx: Transaction) => {
     setSelectedTransaction(tx)
     setDrawerOpen(true)
     void fetchTransactionDetail(tx.id)
@@ -43,6 +43,11 @@ export default function App() {
   const handleDrawerClose = () => {
     setDrawerOpen(false)
     setTimeout(() => setSelectedTransaction(null), 300) // Delay to allow animation
+  }
+
+  const handleMerged = (result: TransactionMergeResult) => {
+    setSelectedTransaction(result.transaction)
+    void fetchTransactions(filters)
   }
 
   return (
@@ -76,7 +81,8 @@ export default function App() {
               <h2>Transaction History</h2>
               <ExportButton />
             </div>
-            <TransactionsTable onRowClick={handleRowClick} />
+            <TransactionsTable onRowClick={handleRowClick} loadOnMount={false} />
+            <DuplicateReview transactions={transactions} onMerged={handleMerged} />
           </div>
         ) : (
           <div className="settings-page">
@@ -92,6 +98,7 @@ export default function App() {
         loading={detailLoading}
         error={detailError}
         onClose={handleDrawerClose}
+        loading={detailLoading}
       />
       {showWarning && (
         <SessionExpirationDialog

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react'
 import { format } from 'date-fns'
 import { Printer, X } from 'lucide-react'
 import { Transaction } from '../services/api'
+import { StatusTimeline } from './StatusTimeline'
 import '../styles/TransactionDrawer.css'
 
 interface TransactionDrawerProps {
@@ -10,6 +11,7 @@ interface TransactionDrawerProps {
   loading: boolean
   error: string | null
   onClose: () => void
+  loading?: boolean
 }
 
 export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
@@ -18,6 +20,7 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
   loading,
   error,
   onClose,
+  loading = false,
 }) => {
   const handlePrint = () => {
     if (window.confirm('Open the print dialog for this transaction?')) {
@@ -47,26 +50,23 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
       )}
 
       {/* Drawer */}
-      <div className={`transaction-drawer ${isOpen ? 'open' : ''}`}>
+      <div
+        className={`transaction-drawer ${isOpen ? 'open' : ''}`}
+        role="dialog"
+        aria-modal={isOpen}
+        aria-labelledby="transaction-drawer-heading"
+        aria-busy={loading}
+      >
         {/* Header */}
         <div className="drawer-header">
-          <div>
-            <p className="print-company-header">ProxyPay</p>
-            <h2>Transaction Details</h2>
-          </div>
-          <div className="drawer-actions">
-            <button className="print-button" onClick={handlePrint}>
-              <Printer size={18} />
-              Print
-            </button>
-            <button
-              className="close-button"
-              onClick={onClose}
-              aria-label="Close drawer"
-            >
-              <X size={24} />
-            </button>
-          </div>
+          <h2 id="transaction-drawer-heading">Transaction Details</h2>
+          <button
+            className="close-button"
+            onClick={onClose}
+            aria-label="Close drawer"
+          >
+            <X size={24} />
+          </button>
         </div>
 
         {/* Content */}
@@ -173,6 +173,11 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
               )}
             </div>
           </section>
+
+          <StatusTimeline
+            transaction={transaction}
+            currentStatus={transaction.status}
+          />
 
           {/* Failure Reason */}
           {transaction.failureReason && (

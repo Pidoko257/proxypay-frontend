@@ -6,8 +6,8 @@ interface TransactionStore {
   selectedTransaction: Transaction | null
   loading: boolean
   detailLoading: boolean
-  detailError: string | null
   error: string | null
+  detailError: string | null
   total: number
   filters: TransactionFilters
   
@@ -25,20 +25,25 @@ const defaultFilters: TransactionFilters = {
   offset: 0,
 }
 
+let latestDetailRequest = 0
+let latestListRequest = 0
+
 export const useTransactionStore = create<TransactionStore>((set) => ({
   transactions: [],
   selectedTransaction: null,
   loading: false,
   detailLoading: false,
-  detailError: null,
   error: null,
+  detailError: null,
   total: 0,
   filters: defaultFilters,
 
   fetchTransactions: async (filters: TransactionFilters) => {
+    const requestId = ++latestListRequest
     set({ loading: true, error: null })
     try {
       const result = await proxyPayAPI.getTransactions(filters)
+      if (requestId !== latestListRequest) return
       set({
         transactions: result.data,
         total: result.total,
@@ -46,6 +51,7 @@ export const useTransactionStore = create<TransactionStore>((set) => ({
         loading: false,
       })
     } catch (error) {
+      if (requestId !== latestListRequest) return
       set({
         error: error instanceof Error ? error.message : 'Failed to fetch transactions',
         loading: false,
@@ -54,22 +60,35 @@ export const useTransactionStore = create<TransactionStore>((set) => ({
   },
 
   fetchTransactionDetail: async (id: string) => {
+    const requestId = ++latestDetailRequest
     set({ detailLoading: true, detailError: null })
     try {
       const transaction = await proxyPayAPI.getTransactionDetail(id)
-      set({ selectedTransaction: transaction, detailLoading: false })
+      let statusHistory = transaction.statusHistory || []
+      if (statusHistory.length === 0) {
+        try {
+          statusHistory = await proxyPayAPI.getStatusHistory(id)
+        } catch {
+          statusHistory = transaction.statusHistory || []
+        }
+      }
+      if (requestId !== latestDetailRequest) return
+      set({
+        selectedTransaction: { ...transaction, statusHistory },
+        detailLoading: false,
+      })
     } catch (error) {
+      if (requestId !== latestDetailRequest) return
       set({
         detailError:
-          error instanceof Error
-            ? error.message
-            : 'Failed to fetch transaction details',
+          error instanceof Error ? error.message : 'Failed to fetch transaction details',
         detailLoading: false,
       })
     }
   },
 
   setSelectedTransaction: (tx: Transaction | null) => {
+    latestDetailRequest += 1
     set({ selectedTransaction: tx, detailError: null })
   },
 
