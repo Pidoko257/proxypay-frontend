@@ -171,6 +171,13 @@
   background-color: var(--color-neutral-200);
 }
 
+.schedule-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
 @media (max-width: 768px) {
   .export-options {
     position: fixed;

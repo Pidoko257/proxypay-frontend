@@ -2,18 +2,21 @@ import React, { useEffect } from 'react'
 import { format } from 'date-fns'
 import { X } from 'lucide-react'
 import { Transaction } from '../services/api'
+import { StatusTimeline } from './StatusTimeline'
 import '../styles/TransactionDrawer.css'
 
 interface TransactionDrawerProps {
   transaction: Transaction | null
   isOpen: boolean
   onClose: () => void
+  loading?: boolean
 }
 
 export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
   transaction,
   isOpen,
   onClose,
+  loading = false,
 }) => {
   // Handle Escape key
   useEffect(() => {
@@ -37,10 +40,16 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
       )}
 
       {/* Drawer */}
-      <div className={`transaction-drawer ${isOpen ? 'open' : ''}`}>
+      <div
+        className={`transaction-drawer ${isOpen ? 'open' : ''}`}
+        role="dialog"
+        aria-modal={isOpen}
+        aria-labelledby="transaction-drawer-heading"
+        aria-busy={loading}
+      >
         {/* Header */}
         <div className="drawer-header">
-          <h2>Transaction Details</h2>
+          <h2 id="transaction-drawer-heading">Transaction Details</h2>
           <button
             className="close-button"
             onClick={onClose}
@@ -146,6 +155,11 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
               )}
             </div>
           </section>
+
+          <StatusTimeline
+            transaction={transaction}
+            currentStatus={transaction.status}
+          />
 
           {/* Failure Reason */}
           {transaction.failureReason && (
