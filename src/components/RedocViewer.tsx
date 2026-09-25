@@ -24,6 +24,8 @@ import {
   type RedocThemeColors,
 } from '../utils/redocTheme';
 import styles from './RedocViewer.module.css';
+import FormattedMessage from './FormattedMessage';
+import { validateOpenApiSpec } from './ApiReference';
 
 /**
  * OpenAPI specification object
@@ -120,6 +122,13 @@ export default function RedocViewer({
         } else {
           specContent = await response.text();
           specData = JSON.parse(specContent);
+        }
+
+        const validationErrors = validateOpenApiSpec(specData);
+        if (validationErrors.length > 0) {
+          throw new Error(
+            `The OpenAPI document is invalid:\n${validationErrors.map((item) => `- ${item}`).join('\n')}`,
+          );
         }
 
         // Update version tracking after successful load
@@ -261,6 +270,13 @@ export default function RedocViewer({
     if (!RedocStandalone) return;
 
     try {
+      const validationErrors = validateOpenApiSpec(loadedSpec);
+      if (validationErrors.length > 0) {
+        setError(
+          `The OpenAPI document is invalid:\n${validationErrors.map((item) => `- ${item}`).join('\n')}`,
+        );
+        return;
+      }
       const themeColors = readRedocThemeColors(window);
       lastThemeColorsRef.current = themeColors;
 
@@ -388,7 +404,7 @@ export default function RedocViewer({
       <div className={styles.container}>
         <div className={styles.error}>
           <h3>Failed to Load API Reference</h3>
-          <p>{error}</p>
+          <p><FormattedMessage message={error} /></p>
           <p className={styles.errorHint}>
             Make sure the OpenAPI specification file is available at <code>{specUrl}</code>
           </p>
