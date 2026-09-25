@@ -100,6 +100,17 @@ class ProxyPayAPI {
     return data
   }
 
+  async refreshSession(): Promise<string> {
+    const { data } = await this.client.post('/auth/refresh')
+    if (!data?.token || typeof data.token !== 'string') {
+      throw new Error('Session refresh did not return a token')
+    }
+
+    localStorage.setItem('auth_token', data.token)
+    this.client.defaults.headers.common['Authorization'] = `Bearer ${data.token}`
+    return data.token
+  }
+
   // Health check
   async healthCheck(): Promise<boolean> {
     try {

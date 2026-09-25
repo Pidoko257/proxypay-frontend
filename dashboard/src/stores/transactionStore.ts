@@ -5,6 +5,8 @@ interface TransactionStore {
   transactions: Transaction[]
   selectedTransaction: Transaction | null
   loading: boolean
+  detailLoading: boolean
+  detailError: string | null
   error: string | null
   total: number
   filters: TransactionFilters
@@ -27,6 +29,8 @@ export const useTransactionStore = create<TransactionStore>((set) => ({
   transactions: [],
   selectedTransaction: null,
   loading: false,
+  detailLoading: false,
+  detailError: null,
   error: null,
   total: 0,
   filters: defaultFilters,
@@ -50,20 +54,23 @@ export const useTransactionStore = create<TransactionStore>((set) => ({
   },
 
   fetchTransactionDetail: async (id: string) => {
-    set({ loading: true, error: null })
+    set({ detailLoading: true, detailError: null })
     try {
       const transaction = await proxyPayAPI.getTransactionDetail(id)
-      set({ selectedTransaction: transaction, loading: false })
+      set({ selectedTransaction: transaction, detailLoading: false })
     } catch (error) {
       set({
-        error: error instanceof Error ? error.message : 'Failed to fetch transaction details',
-        loading: false,
+        detailError:
+          error instanceof Error
+            ? error.message
+            : 'Failed to fetch transaction details',
+        detailLoading: false,
       })
     }
   },
 
   setSelectedTransaction: (tx: Transaction | null) => {
-    set({ selectedTransaction: tx })
+    set({ selectedTransaction: tx, detailError: null })
   },
 
   setFilters: (newFilters: Partial<TransactionFilters>) => {
