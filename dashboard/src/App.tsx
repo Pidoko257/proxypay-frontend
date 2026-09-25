@@ -4,15 +4,24 @@ import { TransactionsTable } from './components/TransactionsTable'
 import { TransactionDrawer } from './components/TransactionDrawer'
 import { ExportButton } from './components/ExportButton'
 import { NotificationSettings } from './components/NotificationSettings'
-import { ReconciliationTab } from './components/ReconciliationTab'
+import { DuplicateReview } from './components/DuplicateReview'
+import { Transaction } from './services/api'
+import { TransactionMergeResult } from './services/duplicateDetection'
 import './App.css'
 
 type Page = 'transactions' | 'reconciliation' | 'settings'
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('transactions')
-  const { selectedTransaction, setSelectedTransaction, fetchTransactions, filters } =
-    useTransactionStore()
+  const {
+    selectedTransaction,
+    setSelectedTransaction,
+    detailLoading,
+    fetchTransactionDetail,
+    fetchTransactions,
+    filters,
+    transactions,
+  } = useTransactionStore()
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   // Initialize transactions on mount
@@ -20,14 +29,20 @@ export default function App() {
     fetchTransactions(filters)
   }, [])
 
-  const handleRowClick = (tx: any) => {
+  const handleRowClick = (tx: Transaction) => {
     setSelectedTransaction(tx)
     setDrawerOpen(true)
+    void fetchTransactionDetail(tx.id)
   }
 
   const handleDrawerClose = () => {
     setDrawerOpen(false)
     setTimeout(() => setSelectedTransaction(null), 300) // Delay to allow animation
+  }
+
+  const handleMerged = (result: TransactionMergeResult) => {
+    setSelectedTransaction(result.transaction)
+    void fetchTransactions(filters)
   }
 
   return (
@@ -67,7 +82,8 @@ export default function App() {
               <h2>Transaction History</h2>
               <ExportButton />
             </div>
-            <TransactionsTable onRowClick={handleRowClick} />
+            <TransactionsTable onRowClick={handleRowClick} loadOnMount={false} />
+            <DuplicateReview transactions={transactions} onMerged={handleMerged} />
           </div>
         ) : currentPage === 'reconciliation' ? (
           <div className="reconciliation-page">
@@ -85,6 +101,7 @@ export default function App() {
         transaction={selectedTransaction}
         isOpen={drawerOpen}
         onClose={handleDrawerClose}
+        loading={detailLoading}
       />
     </div>
   )

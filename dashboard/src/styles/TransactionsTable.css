@@ -48,8 +48,11 @@
   cursor: pointer;
 }
 
-.transaction-row:hover {
+.transaction-row:hover,
+.transaction-row:focus-visible {
   background-color: var(--color-neutral-50);
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
 }
 
 .transactions-table td {

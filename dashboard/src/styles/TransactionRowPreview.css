@@ -1,0 +1,105 @@
+.transaction-row-preview {
+  position: fixed;
+  z-index: 1100;
+  width: min(310px, calc(100vw - 2rem));
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 0.5rem;
+  background: white;
+  box-shadow: var(--shadow-xl);
+  pointer-events: none;
+  animation: transactionPreviewFadeIn 160ms ease-out both;
+}
+
+.preview-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--color-neutral-100);
+}
+
+.preview-label {
+  color: var(--color-neutral-900);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.preview-id {
+  max-width: 11rem;
+  overflow: hidden;
+  color: var(--color-neutral-600);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preview-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem 1rem;
+  padding: 0.75rem 0;
+}
+
+.preview-details div {
+  min-width: 0;
+}
+
+.preview-details dt {
+  color: var(--color-neutral-600);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.preview-details dd {
+  margin-top: 0.15rem;
+  overflow: hidden;
+  color: var(--color-neutral-900);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preview-details dd .status-badge {
+  padding: 0.2rem 0.45rem;
+  font-size: 0.7rem;
+}
+
+.preview-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--color-neutral-100);
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+@keyframes transactionPreviewFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(0.25rem) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 600px) {
+  .transaction-row-preview {
+    max-width: calc(100vw - 1rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .transaction-row-preview {
+    animation: none;
+  }
+}
