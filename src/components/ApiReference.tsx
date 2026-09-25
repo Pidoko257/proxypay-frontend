@@ -6,6 +6,7 @@ import React, {
   useState,
 } from 'react';
 import jsYaml from 'js-yaml';
+import FormattedMessage from './FormattedMessage';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -67,7 +68,6 @@ interface Template {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const PAGE_SIZE = 10;
 const DEBOUNCE_MS = 300;
 const METHOD_COLORS: Record<string, string> = {
   get: '#61affe',
@@ -182,6 +182,48 @@ function matchesSearch(ep: Endpoint, query: string): boolean {
   );
 }
 
+export function validateOpenApiSpec(value: unknown): string[] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return ['The specification must be a YAML or JSON object.'];
+  }
+
+  const document = value as Record<string, unknown>;
+  const errors: string[] = [];
+
+  if (typeof document.openapi !== 'string' || !/^3\.(0|1)(\.\d+)?$/.test(document.openapi)) {
+    errors.push('The `openapi` field must be an OpenAPI 3.0 or 3.1 version.');
+  }
+
+  const info = document.info;
+  if (!info || typeof info !== 'object' || Array.isArray(info)) {
+    errors.push('The `info` object is required.');
+  } else {
+    const infoObject = info as Record<string, unknown>;
+    if (typeof infoObject.title !== 'string' || !infoObject.title.trim()) {
+      errors.push('The `info.title` field is required.');
+    }
+    if (typeof infoObject.version !== 'string' || !infoObject.version.trim()) {
+      errors.push('The `info.version` field is required.');
+    }
+  }
+
+  const paths = document.paths;
+  if (!paths || typeof paths !== 'object' || Array.isArray(paths)) {
+    errors.push('The `paths` object is required and must contain API paths.');
+  } else {
+    for (const [path, pathItem] of Object.entries(paths)) {
+      if (!path.startsWith('/')) {
+        errors.push(`Path \`${path}\` must start with "/".`);
+      }
+      if (!pathItem || typeof pathItem !== 'object' || Array.isArray(pathItem)) {
+        errors.push(`Path \`${path}\` must be an object.`);
+      }
+    }
+  }
+
+  return errors;
+}
+
 // ─── Hooks ────────────────────────────────────────────────────────────────────
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -252,52 +294,6 @@ function StatusBadge({ status }: { status: EndpointStatus }) {
     >
       {status}
     </a>
-  );
-}
-
-function Pagination({
-  page,
-  totalPages,
-  onPrev,
-  onNext,
-  onPage,
-}: {
-  page: number;
-  totalPages: number;
-  onPrev: () => void;
-  onNext: () => void;
-  onPage: (p: number) => void;
-}) {
-  if (totalPages <= 1) return null;
-
-  // Build page window: always show first, last, current ±1
-  const pages = new Set([1, totalPages, page, page - 1, page + 1].filter((p) => p >= 1 && p <= totalPages));
-  const sorted = Array.from(pages).sort((a, b) => a - b);
-
-  return (
-    <div className="api-pagination">
-      <button onClick={onPrev} disabled={page === 1} aria-label="Previous page">
-        ‹
-      </button>
-      {sorted.map((p, i) => {
-        const prev = sorted[i - 1];
-        return (
-          <React.Fragment key={p}>
-            {prev && p - prev > 1 && <span className="api-pagination-ellipsis">…</span>}
-            <button
-              onClick={() => onPage(p)}
-              className={p === page ? 'active' : ''}
-              aria-current={p === page ? 'page' : undefined}
-            >
-              {p}
-            </button>
-          </React.Fragment>
-        );
-      })}
-      <button onClick={onNext} disabled={page === totalPages} aria-label="Next page">
-        ›
-      </button>
-    </div>
   );
 }
 
@@ -548,7 +544,6 @@ export default function ApiReference(): React.JSX.Element {
   const [specVersion, setSpecVersion] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
-  const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [customTemplates, setCustomTemplates] = useState<Record<string, Template[]>>({});
 
@@ -558,14 +553,22 @@ export default function ApiReference(): React.JSX.Element {
   // Fetch + parse spec; bump specVersion to invalidate cache
   useEffect(() => {
     fetch('/openapi.yaml')
-      .then((r) => r.text())
+      .then((r) => {
+        if (!r.ok) throw new Error(`Unable to load the OpenAPI document (HTTP ${r.status}).`);
+        return r.text();
+      })
       .then((text) => {
-        const parsed = jsYaml.load(text) as Record<string, unknown>;
-        setSpec(parsed);
+        const parsed = jsYaml.load(text);
+        const validationErrors = validateOpenApiSpec(parsed);
+        if (validationErrors.length > 0) {
+          throw new Error(`The OpenAPI document is invalid:\n${validationErrors.map((item) => `- ${item}`).join('\n')}`);
+        }
+        const validSpec = parsed as Record<string, unknown>;
+        setSpec(validSpec);
         setSpecVersion((v) => v + 1);
         searchCache.current.clear();
       })
-      .catch((e) => setError(String(e)));
+      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
   }, []);
 
   const allEndpoints = useMemo(() => (spec ? extractEndpoints(spec) : []), [spec]);
@@ -585,31 +588,16 @@ export default function ApiReference(): React.JSX.Element {
     return result;
   }, [allEndpoints, debouncedQuery, specVersion]);
 
-  // Reset to page 1 when filter changes
+  // Reset the selected endpoint when the filter changes
   useEffect(() => {
-    setPage(1);
     setSelectedId(null);
   }, [debouncedQuery]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-
-  // Clamp page to valid range
-  const safePage = Math.min(page, totalPages);
-
-  // Correct slice: (page-1)*PAGE_SIZE … page*PAGE_SIZE (no off-by-one)
-  const pageEndpoints = useMemo(() => {
-    const start = (safePage - 1) * PAGE_SIZE;
-    return filtered.slice(start, start + PAGE_SIZE);
-  }, [filtered, safePage]);
 
   const selectedIndex = selectedId ? filtered.findIndex((e) => e.id === selectedId) : -1;
   const selectedEndpoint = selectedIndex >= 0 ? filtered[selectedIndex] : null;
 
   function selectEndpoint(ep: Endpoint) {
     setSelectedId(ep.id);
-    // Navigate to the correct page for this endpoint
-    const idx = filtered.findIndex((e) => e.id === ep.id);
-    if (idx >= 0) setPage(Math.floor(idx / PAGE_SIZE) + 1);
   }
 
   function navigateEndpoint(delta: number) {
@@ -626,7 +614,21 @@ export default function ApiReference(): React.JSX.Element {
     }));
   }
 
-  if (error) return <div className="api-error">Failed to load spec: {error}</div>;
+  if (error) {
+    return (
+      <div className="api-error" role="alert">
+        <h2>Unable to display the API reference</h2>
+        <p>Fix the following issue{error.includes('\n- ') ? 's' : ''} in <code>static/openapi.yaml</code> and reload:</p>
+        {error.includes('\n- ') ? (
+          <ul>
+            {error.split('\n- ').slice(1).map((message) => <li key={message}><FormattedMessage message={message} /></li>)}
+          </ul>
+        ) : (
+          <p><FormattedMessage message={error} /></p>
+        )}
+      </div>
+    );
+  }
   if (!spec) return <div className="api-loading">Loading API reference…</div>;
 
   return (
@@ -646,12 +648,12 @@ export default function ApiReference(): React.JSX.Element {
       </div>
 
       <div className="api-layout">
-        {/* Endpoint list + pagination */}
+        {/* Endpoint list */}
         <nav className="api-endpoint-list">
-          {pageEndpoints.length === 0 ? (
+          {filtered.length === 0 ? (
             <p className="api-no-results">No endpoints match your search.</p>
           ) : (
-            pageEndpoints.map((ep) => (
+            filtered.map((ep) => (
               <button
                 key={ep.id}
                 className={`api-endpoint-item${selectedId === ep.id ? ' selected' : ''}`}
@@ -664,16 +666,8 @@ export default function ApiReference(): React.JSX.Element {
             ))
           )}
 
-          <Pagination
-            page={safePage}
-            totalPages={totalPages}
-            onPrev={() => setPage((p) => Math.max(1, p - 1))}
-            onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
-            onPage={setPage}
-          />
-
           <p className="api-page-info">
-            Page {safePage} of {totalPages} · {filtered.length} endpoint{filtered.length !== 1 ? 's' : ''}
+            {filtered.length} endpoint{filtered.length !== 1 ? 's' : ''}
           </p>
         </nav>
 

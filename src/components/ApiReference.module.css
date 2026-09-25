@@ -114,16 +114,21 @@
 .layout {
   display: flex;
   flex: 1;
-  overflow: hidden;
+  overflow: visible;
   gap: 0;
 }
 
 /* Sidebar */
 .sidebar {
+  position: sticky;
+  top: var(--ifm-navbar-height, 0px);
+  align-self: flex-start;
   flex-shrink: 0;
   width: 320px;
   border-right: 1px solid var(--ifm-color-emphasis-200);
   overflow: hidden;
+  height: calc(100vh - var(--ifm-navbar-height, 0px));
+  max-height: calc(100vh - var(--ifm-navbar-height, 0px));
   display: flex;
   flex-direction: column;
   background: var(--ifm-background-surface-primary);
@@ -132,7 +137,7 @@
 /* Main content */
 .main {
   flex: 1;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   min-width: 0; /* Allow flex child to respect max-content constraints */
@@ -145,10 +150,12 @@
   }
 
   .sidebar {
+    position: static;
     width: 100%;
     border-right: none;
     border-bottom: 1px solid var(--ifm-color-emphasis-200);
     max-height: 40vh;
+    height: auto;
     overflow-y: auto;
   }
 
@@ -182,6 +189,7 @@
 
   .sidebar {
     max-height: 35vh;
+    height: auto;
   }
 
   .main {
