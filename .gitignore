@@ -9,10 +9,16 @@ build/
 # Jest / Vitest snapshots
 **/__snapshots__/
 *.snap
+*.snap.tmp
 
 # Coverage reports
 coverage/
 .nyc_output/
+lcov.info
+
+# Test result outputs
+test-results/
+junit.xml
 
 # ── OS / Editor artefacts ──────────────────────────────────────────────────────
 .DS_Store
@@ -37,3 +43,8 @@ yarn-error.log*
 # ── Misc ──────────────────────────────────────────────────────────────────────
 *.tsbuildinfo
 .cache/
+
+# ── Dashboard sub-project ──────────────────────────────────────────────────────
+dashboard/node_modules/
+dashboard/dist/
+dashboard/build/

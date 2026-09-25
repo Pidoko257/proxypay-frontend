@@ -1,0 +1,355 @@
+/**
+ * ComparisonView Component Styles
+ * Side-by-side comparison with diff highlighting and sync scrolling
+ */
+
+/* ── Wrapper ────────────────────────────────────────────────────────────────── */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  font-family: var(--ifm-font-family-base);
+  color: var(--ifm-font-color-base);
+  background: var(--ifm-background-color);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* ── Toolbar ────────────────────────────────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.625rem 1rem;
+  background: var(--ifm-background-surface-primary);
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.toolbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ifm-font-color-base);
+}
+
+.diffBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: rgba(255, 193, 7, 0.15);
+  color: #b37400;
+  border: 1px solid rgba(255, 193, 7, 0.4);
+}
+
+[data-theme='dark'] .diffBadge {
+  color: #ffd54f;
+  background: rgba(255, 193, 7, 0.1);
+}
+
+.toolbarRight {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.toolbarBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 4px;
+  background: var(--ifm-background-color);
+  color: var(--ifm-font-color-base);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+}
+
+.toolbarBtn:hover {
+  background: var(--ifm-background-surface-secondary);
+  border-color: var(--ifm-color-emphasis-400);
+}
+
+.toolbarBtn.active {
+  background: var(--ifm-color-primary-lightest, rgba(var(--ifm-color-primary-rgb, 66,153,225), 0.1));
+  border-color: var(--ifm-color-primary);
+  color: var(--ifm-color-primary);
+}
+
+/* ── Column headers ─────────────────────────────────────────────────────────── */
+.columnHeaders {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 2px solid var(--ifm-color-emphasis-300);
+}
+
+.columnHeader {
+  padding: 0.6rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: var(--ifm-background-surface-secondary);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.columnHeader:first-child {
+  border-right: 1px solid var(--ifm-color-emphasis-300);
+}
+
+/* ── Panels container ───────────────────────────────────────────────────────── */
+.panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 0;
+  flex: 1;
+}
+
+/* ── Individual panel ───────────────────────────────────────────────────────── */
+.panel {
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: var(--comparison-max-height, 520px);
+  padding: 0;
+  scroll-behavior: smooth;
+}
+
+.panel:first-child {
+  border-right: 2px solid var(--ifm-color-emphasis-300);
+}
+
+/* Scrollbar styling */
+.panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.panel::-webkit-scrollbar-thumb {
+  background: var(--ifm-color-emphasis-300);
+  border-radius: 3px;
+}
+
+.panel::-webkit-scrollbar-thumb:hover {
+  background: var(--ifm-color-emphasis-500);
+}
+
+.panelContent {
+  padding: 1rem;
+  min-height: 100%;
+}
+
+/* ── Diff lines ─────────────────────────────────────────────────────────────── */
+.diffLine {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+  min-height: 1.4em;
+  line-height: 1.6;
+  padding: 0 0.5rem;
+  margin: 0;
+  font-family: var(--ifm-font-family-monospace, monospace);
+  font-size: 0.825rem;
+  border-radius: 2px;
+  transition: background 0.1s ease;
+}
+
+.diffLine:hover {
+  filter: brightness(0.97);
+}
+
+.lineNum {
+  display: inline-block;
+  min-width: 2.5rem;
+  user-select: none;
+  color: var(--ifm-color-emphasis-400);
+  font-size: 0.75rem;
+  padding-right: 0.75rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.lineText {
+  flex: 1;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* Added line */
+.lineAdded {
+  background: rgba(40, 167, 69, 0.12);
+}
+
+.lineAdded .lineNum {
+  color: #28a745;
+}
+
+.lineAdded .lineText {
+  color: #155724;
+}
+
+[data-theme='dark'] .lineAdded .lineText {
+  color: #a8d5b0;
+}
+
+/* Removed line */
+.lineRemoved {
+  background: rgba(220, 53, 69, 0.1);
+}
+
+.lineRemoved .lineNum {
+  color: #dc3545;
+}
+
+.lineRemoved .lineText {
+  color: #721c24;
+}
+
+[data-theme='dark'] .lineRemoved .lineText {
+  color: #f5a0a8;
+}
+
+/* Changed line */
+.lineChanged {
+  background: rgba(255, 193, 7, 0.12);
+}
+
+.lineChanged .lineNum {
+  color: #856404;
+}
+
+.lineChanged .lineText {
+  color: #533f03;
+}
+
+[data-theme='dark'] .lineChanged .lineText {
+  color: #ffe082;
+}
+
+/* Unchanged line */
+.lineUnchanged {
+  background: transparent;
+}
+
+/* ── Generic content view (non-diff mode) ─────────────────────────────────── */
+.contentView {
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+/* ── Empty state ────────────────────────────────────────────────────────────── */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  color: var(--ifm-color-emphasis-500);
+  text-align: center;
+  grid-column: 1 / -1;
+}
+
+.emptyIcon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+  opacity: 0.6;
+}
+
+.emptyText {
+  font-size: 0.95rem;
+}
+
+/* ── Legend ─────────────────────────────────────────────────────────────────── */
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+  background: var(--ifm-background-surface-primary);
+  flex-wrap: wrap;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--ifm-color-emphasis-600);
+}
+
+.legendSwatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.legendAdded   { background: rgba(40, 167, 69, 0.4); }
+.legendRemoved { background: rgba(220, 53, 69, 0.35); }
+.legendChanged { background: rgba(255, 193, 7, 0.45); }
+
+/* ── Sync-scroll indicator ──────────────────────────────────────────────────── */
+.syncIndicator {
+  font-size: 0.78rem;
+  color: var(--ifm-color-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .panels,
+  .columnHeaders {
+    grid-template-columns: 1fr;
+  }
+
+  .panel:first-child {
+    border-right: none;
+    border-bottom: 2px solid var(--ifm-color-emphasis-300);
+  }
+
+  .columnHeader:first-child {
+    border-right: none;
+    border-bottom: 1px solid var(--ifm-color-emphasis-300);
+  }
+}
+
+/* ── Accessibility ──────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    scroll-behavior: auto;
+  }
+
+  .toolbarBtn,
+  .diffLine {
+    transition: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .lineAdded   { outline: 1px solid #28a745; }
+  .lineRemoved { outline: 1px solid #dc3545; }
+  .lineChanged { outline: 1px solid #856404; }
+}

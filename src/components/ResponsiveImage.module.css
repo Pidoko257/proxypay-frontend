@@ -1,0 +1,126 @@
+/**
+ * ResponsiveImage Component Styles
+ */
+
+/* ── Wrapper ────────────────────────────────────────────────────────────────── */
+.wrapper {
+  display: inline-block;
+  position: relative;
+  line-height: 0; /* collapse inline whitespace */
+}
+
+.wrapperBlock {
+  display: block;
+  width: 100%;
+}
+
+/* ── Picture / image ────────────────────────────────────────────────────────── */
+.picture {
+  display: contents; /* transparent wrapper — layout driven by the <img> */
+}
+
+.image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: inherit;
+  transition: opacity 0.25s ease;
+}
+
+/* ── Loading state ──────────────────────────────────────────────────────────── */
+.imagePending {
+  opacity: 0;
+}
+
+.imageLoaded {
+  opacity: 1;
+}
+
+/* ── Placeholder / skeleton ─────────────────────────────────────────────────── */
+.placeholder {
+  position: absolute;
+  inset: 0;
+  background: var(--ifm-color-emphasis-100, #f0f0f0);
+  border-radius: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.placeholderHidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.placeholderIcon {
+  font-size: 2rem;
+  opacity: 0.3;
+  user-select: none;
+}
+
+/* Shimmer animation for the placeholder */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+.placeholderShimmer {
+  background: linear-gradient(
+    90deg,
+    var(--ifm-color-emphasis-100, #ebebeb) 25%,
+    var(--ifm-color-emphasis-200, #ddd)    50%,
+    var(--ifm-color-emphasis-100, #ebebeb) 75%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.6s infinite linear;
+}
+
+/* ── Error state ────────────────────────────────────────────────────────────── */
+.errorState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: var(--ifm-color-emphasis-100, #f5f5f5);
+  border: 1px dashed var(--ifm-color-emphasis-300);
+  border-radius: 4px;
+  color: var(--ifm-color-emphasis-600);
+  font-size: 0.8rem;
+  text-align: center;
+  gap: 0.25rem;
+  min-height: 80px;
+}
+
+.errorIcon {
+  font-size: 1.5rem;
+  opacity: 0.5;
+}
+
+/* ── Caption ────────────────────────────────────────────────────────────────── */
+.caption {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--ifm-color-emphasis-600);
+  line-height: 1.4;
+  text-align: center;
+}
+
+/* ── Accessibility ──────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .image {
+    transition: none;
+  }
+
+  .placeholder {
+    transition: none;
+  }
+
+  .placeholderShimmer {
+    animation: none;
+    background: var(--ifm-color-emphasis-100, #ebebeb);
+  }
+}
