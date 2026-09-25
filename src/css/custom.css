@@ -409,50 +409,6 @@ a[target='_blank']::after {
   letter-spacing: 0.03em;
 }
 
-/* Pagination */
-.api-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  padding: 0.5rem;
-  margin-top: auto;
-}
-
-.api-pagination button {
-  min-width: 2rem;
-  padding: 0.2rem 0.4rem;
-  border: 1px solid var(--ifm-color-emphasis-400);
-  border-radius: 3px;
-  background: var(--ifm-background-surface-color);
-  color: var(--ifm-font-color-base);
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: background 0.15s;
-}
-
-.api-pagination button:hover:not(:disabled) {
-  background: var(--ifm-color-primary-lightest);
-}
-
-.api-pagination button.active {
-  background: var(--ifm-color-primary);
-  color: #fff;
-  border-color: var(--ifm-color-primary);
-  font-weight: 700;
-}
-
-.api-pagination button:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-.api-pagination-ellipsis {
-  padding: 0 0.2rem;
-  color: var(--ifm-color-emphasis-600);
-}
-
 .api-page-info {
   font-size: 0.75rem;
   color: var(--ifm-color-emphasis-600);

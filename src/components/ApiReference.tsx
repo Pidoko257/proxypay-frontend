@@ -67,7 +67,6 @@ interface Template {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const PAGE_SIZE = 10;
 const DEBOUNCE_MS = 300;
 const METHOD_COLORS: Record<string, string> = {
   get: '#61affe',
@@ -294,52 +293,6 @@ function StatusBadge({ status }: { status: EndpointStatus }) {
     >
       {status}
     </a>
-  );
-}
-
-function Pagination({
-  page,
-  totalPages,
-  onPrev,
-  onNext,
-  onPage,
-}: {
-  page: number;
-  totalPages: number;
-  onPrev: () => void;
-  onNext: () => void;
-  onPage: (p: number) => void;
-}) {
-  if (totalPages <= 1) return null;
-
-  // Build page window: always show first, last, current ±1
-  const pages = new Set([1, totalPages, page, page - 1, page + 1].filter((p) => p >= 1 && p <= totalPages));
-  const sorted = Array.from(pages).sort((a, b) => a - b);
-
-  return (
-    <div className="api-pagination">
-      <button onClick={onPrev} disabled={page === 1} aria-label="Previous page">
-        ‹
-      </button>
-      {sorted.map((p, i) => {
-        const prev = sorted[i - 1];
-        return (
-          <React.Fragment key={p}>
-            {prev && p - prev > 1 && <span className="api-pagination-ellipsis">…</span>}
-            <button
-              onClick={() => onPage(p)}
-              className={p === page ? 'active' : ''}
-              aria-current={p === page ? 'page' : undefined}
-            >
-              {p}
-            </button>
-          </React.Fragment>
-        );
-      })}
-      <button onClick={onNext} disabled={page === totalPages} aria-label="Next page">
-        ›
-      </button>
-    </div>
   );
 }
 
@@ -590,7 +543,6 @@ export default function ApiReference(): React.JSX.Element {
   const [specVersion, setSpecVersion] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
-  const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [customTemplates, setCustomTemplates] = useState<Record<string, Template[]>>({});
 
@@ -635,31 +587,16 @@ export default function ApiReference(): React.JSX.Element {
     return result;
   }, [allEndpoints, debouncedQuery, specVersion]);
 
-  // Reset to page 1 when filter changes
+  // Reset the selected endpoint when the filter changes
   useEffect(() => {
-    setPage(1);
     setSelectedId(null);
   }, [debouncedQuery]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-
-  // Clamp page to valid range
-  const safePage = Math.min(page, totalPages);
-
-  // Correct slice: (page-1)*PAGE_SIZE … page*PAGE_SIZE (no off-by-one)
-  const pageEndpoints = useMemo(() => {
-    const start = (safePage - 1) * PAGE_SIZE;
-    return filtered.slice(start, start + PAGE_SIZE);
-  }, [filtered, safePage]);
 
   const selectedIndex = selectedId ? filtered.findIndex((e) => e.id === selectedId) : -1;
   const selectedEndpoint = selectedIndex >= 0 ? filtered[selectedIndex] : null;
 
   function selectEndpoint(ep: Endpoint) {
     setSelectedId(ep.id);
-    // Navigate to the correct page for this endpoint
-    const idx = filtered.findIndex((e) => e.id === ep.id);
-    if (idx >= 0) setPage(Math.floor(idx / PAGE_SIZE) + 1);
   }
 
   function navigateEndpoint(delta: number) {
@@ -710,12 +647,12 @@ export default function ApiReference(): React.JSX.Element {
       </div>
 
       <div className="api-layout">
-        {/* Endpoint list + pagination */}
+        {/* Endpoint list */}
         <nav className="api-endpoint-list">
-          {pageEndpoints.length === 0 ? (
+          {filtered.length === 0 ? (
             <p className="api-no-results">No endpoints match your search.</p>
           ) : (
-            pageEndpoints.map((ep) => (
+            filtered.map((ep) => (
               <button
                 key={ep.id}
                 className={`api-endpoint-item${selectedId === ep.id ? ' selected' : ''}`}
@@ -728,16 +665,8 @@ export default function ApiReference(): React.JSX.Element {
             ))
           )}
 
-          <Pagination
-            page={safePage}
-            totalPages={totalPages}
-            onPrev={() => setPage((p) => Math.max(1, p - 1))}
-            onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
-            onPage={setPage}
-          />
-
           <p className="api-page-info">
-            Page {safePage} of {totalPages} · {filtered.length} endpoint{filtered.length !== 1 ? 's' : ''}
+            {filtered.length} endpoint{filtered.length !== 1 ? 's' : ''}
           </p>
         </nav>
 
