@@ -6,6 +6,7 @@ import React, {
   useState,
 } from 'react';
 import jsYaml from 'js-yaml';
+import { MAX_SEARCH_QUERY_LENGTH, validateSearchQuery } from '../utils/searchValidation';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -548,6 +549,7 @@ export default function ApiReference(): React.JSX.Element {
   const [specVersion, setSpecVersion] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [customTemplates, setCustomTemplates] = useState<Record<string, Template[]>>({});
@@ -636,13 +638,21 @@ export default function ApiReference(): React.JSX.Element {
         <input
           type="search"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          maxLength={MAX_SEARCH_QUERY_LENGTH}
+          aria-invalid={searchError !== null}
+          aria-describedby={searchError ? 'api-search-error' : undefined}
+          onChange={(e) => {
+            const result = validateSearchQuery(e.target.value);
+            setSearchError(result.error);
+            if (!result.error) setQuery(result.value);
+          }}
           placeholder="Search endpoints…"
           aria-label="Search endpoints"
         />
         <span className="api-search-count">
           {filtered.length} / {allEndpoints.length} endpoints
         </span>
+        {searchError && <span id="api-search-error" role="alert">{searchError}</span>}
       </div>
 
       <div className="api-layout">

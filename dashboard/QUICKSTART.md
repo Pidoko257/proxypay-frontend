@@ -49,13 +49,17 @@ Your ProxyPay backend must provide these endpoints:
 
 ### 4. Authentication
 
-If your API requires authentication, add your token to localStorage:
+For local development only, keep a short-lived token in memory:
 
 ```javascript
-localStorage.setItem('auth_token', 'your_jwt_token_here')
+import { proxyPayAPI } from './services/api'
+
+proxyPayAPI.setAuthToken('your_short_lived_token')
 ```
 
-The API client automatically includes this in the `Authorization: Bearer` header.
+The API client adds it to the `Authorization: Bearer` header for the current page session. Do not persist API keys or tokens in localStorage or sessionStorage. Production deployments should use a server-managed Secure, HttpOnly, SameSite cookie where possible.
+
+To configure trusted export-link domains, set `VITE_TRUSTED_REDIRECT_DOMAINS` to a comma-separated list of hostnames (for example, `exports.example.com,files.example.com`). Every external link still requires user confirmation.
 
 ## Development Server
 
