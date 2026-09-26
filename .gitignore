@@ -13,6 +13,9 @@ build/
 # Coverage reports
 coverage/
 .nyc_output/
+.quality-reports/
+playwright-report/
+test-results/
 
 # ── OS / Editor artefacts ──────────────────────────────────────────────────────
 .DS_Store
