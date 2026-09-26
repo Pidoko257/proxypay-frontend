@@ -3339,3 +3339,324 @@ body {
 .theme-customizer__warnings li > div [style*='inline-block'] {
   margin: 0 0.25rem;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   #439 — Search Results Highlighting
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* Highlighted search term in endpoint list items */
+.api-search-highlight {
+  background-color: #fff176;          /* yellow highlight, light mode */
+  color: #1a1a1a;
+  border-radius: 2px;
+  padding: 0 1px;
+  font-weight: 600;
+  font-style: normal;
+}
+
+[data-theme='dark'] .api-search-highlight {
+  background-color: #b8860b;          /* gold, readable on dark surfaces */
+  color: #ffffff;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   #440 — Enhanced Pagination Controls
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* Wrapper that holds meta row, buttons row, and jump form */
+.api-pagination-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  margin-top: auto;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+}
+
+/* "1–10 of 42" count + page-size selector row */
+.api-pagination-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.api-pagination-count {
+  white-space: nowrap;
+}
+
+.api-pagination-page-size {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.api-pagination-page-size select {
+  padding: 0.15rem 0.35rem;
+  border: 1px solid var(--ifm-color-emphasis-400);
+  border-radius: 3px;
+  background: var(--ifm-background-color);
+  color: var(--ifm-font-color-base);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+/* Jump-to-page form */
+.api-pagination-jump {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.api-pagination-jump label {
+  white-space: nowrap;
+}
+
+.api-pagination-jump input[type='number'] {
+  width: 4rem;
+  padding: 0.15rem 0.35rem;
+  border: 1px solid var(--ifm-color-emphasis-400);
+  border-radius: 3px;
+  background: var(--ifm-background-color);
+  color: var(--ifm-font-color-base);
+  font-size: 0.78rem;
+  /* hide native spin buttons — they crowd the compact layout */
+  -moz-appearance: textfield;
+}
+
+.api-pagination-jump input[type='number']::-webkit-inner-spin-button,
+.api-pagination-jump input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.api-pagination-jump button {
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--ifm-color-emphasis-400);
+  border-radius: 3px;
+  background: var(--ifm-background-color);
+  color: var(--ifm-font-color-base);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.api-pagination-jump button:hover {
+  background: var(--ifm-color-primary-lightest);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   #441 — Dark Mode: chart / hardcoded colour fixes
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* CSS custom properties that chart-like components should use.
+   In light mode these resolve to the existing palette; dark mode overrides them. */
+:root {
+  --proxypay-chart-bg:          #ffffff;
+  --proxypay-chart-surface:     #f7f8fa;
+  --proxypay-chart-border:      #dbe2ea;
+  --proxypay-chart-text:        #1f2937;
+  --proxypay-chart-text-muted:  #64748b;
+  --proxypay-chart-grid:        rgba(0, 0, 0, 0.08);
+  --proxypay-chart-bar-default: #2e8555;
+  --proxypay-chart-bar-alt:     #4f46e5;
+  --proxypay-chart-positive:    #49cc90;
+  --proxypay-chart-negative:    #f93e3e;
+  --proxypay-chart-warning:     #fca130;
+  --proxypay-chart-tooltip-bg:  rgba(15, 23, 42, 0.85);
+  --proxypay-chart-tooltip-text: #f8fafc;
+}
+
+/* Docusaurus sets [data-theme='dark'] on <html> in dark mode */
+[data-theme='dark'] {
+  --proxypay-chart-bg:          #111827;
+  --proxypay-chart-surface:     #1f2937;
+  --proxypay-chart-border:      #334155;
+  --proxypay-chart-text:        #f8fafc;
+  --proxypay-chart-text-muted:  #cbd5e1;
+  --proxypay-chart-grid:        rgba(255, 255, 255, 0.08);
+  --proxypay-chart-bar-default: #4fcf93;
+  --proxypay-chart-bar-alt:     #818cf8;
+  --proxypay-chart-positive:    #4fcf93;
+  --proxypay-chart-negative:    #ff8f8f;
+  --proxypay-chart-warning:     #fbbf24;
+  --proxypay-chart-tooltip-bg:  rgba(248, 250, 252, 0.92);
+  --proxypay-chart-tooltip-text: #0f172a;
+}
+
+/* ------ MetricsPanel dark mode ------ */
+[data-theme='dark'] .metrics-panel {
+  background: var(--proxypay-chart-bg);
+  color: var(--proxypay-chart-text);
+  border-color: var(--proxypay-chart-border);
+}
+
+[data-theme='dark'] .metrics-panel-card {
+  background: var(--proxypay-chart-surface);
+  border-color: var(--proxypay-chart-border);
+  color: var(--proxypay-chart-text);
+}
+
+[data-theme='dark'] .metrics-panel-card h3,
+[data-theme='dark'] .metrics-panel-card h4 {
+  color: var(--proxypay-chart-text);
+}
+
+[data-theme='dark'] .metrics-panel-card .trend-positive {
+  color: var(--proxypay-chart-positive);
+}
+
+[data-theme='dark'] .metrics-panel-card .trend-negative {
+  color: var(--proxypay-chart-negative);
+}
+
+/* ------ PerformanceBenchmarks dark mode ------ */
+[data-theme='dark'] .performance-benchmarks {
+  background: var(--proxypay-chart-bg);
+  color: var(--proxypay-chart-text);
+}
+
+[data-theme='dark'] .benchmark-card {
+  background: var(--proxypay-chart-surface);
+  border-color: var(--proxypay-chart-border);
+  color: var(--proxypay-chart-text);
+}
+
+[data-theme='dark'] .benchmark-bar-track {
+  background: var(--proxypay-chart-grid);
+}
+
+[data-theme='dark'] .benchmark-bar-fill {
+  background: var(--proxypay-chart-bar-default);
+}
+
+[data-theme='dark'] .benchmark-tooltip {
+  background: var(--proxypay-chart-tooltip-bg);
+  color: var(--proxypay-chart-tooltip-text);
+}
+
+/* ------ RateLimitDashboard dark mode ------ */
+[data-theme='dark'] .rate-limit-dashboard {
+  background: var(--proxypay-chart-bg);
+  color: var(--proxypay-chart-text);
+}
+
+[data-theme='dark'] .rate-limit-card {
+  background: var(--proxypay-chart-surface);
+  border-color: var(--proxypay-chart-border);
+}
+
+[data-theme='dark'] .rate-limit-card-header {
+  border-color: var(--proxypay-chart-border);
+}
+
+[data-theme='dark'] .rate-limit-progress-bar {
+  background: var(--proxypay-chart-grid);
+}
+
+[data-theme='dark'] .rate-limit-badge.rate-limit-status-ok {
+  background: rgba(79, 207, 147, 0.2);
+  color: var(--proxypay-chart-positive);
+}
+
+[data-theme='dark'] .rate-limit-badge.rate-limit-status-warning {
+  background: rgba(251, 191, 36, 0.2);
+  color: var(--proxypay-chart-warning);
+}
+
+[data-theme='dark'] .rate-limit-badge.rate-limit-status-critical {
+  background: rgba(255, 143, 143, 0.2);
+  color: var(--proxypay-chart-negative);
+}
+
+/* ------ Generic: any inline white/black backgrounds inside charts in dark mode ------ */
+[data-theme='dark'] .chart-container,
+[data-theme='dark'] .chart-wrapper,
+[data-theme='dark'] .recharts-wrapper,
+[data-theme='dark'] .recharts-surface {
+  background: transparent !important;
+}
+
+[data-theme='dark'] .recharts-cartesian-grid line,
+[data-theme='dark'] .recharts-cartesian-grid-horizontal line,
+[data-theme='dark'] .recharts-cartesian-grid-vertical line {
+  stroke: var(--proxypay-chart-grid);
+}
+
+[data-theme='dark'] .recharts-text,
+[data-theme='dark'] .recharts-legend-item-text,
+[data-theme='dark'] .recharts-cartesian-axis-tick-value {
+  fill: var(--proxypay-chart-text-muted) !important;
+}
+
+[data-theme='dark'] .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background-color: var(--proxypay-chart-tooltip-bg) !important;
+  color: var(--proxypay-chart-tooltip-text) !important;
+  border-color: var(--proxypay-chart-border) !important;
+}
+
+/* Auto-detect system dark preference for components that render before Docusaurus
+   applies [data-theme] (e.g. initial SSR flash prevention) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --proxypay-chart-bg:          #111827;
+    --proxypay-chart-surface:     #1f2937;
+    --proxypay-chart-border:      #334155;
+    --proxypay-chart-text:        #f8fafc;
+    --proxypay-chart-text-muted:  #cbd5e1;
+    --proxypay-chart-grid:        rgba(255, 255, 255, 0.08);
+    --proxypay-chart-bar-default: #4fcf93;
+    --proxypay-chart-bar-alt:     #818cf8;
+    --proxypay-chart-positive:    #4fcf93;
+    --proxypay-chart-negative:    #ff8f8f;
+    --proxypay-chart-warning:     #fbbf24;
+    --proxypay-chart-tooltip-bg:  rgba(248, 250, 252, 0.92);
+    --proxypay-chart-tooltip-text: #0f172a;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   #442 — Keyboard / Tab Navigation Focus Styles
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* Ensure keyboard-focused endpoint items are clearly visible */
+.api-endpoint-item:focus {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: -2px;
+  background: var(--ifm-color-primary-lightest);
+}
+
+/* Only hide the outline for mouse users, keep it for keyboard users */
+.api-endpoint-item:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.api-endpoint-item:focus-visible {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: -2px;
+}
+
+/* Announced active-tab indicator for screen readers (visually hidden text supplement) */
+.api-endpoint-item[aria-selected='true']::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 100%;
+  background: var(--ifm-color-primary);
+  border-radius: 0 2px 2px 0;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.api-endpoint-item {
+  position: relative;
+}

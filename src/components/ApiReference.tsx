@@ -67,7 +67,8 @@ interface Template {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 10;
+export const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 const DEBOUNCE_MS = 300;
 const METHOD_COLORS: Record<string, string> = {
   get: '#61affe',
@@ -182,6 +183,27 @@ function matchesSearch(ep: Endpoint, query: string): boolean {
   );
 }
 
+/**
+ * Splits `text` into alternating plain/highlighted segments for `query`.
+ * Returns an array of React nodes with matching substrings wrapped in
+ * <mark> for visual highlighting (#439).
+ */
+export function highlightText(text: string, query: string): React.ReactNode[] {
+  if (!query.trim()) return [text];
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(${escaped})`, 'gi');
+  const parts = text.split(regex);
+  return parts.map((part, i) =>
+    regex.test(part) ? (
+      <mark key={i} className="api-search-highlight">
+        {part}
+      </mark>
+    ) : (
+      part
+    ),
+  );
+}
+
 // ─── Hooks ────────────────────────────────────────────────────────────────────
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -258,45 +280,136 @@ function StatusBadge({ status }: { status: EndpointStatus }) {
 function Pagination({
   page,
   totalPages,
+  pageSize,
+  totalItems,
   onPrev,
   onNext,
   onPage,
+  onFirst,
+  onLast,
+  onPageSizeChange,
 }: {
   page: number;
   totalPages: number;
+  pageSize: number;
+  totalItems: number;
   onPrev: () => void;
   onNext: () => void;
   onPage: (p: number) => void;
+  onFirst: () => void;
+  onLast: () => void;
+  onPageSizeChange: (size: number) => void;
 }) {
-  if (totalPages <= 1) return null;
+  const [jumpValue, setJumpValue] = useState('');
+
+  function handleJump(e: React.FormEvent) {
+    e.preventDefault();
+    const parsed = parseInt(jumpValue, 10);
+    if (!isNaN(parsed) && parsed >= 1 && parsed <= totalPages) {
+      onPage(parsed);
+    }
+    setJumpValue('');
+  }
+
+  if (totalPages <= 1 && totalItems <= PAGE_SIZE_OPTIONS[0]) return null;
 
   // Build page window: always show first, last, current ±1
-  const pages = new Set([1, totalPages, page, page - 1, page + 1].filter((p) => p >= 1 && p <= totalPages));
+  const pages = new Set(
+    [1, totalPages, page, page - 1, page + 1].filter((p) => p >= 1 && p <= totalPages),
+  );
   const sorted = Array.from(pages).sort((a, b) => a - b);
 
+  const startItem = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endItem = Math.min(page * pageSize, totalItems);
+
   return (
-    <div className="api-pagination">
-      <button onClick={onPrev} disabled={page === 1} aria-label="Previous page">
-        ‹
-      </button>
-      {sorted.map((p, i) => {
-        const prev = sorted[i - 1];
-        return (
-          <React.Fragment key={p}>
-            {prev && p - prev > 1 && <span className="api-pagination-ellipsis">…</span>}
-            <button
-              onClick={() => onPage(p)}
-              className={p === page ? 'active' : ''}
-              aria-current={p === page ? 'page' : undefined}
-            >
-              {p}
-            </button>
-          </React.Fragment>
-        );
-      })}
-      <button onClick={onNext} disabled={page === totalPages} aria-label="Next page">
-        ›
-      </button>
+    <div className="api-pagination-container" role="navigation" aria-label="Pagination">
+      {/* Total count + page size selector */}
+      <div className="api-pagination-meta">
+        <span className="api-pagination-count" aria-live="polite">
+          {totalItems === 0
+            ? 'No items'
+            : `${startItem}–${endItem} of ${totalItems}`}
+        </span>
+        <label className="api-pagination-page-size" htmlFor="api-page-size-select">
+          Items per page:
+          <select
+            id="api-page-size-select"
+            value={pageSize}
+            onChange={(e) => onPageSizeChange(Number(e.target.value))}
+          >
+            {PAGE_SIZE_OPTIONS.map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {/* Page buttons */}
+      <div className="api-pagination">
+        <button
+          onClick={onFirst}
+          disabled={page === 1}
+          aria-label="First page"
+          title="First page"
+        >
+          «
+        </button>
+        <button onClick={onPrev} disabled={page === 1} aria-label="Previous page">
+          ‹
+        </button>
+        {sorted.map((p, i) => {
+          const prev = sorted[i - 1];
+          return (
+            <React.Fragment key={p}>
+              {prev && p - prev > 1 && (
+                <span className="api-pagination-ellipsis" aria-hidden="true">
+                  …
+                </span>
+              )}
+              <button
+                onClick={() => onPage(p)}
+                className={p === page ? 'active' : ''}
+                aria-current={p === page ? 'page' : undefined}
+                aria-label={`Page ${p}`}
+              >
+                {p}
+              </button>
+            </React.Fragment>
+          );
+        })}
+        <button onClick={onNext} disabled={page === totalPages} aria-label="Next page">
+          ›
+        </button>
+        <button
+          onClick={onLast}
+          disabled={page === totalPages}
+          aria-label="Last page"
+          title="Last page"
+        >
+          »
+        </button>
+      </div>
+
+      {/* Jump-to-page */}
+      {totalPages > 5 && (
+        <form className="api-pagination-jump" onSubmit={handleJump} aria-label="Jump to page">
+          <label htmlFor="api-jump-input">Go to page:</label>
+          <input
+            id="api-jump-input"
+            type="number"
+            min={1}
+            max={totalPages}
+            value={jumpValue}
+            onChange={(e) => setJumpValue(e.target.value)}
+            placeholder={String(page)}
+            aria-label={`Jump to page (1–${totalPages})`}
+          />
+          <button type="submit" aria-label="Go">Go</button>
+        </form>
+      )}
     </div>
   );
 }
@@ -549,8 +662,12 @@ export default function ApiReference(): React.JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [customTemplates, setCustomTemplates] = useState<Record<string, Template[]>>({});
+
+  // Ref for the endpoint list nav — used for keyboard focus management (#442)
+  const navRef = useRef<HTMLElement>(null);
 
   // Search cache: key = `${specVersion}:${query}` → Endpoint[]
   const searchCache = useRef<Map<string, Endpoint[]>>(new Map());
@@ -585,22 +702,22 @@ export default function ApiReference(): React.JSX.Element {
     return result;
   }, [allEndpoints, debouncedQuery, specVersion]);
 
-  // Reset to page 1 when filter changes
+  // Reset to page 1 when filter or pageSize changes
   useEffect(() => {
     setPage(1);
     setSelectedId(null);
-  }, [debouncedQuery]);
+  }, [debouncedQuery, pageSize]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
 
   // Clamp page to valid range
   const safePage = Math.min(page, totalPages);
 
-  // Correct slice: (page-1)*PAGE_SIZE … page*PAGE_SIZE (no off-by-one)
+  // Correct slice: (page-1)*pageSize … page*pageSize
   const pageEndpoints = useMemo(() => {
-    const start = (safePage - 1) * PAGE_SIZE;
-    return filtered.slice(start, start + PAGE_SIZE);
-  }, [filtered, safePage]);
+    const start = (safePage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, safePage, pageSize]);
 
   const selectedIndex = selectedId ? filtered.findIndex((e) => e.id === selectedId) : -1;
   const selectedEndpoint = selectedIndex >= 0 ? filtered[selectedIndex] : null;
@@ -609,7 +726,7 @@ export default function ApiReference(): React.JSX.Element {
     setSelectedId(ep.id);
     // Navigate to the correct page for this endpoint
     const idx = filtered.findIndex((e) => e.id === ep.id);
-    if (idx >= 0) setPage(Math.floor(idx / PAGE_SIZE) + 1);
+    if (idx >= 0) setPage(Math.floor(idx / pageSize) + 1);
   }
 
   function navigateEndpoint(delta: number) {
@@ -626,6 +743,34 @@ export default function ApiReference(): React.JSX.Element {
     }));
   }
 
+  /**
+   * Keyboard navigation for the endpoint list (#442 — WCAG tab/arrow key support).
+   * Arrow keys move focus between items; Enter/Space activate selection.
+   */
+  function handleListKeyDown(e: React.KeyboardEvent<HTMLElement>, ep: Endpoint, listIdx: number) {
+    const buttons = navRef.current?.querySelectorAll<HTMLButtonElement>('button.api-endpoint-item');
+    if (!buttons) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = buttons[listIdx + 1];
+      next?.focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = buttons[listIdx - 1];
+      prev?.focus();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      buttons[0]?.focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      buttons[buttons.length - 1]?.focus();
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      selectEndpoint(ep);
+    }
+  }
+
   if (error) return <div className="api-error">Failed to load spec: {error}</div>;
   if (!spec) return <div className="api-loading">Loading API reference…</div>;
 
@@ -640,26 +785,44 @@ export default function ApiReference(): React.JSX.Element {
           placeholder="Search endpoints…"
           aria-label="Search endpoints"
         />
-        <span className="api-search-count">
+        <span className="api-search-count" aria-live="polite">
           {filtered.length} / {allEndpoints.length} endpoints
         </span>
       </div>
 
       <div className="api-layout">
         {/* Endpoint list + pagination */}
-        <nav className="api-endpoint-list">
+        {/* role="tablist" + aria-orientation enables screen-reader tab semantics (#442) */}
+        <nav
+          ref={navRef}
+          className="api-endpoint-list"
+          role="tablist"
+          aria-label="API endpoints"
+          aria-orientation="vertical"
+        >
           {pageEndpoints.length === 0 ? (
             <p className="api-no-results">No endpoints match your search.</p>
           ) : (
-            pageEndpoints.map((ep) => (
+            pageEndpoints.map((ep, listIdx) => (
               <button
                 key={ep.id}
                 className={`api-endpoint-item${selectedId === ep.id ? ' selected' : ''}`}
                 onClick={() => selectEndpoint(ep)}
+                // Keyboard navigation (#442)
+                onKeyDown={(e) => handleListKeyDown(e, ep, listIdx)}
+                // roving tabIndex: only the selected (or first) item is in the tab order
+                tabIndex={selectedId === ep.id || (selectedId === null && listIdx === 0) ? 0 : -1}
+                role="tab"
+                aria-selected={selectedId === ep.id}
+                aria-controls="api-detail-panel"
+                id={`api-tab-${ep.id}`}
               >
                 <MethodBadge method={ep.method} />
                 <StatusBadge status={ep.status} />
-                <span className="api-endpoint-item-path">{ep.path}</span>
+                {/* #439 — highlight matching text in the path */}
+                <span className="api-endpoint-item-path">
+                  {highlightText(ep.path, debouncedQuery)}
+                </span>
               </button>
             ))
           )}
@@ -667,18 +830,29 @@ export default function ApiReference(): React.JSX.Element {
           <Pagination
             page={safePage}
             totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={filtered.length}
             onPrev={() => setPage((p) => Math.max(1, p - 1))}
             onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
             onPage={setPage}
+            onFirst={() => setPage(1)}
+            onLast={() => setPage(totalPages)}
+            onPageSizeChange={(size) => setPageSize(size)}
           />
 
-          <p className="api-page-info">
-            Page {safePage} of {totalPages} · {filtered.length} endpoint{filtered.length !== 1 ? 's' : ''}
+          <p className="api-page-info" aria-live="polite">
+            Page {safePage} of {totalPages} · {filtered.length} endpoint
+            {filtered.length !== 1 ? 's' : ''}
           </p>
         </nav>
 
         {/* Detail panel */}
-        <main className="api-detail-panel">
+        <main
+          className="api-detail-panel"
+          id="api-detail-panel"
+          role="tabpanel"
+          aria-labelledby={selectedEndpoint ? `api-tab-${selectedEndpoint.id}` : undefined}
+        >
           {selectedEndpoint ? (
             <EndpointDetail
               endpoint={selectedEndpoint}
