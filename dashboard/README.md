@@ -26,6 +26,17 @@ A modern React-based dashboard for viewing transaction history, exporting data a
 - Optimistic UI updates with rollback on failure
 - Real-time sync with backend
 
+### 🚦 Feature Flags
+- Configure dashboard flags per user or browser session
+- Review active flags in the built-in debug panel
+- Flag toggles and evaluations are emitted as analytics actions
+- User values are keyed by `auth_user_id` or a JWT `sub` claim; session values use `sessionStorage`
+
+### ⚡ Performance Monitoring
+- Track page load, LCP, CLS, INP, API response, and React commit duration
+- Review persisted seven-day response trends and threshold alerts
+- Forward metrics to Datadog when the host application exposes `window.DD_RUM.addAction`
+
 ## Technology Stack
 
 - **Frontend**: React 18, TypeScript, Vite
@@ -81,6 +92,8 @@ src/
 │   ├── TransactionDrawer.tsx    # Detail sidebar drawer
 │   ├── ExportButton.tsx         # CSV export functionality
 │   └── NotificationSettings.tsx # Notification config page
+│   ├── FeatureFlagSettings.tsx  # Feature flag management and debug panel
+│   └── PerformanceDashboard.tsx # Web Vitals and operation metrics
 ├── services/            # API & utility services
 │   ├── api.ts          # ProxyPay API client
 │   └── csv.ts          # CSV export utilities

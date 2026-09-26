@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { format } from 'date-fns'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useTransactionStore } from '../stores/transactionStore'
+import { trackFeatureFlagEvaluation, useFeatureFlagStore } from '../stores/featureFlagStore'
 import { Transaction } from '../services/api'
 import { TransactionTableSkeleton } from './TransactionTableSkeleton'
 import {
@@ -49,22 +50,34 @@ export const TransactionsTable: React.FC<{
 }> = ({ onRowClick, loadOnMount = true }) => {
   const {
     transactions,
+    total,
     loading,
     error,
     fetchTransactions,
     filters,
+    setFilters,
   } = useTransactionStore()
+  const showRowPreview = useFeatureFlagStore(
+    (state) => state.isEnabled('transaction-row-preview')
+  )
   const [sort, setSort] = useState<SortState>({ column: null, direction: 'asc' })
   const [preview, setPreview] = useState<PreviewState | null>(null)
   const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const touchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const longPressTriggered = useRef(false)
+  const skipInitialFetch = useRef(!loadOnMount)
 
   useEffect(() => {
-    if (loadOnMount) {
-      void fetchTransactions(filters || {})
+    if (skipInitialFetch.current) {
+      skipInitialFetch.current = false
+      return
     }
-  }, [fetchTransactions, filters, loadOnMount])
+    void fetchTransactions(filters || {})
+  }, [fetchTransactions, filters])
+
+  useEffect(() => {
+    trackFeatureFlagEvaluation('transaction-row-preview')
+  }, [showRowPreview])
 
   useEffect(() => {
     return () => {
@@ -108,6 +121,15 @@ export const TransactionsTable: React.FC<{
       direction:
         prev.column === column && prev.direction === 'asc' ? 'desc' : 'asc',
     }))
+  }
+
+  const pageSize = filters.limit || 50
+  const pageOffset = filters.offset || 0
+  const pageCount = Math.max(1, Math.ceil(total / pageSize))
+  const currentPage = Math.floor(pageOffset / pageSize) + 1
+
+  const changePage = (page: number) => {
+    setFilters({ offset: (page - 1) * pageSize })
   }
 
   const handleKeyDown = (
@@ -170,16 +192,17 @@ export const TransactionsTable: React.FC<{
     column: keyof Transaction
     label: string
   }> = ({ column, label }) => (
-    <th onClick={() => handleSort(column)} className="sortable-header">
-      <div className="header-content">
-        {label}
-        {sort.column === column &&
-          (sort.direction === 'asc' ? (
-            <ChevronUp size={16} />
-          ) : (
-            <ChevronDown size={16} />
-          ))}
-      </div>
+    <th
+      className="sortable-header"
+      aria-sort={sort.column === column ? (sort.direction === 'asc' ? 'ascending' : 'descending') : 'none'}
+    >
+      <button type="button" onClick={() => handleSort(column)}>
+        <span className="header-content">
+          {label}
+          {sort.column === column &&
+            (sort.direction === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />)}
+        </span>
+      </button>
     </th>
   )
 
@@ -222,9 +245,9 @@ export const TransactionsTable: React.FC<{
                   }
                   onRowClick(tx)
                 }}
-                onMouseEnter={(event) => schedulePreview(tx, event.currentTarget)}
+                onMouseEnter={(event) => showRowPreview && schedulePreview(tx, event.currentTarget)}
                 onMouseLeave={hidePreview}
-                onFocus={(event) => schedulePreview(tx, event.currentTarget)}
+                onFocus={(event) => showRowPreview && schedulePreview(tx, event.currentTarget)}
                 onBlur={hidePreview}
                 onKeyDown={(event) => handleKeyDown(event, tx)}
                 onTouchStart={(event) => handleTouchStart(event, tx)}
@@ -270,7 +293,23 @@ export const TransactionsTable: React.FC<{
           )}
         </tbody>
       </table>
-      {preview && (
+      {total > pageSize && (
+        <nav className="table-pagination" aria-label="Transaction pages">
+          <span>
+            {pageOffset + 1}-{Math.min(pageOffset + pageSize, total)} of {total}
+          </span>
+          <div className="pagination-actions">
+            <button type="button" onClick={() => changePage(currentPage - 1)} disabled={currentPage <= 1}>
+              Previous
+            </button>
+            <span aria-current="page">Page {currentPage} of {pageCount}</span>
+            <button type="button" onClick={() => changePage(currentPage + 1)} disabled={currentPage >= pageCount}>
+              Next
+            </button>
+          </div>
+        </nav>
+      )}
+      {preview && showRowPreview && (
         <TransactionRowPreview
           transaction={preview.transaction}
           position={preview.position}

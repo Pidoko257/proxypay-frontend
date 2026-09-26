@@ -94,7 +94,7 @@ export const useTransactionStore = create<TransactionStore>((set) => ({
 
   setFilters: (newFilters: Partial<TransactionFilters>) => {
     set((state) => ({
-      filters: { ...state.filters, ...newFilters, offset: 0 }, // Reset to first page
+      filters: { ...state.filters, ...newFilters, offset: newFilters.offset ?? 0 },
     }))
   },
 
