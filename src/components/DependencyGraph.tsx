@@ -1,29 +1,51 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 
 // ── Types ──────────────────────────────────────────────────────────
+/** A single node in the dependency graph, representing one API endpoint. */
 interface GraphNode {
+  /** Unique identifier matching the node IDs used in {@link GraphEdge}. */
   id: string;
+  /** Human-readable endpoint label, e.g. `"POST /payments"`. */
   label: string;
+  /** HTTP method displayed in the node badge (`GET`, `POST`, …). */
   method: string;
+  /** Logical group for colour-coding, e.g. `"Payments"`, `"Wallets"`. */
   group: string;
+  /** Horizontal position in the SVG coordinate space. */
   x: number;
+  /** Vertical position in the SVG coordinate space. */
   y: number;
+  /**
+   * When `true`, the node is on a critical path: failure breaks the
+   * payment flow. Rendered with a thicker border and a ⚡ badge.
+   */
   critical: boolean;
 }
 
+/** A directed edge connecting two nodes in the dependency graph. */
 interface GraphEdge {
+  /** ID of the source (upstream) node. */
   from: string;
+  /** ID of the target (downstream) node. */
   to: string;
+  /** Short relationship description displayed as an edge label. */
   label: string;
+  /**
+   * When `true`, the edge is on a critical path: rendered as a solid red
+   * line instead of a dashed grey one.
+   */
   critical: boolean;
 }
 
+/** Full in-memory graph containing all nodes and directed edges. */
 interface DependencyGraph {
   nodes: GraphNode[];
   edges: GraphEdge[];
 }
 
+/** Font size (px) used for node labels inside the SVG graph. */
 export const GRAPH_LABEL_FONT_SIZE = 14;
+/** Hex colour applied to node label text in light mode. */
 export const GRAPH_LABEL_COLOR = '#172033';
 
 // ── Mock Data ──────────────────────────────────────────────────────
@@ -143,7 +165,10 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
     boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
     cursor: 'grab',
-    touchAction: 'none' as const,
+    // Issue #446: allow pinch-zoom and pan gestures natively; will-change
+    // promotes the layer to the GPU compositor for jank-free rendering.
+    touchAction: 'pan-x pan-y pinch-zoom' as const,
+    willChange: 'transform' as const,
   },
   legend: {
     marginTop: '1rem',
@@ -231,6 +256,38 @@ const styles: Record<string, React.CSSProperties> = {
 };
 
 // ── Main Component ─────────────────────────────────────────────────
+/**
+ * DependencyGraphViewer
+ *
+ * Interactive SVG-based directed-graph visualisation of ProxyPay API endpoint
+ * dependencies. Supports search, depth filtering, critical-path highlighting,
+ * pan/zoom, fit-to-screen, and PNG export.
+ *
+ * This component is self-contained: it ships with embedded mock data so it
+ * renders correctly out of the box without any props.
+ *
+ * Features:
+ * - **Search** – Filter nodes by endpoint label or group name.
+ * - **Depth control** – BFS expansion from matching seed nodes up to 5 hops.
+ * - **Critical-only toggle** – Hide non-critical edges for focused analysis.
+ * - **Zoom** – Scroll wheel or +/− buttons, clamped to [0.3×, 3×].
+ * - **Pan** – Click-drag or single-finger touch drag.
+ * - **Fit-to-screen** – Auto-scale and centre all visible nodes.
+ * - **Export** – Download the current graph as a 2× retina PNG.
+ *
+ * Event listeners (wheel, mouse, touch) are attached via React synthetic events
+ * so they are automatically cleaned up on unmount (no memory leaks, issue #445).
+ *
+ * @example
+ * ```tsx
+ * // Drop in to any Docusaurus page – no props needed.
+ * import DependencyGraphViewer from '@site/src/components/DependencyGraph';
+ *
+ * export default function DependenciesPage() {
+ *   return <DependencyGraphViewer />;
+ * }
+ * ```
+ */
 export default function DependencyGraphViewer(): React.JSX.Element {
   const [search, setSearch] = useState('');
   const [depthFilter, setDepthFilter] = useState(5);

@@ -3339,3 +3339,60 @@ body {
 .theme-customizer__warnings li > div [style*='inline-block'] {
   margin: 0 0.25rem;
 }
+
+
+/* ============================================================
+   Issue #446 – Scroll Jank on Mobile: Performance Optimisations
+   ============================================================
+   These rules prevent dropped frames and stuttering during scroll
+   on mobile devices by:
+     1. Using `will-change: transform` to promote heavy-scroll
+        containers to their own compositor layers.
+     2. Setting `touch-action: pan-y` so the browser can handle
+        vertical touch scrolling without waiting for JS event handlers.
+     3. Setting `-webkit-overflow-scrolling: touch` for smooth
+        momentum scrolling on iOS Safari.
+   ============================================================ */
+
+/* --- Virtual / large list containers --- */
+.virtual-scroll-container {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Hint the browser to keep this layer GPU-composited */
+  will-change: scroll-position;
+  /* Allow native vertical pan without blocking other touch events */
+  touch-action: pan-y;
+}
+
+.virtual-scroll-inner {
+  position: relative;
+  /* Promote inner positioning layer to its own compositor layer */
+  will-change: transform;
+}
+
+/* --- Dependency Graph scroll wrapper --- */
+.dependency-graph-wrapper {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y pinch-zoom;
+  will-change: transform;
+}
+
+/* --- Changelog timeline list --- */
+.changelog-scroll-area {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+/* --- General page-level scrollable sections --- */
+.scroll-smooth {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  will-change: scroll-position;
+}
+
+/* --- Annotation list (long list of cards) --- */
+.annotations-list {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}

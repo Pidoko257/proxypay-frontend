@@ -6,13 +6,15 @@ node_modules/
 build/
 
 # ── Test artifacts ────────────────────────────────────────────────────────────
-# Jest / Vitest snapshots
+# Jest / Vitest snapshots – never commit generated snapshot files
 **/__snapshots__/
 *.snap
 
 # Coverage reports
 coverage/
 .nyc_output/
+lcov.info
+*.lcov
 
 # ── OS / Editor artefacts ──────────────────────────────────────────────────────
 .DS_Store
@@ -33,7 +35,25 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
 # ── Misc ──────────────────────────────────────────────────────────────────────
 *.tsbuildinfo
 .cache/
+
+# ── Load-test outputs (runtime-generated, not source) ─────────────────────────
+load-test-results/
+baseline-results/
+*.baseline.json
+*.report.html
+
+# ── Temporary files ───────────────────────────────────────────────────────────
+*.tmp
+*.temp
+tmp/
+temp/
+
+# ── Dashboard sub-project build artifacts ─────────────────────────────────────
+dashboard/dist/
+dashboard/node_modules/
+dashboard/coverage/

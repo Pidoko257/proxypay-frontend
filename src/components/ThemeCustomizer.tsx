@@ -1,31 +1,54 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { validateContrast, suggestColors } from '../utils/contrastValidator';
 
+/** A full colour palette used in a single colour scheme (light or dark). */
 type ThemePalette = {
+  /** Primary brand colour, used for buttons and links. */
   primary: string;
+  /** Accent / secondary colour for badges and callouts. */
   secondary: string;
+  /** Main page background colour. */
   surface: string;
+  /** Alternate surface for cards and panels. */
   surfaceAlt: string;
+  /** Primary body text colour. */
   text: string;
+  /** Muted / secondary text colour. */
   muted: string;
+  /** Divider and input-border colour. */
   border: string;
 };
 
+/** Full definition of a single named theme. */
 type ThemeDefinition = {
+  /** Machine-readable unique key, e.g. `"classic"`. */
   id: string;
+  /** Display name shown in the theme selector, e.g. `"Classic"`. */
   name: string;
+  /** One-line description of the theme's aesthetic. */
   description: string;
+  /** Light-mode colour palette (always required). */
   palette: ThemePalette;
+  /**
+   * Optional dark-mode colour palette.
+   * Falls back to {@link palette} when absent.
+   */
   darkPalette?: ThemePalette;
+  /** CSS `font-family` stack applied to body text. */
   fontFamily: string;
+  /** CSS `font-family` stack applied to headings. */
   headingFontFamily: string;
+  /** Base spacing value (px) used for the `--proxypay-theme-spacing` CSS variable. */
   spacing: number;
 };
 
+/** A {@link ThemeDefinition} that has been persisted to `localStorage`. */
 type SavedTheme = ThemeDefinition & {
+  /** ISO 8601 timestamp at which the theme was saved. */
   savedAt: string;
 };
 
+/** Whether the component is rendering in light or dark colour scheme. */
 type ThemeMode = 'light' | 'dark';
 
 const STORAGE_KEYS = {
@@ -271,13 +294,44 @@ function validateThemeContrast(theme: ThemeDefinition, mode: ThemeMode): Contras
   return warnings;
 }
 
+/**
+ * A single WCAG AA contrast failure detected for the current theme palette.
+ * Displayed in the "Contrast Issues Detected" warning panel.
+ */
 interface ContrastWarning {
+  /** Palette-field key pair, e.g. `"text-surface"`. */
   field: string;
+  /** Human-readable label describing the foreground/background pair. */
   colors: string;
+  /** Computed contrast ratio (e.g. `3.21`). Must be ≥ 4.5 for WCAG AA. */
   ratio: number;
+  /** Always `false` – only non-compliant warnings are stored. */
   isCompliant: boolean;
 }
 
+/**
+ * ThemeCustomizer
+ *
+ * Interactive theme editor for the ProxyPay docs portal. Lets users select a
+ * preset theme, install a community theme, or build their own custom palette
+ * from colour pickers, font selectors, and a spacing slider.
+ *
+ * Selected themes are persisted to `localStorage` and re-applied on every page
+ * load via a `useEffect`. WCAG AA contrast warnings are surfaced live as the
+ * user adjusts colours so accessibility is never accidentally broken.
+ *
+ * This component has **no required props** and is self-contained.
+ *
+ * @example
+ * ```tsx
+ * // Add to any Docusaurus page
+ * import ThemeCustomizer from '@site/src/components/ThemeCustomizer';
+ *
+ * export default function ThemePage() {
+ *   return <ThemeCustomizer />;
+ * }
+ * ```
+ */
 export default function ThemeCustomizer(): React.JSX.Element {
   const [previewTheme, setPreviewTheme] = useState<ThemeDefinition>(presetThemes[0]);
   const [appliedTheme, setAppliedTheme] = useState<ThemeDefinition>(presetThemes[0]);
