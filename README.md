@@ -1,5 +1,7 @@
 # ProxyPay API Docs Portal
 
+[![Test coverage](https://github.com/Pidoko257/proxypay-frontend/actions/workflows/quality.yml/badge.svg)](https://github.com/Pidoko257/proxypay-frontend/actions/workflows/quality.yml)
+
 Docusaurus-based documentation site for the ProxyPay — Mobile Money ↔ Stellar Bridge API.
 
 ## Getting started

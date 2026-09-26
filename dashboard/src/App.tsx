@@ -7,6 +7,11 @@ import { NotificationSettings } from './components/NotificationSettings'
 import { DuplicateReview } from './components/DuplicateReview'
 import { Transaction } from './services/api'
 import { TransactionMergeResult } from './services/duplicateDetection'
+import {
+  consumeSessionRedirect,
+  restoreScrollPosition,
+  storeSessionRedirect,
+} from './services/sessionRestoration'
 import './App.css'
 
 type Page = 'transactions' | 'settings'
@@ -23,10 +28,35 @@ export default function App() {
     transactions,
   } = useTransactionStore()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [sessionRestored, setSessionRestored] = useState(false)
 
   // Initialize transactions on mount
   useEffect(() => {
     fetchTransactions(filters)
+  }, [])
+
+  useEffect(() => {
+    const handleAuthChange = (event: StorageEvent) => {
+      if (event.key !== 'auth_token') return
+
+      if (event.oldValue && !event.newValue) {
+        storeSessionRedirect(new URL(window.location.href))
+        return
+      }
+
+      if (!event.oldValue && event.newValue) {
+        const redirect = consumeSessionRedirect()
+        if (!redirect) return
+
+        if (redirect.path.startsWith('/settings')) setCurrentPage('settings')
+        restoreScrollPosition(redirect.scrollY)
+        setSessionRestored(true)
+        window.setTimeout(() => setSessionRestored(false), 4000)
+      }
+    }
+
+    window.addEventListener('storage', handleAuthChange)
+    return () => window.removeEventListener('storage', handleAuthChange)
   }, [])
 
   const handleRowClick = (tx: Transaction) => {
@@ -70,6 +100,11 @@ export default function App() {
 
       {/* Main Content */}
       <main className="app-main">
+        {sessionRestored && (
+          <div role="status" className="session-restored-notice">
+            Session restored
+          </div>
+        )}
         {currentPage === 'transactions' ? (
           <div className="transactions-page">
             <div className="page-header">
