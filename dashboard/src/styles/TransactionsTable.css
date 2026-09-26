@@ -5,6 +5,11 @@
   background: white;
 }
 
+.transactions-table-viewport {
+  height: min(70vh, 600px);
+  min-height: 280px;
+}
+
 .transactions-table {
   width: 100%;
   border-collapse: collapse;
@@ -24,8 +29,19 @@
   user-select: none;
 }
 
+.transactions-table th[aria-sort] {
+  padding: 0;
+}
+
 .sortable-header {
-  cursor: pointer;
+  display: block;
+  width: 100%;
+  padding: 1rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
   transition: background-color var(--transition-fast);
 }
 
@@ -44,13 +60,16 @@
   transition: background-color var(--transition-fast);
 }
 
-.transaction-row {
+.transactions-table tbody tr:hover,
+.transactions-table tbody tr:focus-within {
+  background-color: var(--color-neutral-50);
+}
+
+.transactions-table td.transaction-row {
   cursor: pointer;
 }
 
-.transaction-row:hover,
-.transaction-row:focus-visible {
-  background-color: var(--color-neutral-50);
+.transactions-table td.transaction-row:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: -2px;
 }
@@ -117,6 +136,10 @@
 
   .transactions-table th,
   .transactions-table td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .sortable-header {
     padding: 0.75rem 0.5rem;
   }
 

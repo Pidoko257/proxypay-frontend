@@ -16,11 +16,13 @@ export const ExportButton: React.FC = () => {
   const [includeAudit, setIncludeAudit] = useState(false)
   const [showOptions, setShowOptions] = useState(false)
   const [showScheduleDialog, setShowScheduleDialog] = useState(false)
+  const [exportAnnouncement, setExportAnnouncement] = useState('')
 
   useEffect(() => {
     const handleCompletion = (event: Event) => {
       const detail = (event as CustomEvent<{ scheduleId?: string; message?: string }>).detail
       const message = detail?.message || 'Your scheduled transaction export is ready.'
+      setExportAnnouncement(message)
       setCompletionNotification({
         scheduleId: detail?.scheduleId || 'scheduled-export',
         message,
@@ -36,12 +38,14 @@ export const ExportButton: React.FC = () => {
 
   const handleExport = async () => {
     if (transactions.length === 0) {
+      setExportAnnouncement('No transactions are available to export.')
       alert('No transactions to export')
       return
     }
 
     setExporting(true)
     setProgress(0)
+    setExportAnnouncement('Preparing transaction export.')
 
     try {
       const totalRows = transactions.length
@@ -50,7 +54,11 @@ export const ExportButton: React.FC = () => {
       if (isLargeExport) {
         const increment = Math.max(1, Math.floor(totalRows / 10))
         for (let i = 0; i < totalRows; i += increment) {
-          setProgress(Math.min((i / totalRows) * 100, 99))
+          const nextProgress = Math.min((i / totalRows) * 100, 99)
+          setProgress(nextProgress)
+          setExportAnnouncement(
+            `Exporting ${totalRows} transactions: ${Math.round(nextProgress)}% complete.`
+          )
           await new Promise((resolve) => setTimeout(resolve, 50))
         }
       }
@@ -60,6 +68,7 @@ export const ExportButton: React.FC = () => {
       CSVExporter.downloadCSV(csv, filename)
 
       setProgress(100)
+      setExportAnnouncement(`Export complete: ${totalRows} transactions downloaded.`)
       setShowOptions(false)
 
       setTimeout(() => {
@@ -68,6 +77,7 @@ export const ExportButton: React.FC = () => {
       }, 1500)
     } catch (error) {
       console.error('Export failed:', error)
+      setExportAnnouncement('Transaction export failed.')
       alert('Failed to export transactions')
       setExporting(false)
       setProgress(0)
@@ -98,10 +108,21 @@ export const ExportButton: React.FC = () => {
         </button>
 
         {exporting && progress > 0 && (
-          <div className="progress-bar">
+          <div
+            className="progress-bar"
+            role="progressbar"
+            aria-label="CSV export progress"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(progress)}
+          >
             <div className="progress-fill" style={{ width: `${progress}%` }} />
           </div>
         )}
+
+        <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+          {exportAnnouncement}
+        </div>
 
         {showOptions && !exporting && (
           <div className="export-options" role="group" aria-label="Export options">

@@ -275,7 +275,7 @@ export default function RedocViewer({
           disableSidebar,
           expandTagsByDefault,
           nativeScrollbars: true,
-          untrustedSpec: false,
+          untrustedSpec: true,
           suppressWarnings: true,
           theme: buildRedocTheme(themeColors),
         },
