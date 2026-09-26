@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, ReactNode } from 'react';
+import Link from '@docusaurus/Link';
 
 // ── Types ──────────────────────────────────────────────────────────
 type EntryType = 'new' | 'fix' | 'deprecation';
@@ -755,6 +756,14 @@ export default function ChangelogViewer(): React.JSX.Element {
                     })}
                     <br />
                     <strong>ID:</strong> {entry.id}
+                    {(entry.tags.includes('breaking') || entry.type === 'deprecation') && (
+                      <>
+                        <br />
+                        <Link to="/migration" onClick={(event) => event.stopPropagation()}>
+                          Read the migration guide
+                        </Link>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
