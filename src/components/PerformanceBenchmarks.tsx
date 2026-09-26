@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import ProgressiveChart from './ProgressiveChart';
 
 // ── Types ──────────────────────────────────────────────────────────
 interface EndpointBenchmark {
@@ -378,7 +379,7 @@ const styles: Record<string, any> = {
 };
 
 // ── Chart Sub-Component ────────────────────────────────────────────
-function LatencyChart({ history }: { history: HistoricalPoint[] }) {
+function LatencyChartSvg({ history }: { history: HistoricalPoint[] }) {
   if (!history.length) return null;
   const w = 1000;
   const h = 200;
@@ -462,6 +463,22 @@ function LatencyChart({ history }: { history: HistoricalPoint[] }) {
         </text>
       ))}
     </svg>
+  );
+}
+
+function LatencyChart({ history }: { history: HistoricalPoint[] }) {
+  if (!history.length) return null;
+  const previewHistory = history.filter(
+    (_, index) => index === 0 || index === history.length - 1 || index % 4 === 0,
+  );
+
+  return (
+    <ProgressiveChart
+      cacheKey={`latency:${JSON.stringify(history)}`}
+      preview={<LatencyChartSvg history={previewHistory} />}
+    >
+      <LatencyChartSvg history={history} />
+    </ProgressiveChart>
   );
 }
 

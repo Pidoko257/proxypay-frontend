@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { FC, FormEvent, KeyboardEvent } from 'react'
 import { AlertCircle, CalendarPlus, Loader, X } from 'lucide-react'
 import {
@@ -36,6 +36,73 @@ interface ScheduleFormValues {
   includeAuditTrail: boolean
   notifyOnCompletion: boolean
   active: boolean
+}
+
+interface ScheduleDraft {
+  values: ScheduleFormValues
+  editingId: string | null
+  savedAt: number
+}
+
+const SCHEDULE_DRAFT_KEY = 'proxypay.export-schedule.draft'
+
+function readScheduleDraft(): ScheduleDraft | null {
+  try {
+    const rawDraft = window.localStorage.getItem(SCHEDULE_DRAFT_KEY)
+    if (!rawDraft) return null
+    const draft = JSON.parse(rawDraft) as Partial<ScheduleDraft>
+    if (
+      !draft.values ||
+      typeof draft.values.name !== 'string' ||
+      !['daily', 'weekly', 'monthly'].includes(draft.values.frequency) ||
+      typeof draft.values.time !== 'string' ||
+      typeof draft.values.timezone !== 'string' ||
+      !['email', 'webhook'].includes(draft.values.deliveryType) ||
+      typeof draft.values.email !== 'string' ||
+      typeof draft.values.webhookUrl !== 'string'
+    ) {
+      return null
+    }
+    return {
+      values: draft.values as ScheduleFormValues,
+      editingId: typeof draft.editingId === 'string' ? draft.editingId : null,
+      savedAt: typeof draft.savedAt === 'number' ? draft.savedAt : Date.now(),
+    }
+  } catch {
+    return null
+  }
+}
+
+function useScheduleDraftAutoSave(
+  values: ScheduleFormValues,
+  editingId: string | null,
+  enabled: boolean
+) {
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved')
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null)
+
+  const saveDraftNow = useCallback(() => {
+    try {
+      const savedAt = Date.now()
+      window.localStorage.setItem(
+        SCHEDULE_DRAFT_KEY,
+        JSON.stringify({ values, editingId, savedAt })
+      )
+      setLastSavedAt(savedAt)
+      setSaveStatus('saved')
+    } catch {
+      setSaveStatus('error')
+    }
+  }, [editingId, values])
+
+  useEffect(() => {
+    if (!enabled) return
+    setSaveStatus('saving')
+    const timeout = window.setTimeout(saveDraftNow, 500)
+    return () => window.clearTimeout(timeout)
+  }, [enabled, saveDraftNow])
+
+  return { saveStatus, lastSavedAt, saveDraftNow, setLastSavedAt }
 }
 
 const initialValues = (
@@ -100,19 +167,43 @@ export const ExportScheduleDialog: FC<ExportScheduleDialogProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const nameInputRef = useRef<HTMLInputElement>(null)
   const timezones = useMemo(() => getAvailableTimezones(), [])
+  const { saveStatus, lastSavedAt, saveDraftNow, setLastSavedAt } =
+    useScheduleDraftAutoSave(values, editingId, isOpen && hasUnsavedChanges)
+  const saveDraftRef = useRef(saveDraftNow)
+
+  useEffect(() => {
+    saveDraftRef.current = saveDraftNow
+  }, [saveDraftNow])
 
   useEffect(() => {
     if (isOpen) {
       void fetchSchedules()
-      setValues(initialValues(filters, includeAuditTrail))
-      setEditingId(null)
+      const draft = readScheduleDraft()
+      setValues(draft?.values ?? initialValues(filters, includeAuditTrail))
+      setEditingId(draft?.editingId ?? null)
+      setHasUnsavedChanges(Boolean(draft))
+      setLastSavedAt(draft?.savedAt ?? null)
       setFormError(null)
       setDeleteId(null)
       clearError()
+    } else {
+      setHasUnsavedChanges(false)
     }
-  }, [clearError, fetchSchedules, filters, includeAuditTrail, isOpen])
+  }, [clearError, fetchSchedules, filters, includeAuditTrail, isOpen, setLastSavedAt])
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) return
+    const warnBeforeLeave = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+      saveDraftRef.current()
+    }
+    window.addEventListener('beforeunload', warnBeforeLeave)
+    return () => window.removeEventListener('beforeunload', warnBeforeLeave)
+  }, [hasUnsavedChanges])
 
   useEffect(() => {
     if (!isOpen) return
@@ -142,12 +233,31 @@ export const ExportScheduleDialog: FC<ExportScheduleDialogProps> = ({
     value: ScheduleFormValues[K]
   ) => {
     setValues((current) => ({ ...current, [key]: value }))
+    setHasUnsavedChanges(true)
   }
 
   const resetForm = () => {
     setValues(initialValues(filters, includeAuditTrail))
     setEditingId(null)
     setFormError(null)
+    setHasUnsavedChanges(false)
+    setLastSavedAt(null)
+    try {
+      window.localStorage.removeItem(SCHEDULE_DRAFT_KEY)
+    } catch {
+      setSaveStatus('error')
+    }
+  }
+
+  const handleClose = () => {
+    if (
+      hasUnsavedChanges &&
+      !window.confirm('Your changes are saved as a draft but have not been submitted. Leave anyway?')
+    ) {
+      return
+    }
+    if (hasUnsavedChanges) saveDraftNow()
+    onClose()
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -221,6 +331,7 @@ export const ExportScheduleDialog: FC<ExportScheduleDialogProps> = ({
   const handleEdit = (schedule: ExportSchedule) => {
     setValues(formFromSchedule(schedule))
     setEditingId(schedule.id)
+    setHasUnsavedChanges(true)
     setFormError(null)
     clearError()
   }
@@ -269,6 +380,7 @@ export const ExportScheduleDialog: FC<ExportScheduleDialogProps> = ({
         onKeyDown={handleDialogKeyDown}
       >
         <div className="schedule-dialog-header">
+                    <button type="button" onClick={handleClose} aria-label="Close scheduled exports">
           <div>
             <h2 id="schedule-dialog-heading">
               <CalendarPlus size={20} /> Scheduled exports
@@ -303,6 +415,20 @@ export const ExportScheduleDialog: FC<ExportScheduleDialogProps> = ({
           <form className="schedule-form" onSubmit={handleSubmit}>
             <h3>{editingId ? 'Edit schedule' : 'Create a schedule'}</h3>
             {formError && <p className="schedule-form-error" role="alert">{formError}</p>}
+            <div className="schedule-draft-status" role="status">
+              <span>
+                {saveStatus === 'saving'
+                  ? 'Saving...'
+                  : saveStatus === 'error'
+                    ? 'Draft could not be saved'
+                    : lastSavedAt
+                      ? `Draft saved at ${new Date(lastSavedAt).toLocaleString()}`
+                      : 'Draft not saved'}
+              </span>
+              <button type="button" onClick={saveDraftNow} disabled={!hasUnsavedChanges}>
+                Save draft now
+              </button>
+            </div>
 
             <label className="schedule-field">
               <span>Name</span>
@@ -450,6 +576,14 @@ export const ExportScheduleDialog: FC<ExportScheduleDialogProps> = ({
             <div className="schedule-form-actions">
               {editingId && (
                 <button type="button" className="schedule-cancel" onClick={resetForm}>
+                          onKeyDown={(event) => {
+                            if (event.key === 'Escape') {
+                              event.preventDefault()
+                              handleClose()
+                              return
+                            }
+                            handleDialogKeyDown(event)
+                          }}
                   Cancel edit
                 </button>
               )}
