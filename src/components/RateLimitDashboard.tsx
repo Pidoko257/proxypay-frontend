@@ -13,6 +13,7 @@ interface RateLimitStatus {
   percentageUsed: number;
   endpoints: EndpointUsage[];
   usageHistory?: UsageHistoryPoint[];
+  responseHeaders?: Record<string, string>;
 }
 
 export interface UsageHistoryPoint {
@@ -68,7 +69,7 @@ const STATUS_COLORS = {
 };
 
 const POLLING_INTERVAL = 30000; // 30 seconds
-const DEMO_MODE = true; // Set to false when connecting to real API
+const HISTORY_STORAGE_KEY = 'proxypay-rate-limit-history';
 
 // ─── Mock Data Generator ──────────────────────────────────────────────────────
 
@@ -155,6 +156,85 @@ function formatDate(date: string | number | Date): string {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function readStoredUsageHistory(): UsageHistoryPoint[] {
+  try {
+    const stored = localStorage.getItem(HISTORY_STORAGE_KEY);
+    const history = stored ? JSON.parse(stored) : [];
+    return Array.isArray(history) ? history : [];
+  } catch {
+    return [];
+  }
+}
+
+async function parseRateLimitResponse(response: Response): Promise<RateLimitStatus> {
+  const body = await response.json().catch(() => ({})) as Partial<RateLimitStatus>;
+  const readHeader = (...names: string[]) => {
+    for (const name of names) {
+      const value = response.headers.get(name);
+      if (value !== null) return value;
+    }
+    return null;
+  };
+  const readNumber = (headerValue: string | null, bodyValue?: number) => {
+    const value = headerValue === null ? bodyValue : Number(headerValue);
+    return value !== undefined && Number.isFinite(value) ? value : undefined;
+  };
+
+  const limit = readNumber(readHeader('RateLimit-Limit', 'X-RateLimit-Limit'), body.requestsLimit);
+  const remaining = readNumber(readHeader('RateLimit-Remaining', 'X-RateLimit-Remaining'), body.requestsRemaining);
+  if (limit === undefined) {
+    throw new Error('The response did not include a rate limit value.');
+  }
+
+  const used = readNumber(readHeader('X-RateLimit-Used'), body.requestsUsed)
+    ?? Math.max(0, limit - (remaining ?? limit));
+  const resetHeader = readHeader('RateLimit-Reset', 'X-RateLimit-Reset');
+  const resetValue = resetHeader === null ? undefined : Number(resetHeader);
+  const bodyReset = body.resetTimestamp ?? (body.resetTime ? Date.parse(body.resetTime) : undefined);
+  const resetTimestamp = resetValue !== undefined && Number.isFinite(resetValue)
+    ? (resetValue > 1_000_000_000_000 ? resetValue : resetValue > 1_000_000_000 ? resetValue * 1000 : Date.now() + resetValue * 1000)
+    : bodyReset && Number.isFinite(bodyReset) ? bodyReset : Date.now() + 3600000;
+
+  const previousHistory = readStoredUsageHistory();
+  const usageHistory = [...previousHistory, { timestamp: Date.now(), requestsUsed: used }].slice(-24);
+  localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(usageHistory));
+
+  const responseHeaders: Record<string, string> = {};
+  for (const [label, names] of Object.entries({
+    Limit: ['RateLimit-Limit', 'X-RateLimit-Limit'],
+    Remaining: ['RateLimit-Remaining', 'X-RateLimit-Remaining'],
+    Reset: ['RateLimit-Reset', 'X-RateLimit-Reset'],
+    Used: ['X-RateLimit-Used'],
+  })) {
+    const value = readHeader(...names);
+    if (value !== null) responseHeaders[label] = value;
+  }
+
+  return {
+    tier: body.tier ?? 'API',
+    requestsLimit: limit,
+    requestsUsed: used,
+    requestsRemaining: remaining ?? Math.max(0, limit - used),
+    resetTime: new Date(resetTimestamp).toISOString(),
+    resetTimestamp,
+    percentageUsed: Math.min(100, Math.round((used / limit) * 100)),
+    endpoints: body.endpoints ?? [],
+    usageHistory,
+    responseHeaders,
+  };
+}
+
+function buildUsageAlert(status: RateLimitStatus): RateLimitAlert {
+  const percentage = status.percentageUsed;
+  if (percentage >= 90) {
+    return { level: 'critical', message: 'You have used 90% or more of your rate limit. Your requests may be throttled soon.', timestamp: Date.now() };
+  }
+  if (percentage >= 70) {
+    return { level: 'warning', message: 'You have used 70% of your rate limit. Consider optimizing your API usage.', timestamp: Date.now() };
+  }
+  return { level: 'ok', message: `Your rate limit usage is healthy. You have ${status.requestsRemaining} requests remaining.`, timestamp: Date.now() };
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -252,7 +332,7 @@ export default function RateLimitDashboard(): React.JSX.Element {
       setLoading(true);
       setError(null);
 
-      if (DEMO_MODE) {
+      if (!localStorage.getItem('api_token')) {
         // Use mock data
         await new Promise((resolve) => setTimeout(resolve, 500));
         const newStatus = generateMockStatus();
@@ -300,8 +380,9 @@ export default function RateLimitDashboard(): React.JSX.Element {
           }
         );
 
-        const data = (await response.json()) as RateLimitStatus;
+        const data = await parseRateLimitResponse(response);
         setStatus(data);
+        setAlerts([buildUsageAlert(data)]);
         setLastUpdated(Date.now());
       }
 
@@ -457,6 +538,14 @@ export default function RateLimitDashboard(): React.JSX.Element {
                 <a href="#pricing" className="rate-limit-upgrade-link">
                   View upgrade options →
                 </a>
+                {status.responseHeaders && Object.keys(status.responseHeaders).length > 0 && (
+                  <dl className="rate-limit-response-headers">
+                    <dt>Response headers</dt>
+                    {Object.entries(status.responseHeaders).map(([name, value]) => (
+                      <dd key={name}><code>{name}</code>: {value}</dd>
+                    ))}
+                  </dl>
+                )}
               </div>
             </div>
           </div>
@@ -505,6 +594,23 @@ export default function RateLimitDashboard(): React.JSX.Element {
             );
           })()}
 
+          {status.usageHistory && status.usageHistory.length > 0 && (
+            <section className="rate-limit-history-section">
+              <h3>Recent Consumption</h3>
+              <table className="rate-limit-history-table">
+                <thead><tr><th>Recorded</th><th>Requests used</th></tr></thead>
+                <tbody>
+                  {[...status.usageHistory].reverse().map((point) => (
+                    <tr key={point.timestamp}>
+                      <td>{formatDate(point.timestamp)}</td>
+                      <td>{point.requestsUsed.toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
+
           {/* Help Section */}
           <div className="rate-limit-help-section">
             <h3>Tips to Manage Your Rate Limit</h3>
@@ -526,7 +632,8 @@ export default function RateLimitDashboard(): React.JSX.Element {
               </li>
             </ul>
             <p className="rate-limit-help-cta">
-              Need help? Check our <a href="/api">API documentation</a> or{' '}
+              Need help? Check our <a href="/api">API documentation</a> and{' '}
+              <a href="/rate-limits">rate limit guide</a>, or{' '}
               <a href="/support">contact support</a>.
             </p>
           </div>
