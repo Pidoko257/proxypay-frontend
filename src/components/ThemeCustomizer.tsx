@@ -307,6 +307,19 @@ export default function ThemeCustomizer(): React.JSX.Element {
     applyThemeToDocument(storedPreference || presetThemes[0], preferredMode);
   }, []);
 
+  // #441 — Automatic dark-mode detection: listen for OS-level color scheme changes
+  // and update the theme mode accordingly without requiring a manual toggle.
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: MediaQueryListEvent) => {
+      const nextMode: ThemeMode = e.matches ? 'dark' : 'light';
+      setThemeMode(nextMode);
+      setSchemeLabel(nextMode === 'dark' ? 'Dark preview' : 'Light preview');
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
   useEffect(() => {
     applyThemeToDocument(previewTheme, themeMode);
     // Validate contrast when theme or mode changes
