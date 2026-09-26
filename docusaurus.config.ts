@@ -103,6 +103,16 @@ const config: Config = {
       items: [
         { to: '/', label: 'Overview', position: 'left' },
         { to: '/api', label: 'Reference', position: 'left' },
+        {
+          type: 'dropdown',
+          label: 'API Tools',
+          position: 'left',
+          items: [
+            { to: '/api-compare', label: 'Version Comparison' },
+            { to: '/sdk-generator', label: 'SDK Generator' },
+            { to: '/metrics', label: 'Usage Metrics' },
+          ],
+        },
         { to: '/rate-limits', label: 'Rate Limits', position: 'left' },
         { to: '/sharding',   label: 'Sharding',    position: 'left' },
         { to: '/chaos',      label: 'Chaos',       position: 'left' },

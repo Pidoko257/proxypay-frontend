@@ -1,0 +1,13 @@
+.fallback {
+  max-width: 760px;
+  margin: 12vh auto;
+  padding: 2rem;
+  border-top: 4px solid #b64a36;
+  color: var(--ifm-color-content);
+}
+.fallback h1 { margin: 0 0 0.65rem; font-size: 1.75rem; }
+.fallback p { margin: 0 0 1rem; }
+.eyebrow { color: #a43d2c; font-size: 0.75rem; font-weight: 700; }
+.details { max-height: 16rem; overflow: auto; padding: 1rem; background: var(--ifm-color-emphasis-100); white-space: pre-wrap; overflow-wrap: anywhere; }
+.fallback button { min-height: 40px; padding: 0.5rem 0.9rem; border: 1px solid var(--ifm-color-primary); border-radius: 5px; background: var(--ifm-color-primary); color: white; font: inherit; cursor: pointer; }
+@media (max-width: 600px) { .fallback { margin: 5vh 1rem; padding: 1.5rem 0; } }
