@@ -1,0 +1,68 @@
+name: Quality gates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Security, accessibility, and visual checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            dashboard/package-lock.json
+
+      - name: Install portal dependencies
+        run: npm ci
+
+      - name: Install dashboard dependencies
+        run: npm ci --prefix dashboard
+
+      - name: Audit dependencies
+        run: npm run audit:dependencies
+
+      - name: Build portal and validate security headers
+        run: npm run build
+
+      - name: Install browser engines
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Run accessibility audits
+        run: npm run test:accessibility
+
+      - name: Run visual regression checks
+        env:
+          PERCY_TOKEN: ${{ secrets.PERCY_TOKEN }}
+        run: |
+          if [[ -z "$PERCY_TOKEN" ]]; then
+            echo 'Visual regression checks require the repository PERCY_TOKEN secret; configure Percy to enable this gate.' >> "$GITHUB_STEP_SUMMARY"
+            echo 'Skipping Percy visual snapshots because PERCY_TOKEN is not configured.'
+          else
+            npm run test:visual
+          fi
+
+      - name: Upload quality reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-reports
+          path: .quality-reports/
+          if-no-files-found: ignore
+          retention-days: 90
