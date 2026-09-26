@@ -52,6 +52,31 @@
   border-radius: 3px;
 }
 
+.deprecatedFilter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ifm-color-emphasis-700);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.deprecationNotice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  align-items: baseline;
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid #e7a693;
+  background: #fff0eb;
+  color: #792d1c;
+  font-size: 0.85rem;
+}
+
+.deprecationNotice code {
+  color: inherit;
+}
+
 .comparisonToggle {
   padding: 0.5rem 1rem;
   background: var(--ifm-color-primary);

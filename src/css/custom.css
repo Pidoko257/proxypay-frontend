@@ -1298,6 +1298,40 @@ a[target='_blank']::after {
   color: var(--ifm-color-emphasis-700);
 }
 
+.rate-limit-response-headers {
+  margin: 1rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+  font-size: 0.8rem;
+}
+
+.rate-limit-response-headers dt {
+  margin-bottom: 0.35rem;
+  font-weight: 700;
+}
+
+.rate-limit-response-headers dd {
+  margin: 0.2rem 0;
+  overflow-wrap: anywhere;
+}
+
+.rate-limit-history-section {
+  margin-top: 1.5rem;
+  overflow-x: auto;
+}
+
+.rate-limit-history-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rate-limit-history-table th,
+.rate-limit-history-table td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+  text-align: left;
+}
+
 .api-endpoint-status {
   display: inline-block;
   margin-right: 0.5rem;

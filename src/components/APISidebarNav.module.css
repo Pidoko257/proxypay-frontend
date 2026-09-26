@@ -162,6 +162,16 @@
   font-weight: 500;
 }
 
+.deprecatedBadge {
+  flex-shrink: 0;
+  padding: 0.12rem 0.35rem;
+  border-radius: 2px;
+  background: #fff0eb;
+  color: #a33a22;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
 /* Per-tag filter controls */
 .tagFilterBar {
   display: flex;

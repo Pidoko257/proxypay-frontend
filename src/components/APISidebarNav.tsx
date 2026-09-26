@@ -470,6 +470,9 @@ export default function APISidebarNav({
                       >
                         <MethodBadge method={endpoint.method} />
                         <span className={styles.endpointPath}>{endpoint.path}</span>
+                        {endpoint.deprecated && (
+                          <span className={styles.deprecatedBadge}>Deprecated</span>
+                        )}
                       </button>
                     ))
                   ) : (

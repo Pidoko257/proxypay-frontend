@@ -103,6 +103,7 @@ const config: Config = {
       items: [
         { to: '/', label: 'Overview', position: 'left' },
         { to: '/api', label: 'Reference', position: 'left' },
+        { to: '/test-generator', label: 'Test Generator', position: 'left' },
         { to: '/rate-limits', label: 'Rate Limits', position: 'left' },
         { to: '/sharding',   label: 'Sharding',    position: 'left' },
         { to: '/chaos',      label: 'Chaos',       position: 'left' },

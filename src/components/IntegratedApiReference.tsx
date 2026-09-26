@@ -10,6 +10,7 @@ import RedocViewer from './RedocViewer';
 import APISidebarNav from './APISidebarNav';
 import EndpointComparison from './EndpointComparison';
 import SpecUpdateNotifier from './SpecUpdateNotifier';
+import AuthenticationReference from './AuthenticationReference';
 import { parseEndpoints, groupByTag, type OpenAPISpec, type ParsedEndpoint, type TagGroup } from '../utils/apiSpecParser';
 import { parseDeepLink, toEndpointLink } from '../utils/redocDeepLink';
 import {
@@ -48,6 +49,9 @@ function filterEndpointsBySearch(
       endpoint.method.toLowerCase().includes(q) ||
       endpoint.summary.toLowerCase().includes(q) ||
       (endpoint.description?.toLowerCase().includes(q) ?? false) ||
+      (endpoint.deprecated && 'deprecated'.includes(q)) ||
+      (endpoint.migrationPath?.toLowerCase().includes(q) ?? false) ||
+      (endpoint.removalDate?.toLowerCase().includes(q) ?? false) ||
       (endpoint.tags?.some((tag) => tag.toLowerCase().includes(q)) ?? false) ||
       (endpoint.operationId?.toLowerCase().includes(q) ?? false)
     );
@@ -69,6 +73,7 @@ export default function IntegratedApiReference({
 }: IntegratedApiReferenceProps): React.JSX.Element {
   const [loadedSpec, setLoadedSpec] = useState<OpenAPISpec | undefined>(spec);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showDeprecated, setShowDeprecated] = useState(true);
   // Fix #358: persisted recent searches, shown as autocomplete suggestions.
   const [searchHistory, setSearchHistory] = useState<string[]>(() =>
     loadSearchHistory(),
@@ -88,19 +93,21 @@ export default function IntegratedApiReference({
   }, [loadedSpec]);
 
   /**
-   * Group endpoints by tag
-   */
-  const tagGroups = useMemo(() => {
-    if (!loadedSpec) return [];
-    return groupByTag(endpoints);
-  }, [endpoints, loadedSpec]);
-
-  /**
    * Filter endpoints by search query
    */
   const filteredEndpoints = useMemo(() => {
-    return filterEndpointsBySearch(endpoints, searchQuery);
-  }, [endpoints, searchQuery]);
+    const matchingEndpoints = filterEndpointsBySearch(endpoints, searchQuery);
+    return showDeprecated
+      ? matchingEndpoints
+      : matchingEndpoints.filter((endpoint) => !endpoint.deprecated);
+  }, [endpoints, searchQuery, showDeprecated]);
+
+  const visibleTagGroups = useMemo(
+    () => groupByTag(filteredEndpoints),
+    [filteredEndpoints],
+  );
+
+  const selectedEndpoint = endpoints.find((endpoint) => endpoint.id === selectedEndpointId);
 
   /**
    * Autocomplete suggestions drawn from persisted search history.
@@ -275,6 +282,14 @@ export default function IntegratedApiReference({
         <span className={styles.searchCount}>
           {filteredEndpoints.length} / {endpoints.length} endpoints
         </span>
+        <label className={styles.deprecatedFilter}>
+          <input
+            type="checkbox"
+            checked={showDeprecated}
+            onChange={(event) => setShowDeprecated(event.target.checked)}
+          />
+          Show deprecated
+        </label>
         <button
           className={`${styles.comparisonToggle} ${comparisonMode ? styles.active : ''}`}
           onClick={() => (comparisonMode ? handleCloseComparison() : setComparisonMode(true))}
@@ -286,13 +301,28 @@ export default function IntegratedApiReference({
         </button>
       </div>
 
+      {selectedEndpoint?.deprecated && (
+        <aside className={styles.deprecationNotice} role="status">
+          <strong>Deprecated endpoint</strong>
+          <span>{selectedEndpoint.summary}</span>
+          {selectedEndpoint.migrationPath && (
+            <span>Migration path: <code>{selectedEndpoint.migrationPath}</code></span>
+          )}
+          {selectedEndpoint.removalDate && (
+            <span>Planned removal: {selectedEndpoint.removalDate}</span>
+          )}
+        </aside>
+      )}
+
+      <AuthenticationReference spec={loadedSpec} />
+
       <div className={styles.layout}>
         {/* Sidebar */}
         {showSidebar && (
           <aside className={styles.sidebar}>
             <APISidebarNav
               endpoints={filteredEndpoints}
-              tagGroups={tagGroups}
+              tagGroups={visibleTagGroups}
               onEndpointClick={handleEndpointClick}
               onTagClick={handleTagClick}
               selectedEndpointId={selectedEndpointId}
