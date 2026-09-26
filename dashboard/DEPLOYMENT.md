@@ -219,6 +219,8 @@ Vite automatically proxies `/api/*` to `http://localhost:3001`.
    Access-Control-Allow-Credentials: true
    ```
 
+  Use an exact allow-origin value for the dashboard, never `*` for authenticated APIs. Browsers reject wildcard origins when credentials are enabled. The dashboard settings view reports CORS headers observed on successful cross-origin responses; it cannot inspect responses blocked by the browser, so verify the server policy and preflight behavior at the API or reverse proxy as well.
+
 ### Scenario 3: Same Domain
 
 **Backend:** https://proxypay.com/api

@@ -1,16 +1,24 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { CheckCircle2, AlertCircle, Loader } from 'lucide-react'
 import { useNotificationStore } from '../stores/notificationStore'
 import { SkeletonCard } from './Skeleton'
+import {
+  CorsDiagnostic,
+  getCorsDiagnostic,
+  subscribeCorsDiagnostic,
+} from '../services/security'
 import '../styles/NotificationSettings.css'
 
 export const NotificationSettings: React.FC = () => {
+  const [corsDiagnostic, setCorsDiagnostic] = useState<CorsDiagnostic | null>(getCorsDiagnostic)
   const { settings, loading, error, optimisticUpdates, fetchSettings, updateSetting, clearError } =
     useNotificationStore()
 
   useEffect(() => {
     fetchSettings()
   }, [fetchSettings])
+
+  useEffect(() => subscribeCorsDiagnostic(setCorsDiagnostic), [])
 
   const handleToggle = (
     eventType: string,
@@ -35,6 +43,29 @@ export const NotificationSettings: React.FC = () => {
         <h1>Notification Settings</h1>
         <p>Configure which events trigger email and webhook notifications</p>
       </header>
+
+      <section className="cors-diagnostic" aria-labelledby="cors-diagnostic-heading">
+        <h2 id="cors-diagnostic-heading">CORS response check</h2>
+        {corsDiagnostic ? (
+          <div role={corsDiagnostic.status === 'permissive' ? 'alert' : 'status'}>
+            <p>
+              Allowed origin: <code>{corsDiagnostic.allowOrigin || 'not reported'}</code>
+            </p>
+            <p>
+              {corsDiagnostic.status === 'permissive'
+                ? 'The API allows any origin. Restrict this to trusted dashboard origins.'
+                : corsDiagnostic.status === 'restricted'
+                  ? 'The API response allows this dashboard origin.'
+                  : 'The response did not expose an allow-origin value; check the API or same-origin proxy configuration.'}
+            </p>
+            {corsDiagnostic.allowCredentials && corsDiagnostic.allowOrigin === '*' && (
+              <p role="alert">Wildcard origins cannot be used with credentialed CORS requests.</p>
+            )}
+          </div>
+        ) : (
+          <p>Waiting for a cross-origin API response. CORS policy is enforced by the API and browser.</p>
+        )}
+      </section>
 
       {error && (
         <div className="alert alert-error">
