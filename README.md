@@ -22,6 +22,10 @@ To populate the spec from the backend:
 
 A placeholder spec is committed so the project builds out of the box.
 
+## TypeScript
+
+TypeScript strict mode is enabled in `tsconfig.json`. Keep declarations for directly used React packages in the project dependencies and run `npm run typecheck` when validating TypeScript changes.
+
 ## Deploy
 
 Configured for GitHub Pages under `sublime247/proxypay`.
