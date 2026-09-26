@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { sanitizeAnnotationText } from '../utils/sanitize';
+import { useUndoRedo } from '../hooks/useUndoRedo';
 
 interface Annotation {
   id: string;
@@ -89,8 +90,35 @@ function renderAnnotationText(text: string): React.ReactNode[] {
   );
 }
 
+/**
+ * AnnotationsPanel
+ *
+ * Community annotation system for ProxyPay API endpoints. Supports adding,
+ * voting, pinning, flagging, archiving, and deleting annotations. All
+ * destructive actions (add, delete, archive, bulk-moderate) are tracked via
+ * an undo/redo stack with a maximum depth of 10 steps so that accidental
+ * changes can always be reverted.
+ *
+ * @example
+ * ```tsx
+ * // Drop into any Docusaurus page
+ * import AnnotationsPanel from '@site/src/components/AnnotationsPanel';
+ * export default function Page() {
+ *   return <AnnotationsPanel />;
+ * }
+ * ```
+ */
 export default function AnnotationsPanel(): React.JSX.Element {
-  const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  // ── Undo/redo-tracked annotations state (issue #443) ──────────────────────
+  const {
+    state: annotations,
+    setState: setAnnotationsWithHistory,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useUndoRedo<Annotation[]>([]);
+
   const [username, setUsername] = useState('');
   const [usernameInput, setUsernameInput] = useState('');
   const [votes, setVotes] = useState<Record<string, 'up' | 'down' | null>>({});
@@ -111,10 +139,13 @@ export default function AnnotationsPanel(): React.JSX.Element {
   const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
-    setAnnotations(loadAnnotations());
+    const loaded = loadAnnotations();
+    // Seed initial state without polluting the undo stack (direct setter)
+    setAnnotationsWithHistory(loaded);
     setUsername(loadUsername());
     setVotes(loadVotes());
-    setMentionSuggestions([...new Set(loadAnnotations().map((annotation) => annotation.author))].filter(Boolean));
+    setMentionSuggestions([...new Set(loaded.map((annotation) => annotation.author))].filter(Boolean));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const showToast = useCallback((msg: string) => {
@@ -175,7 +206,7 @@ export default function AnnotationsPanel(): React.JSX.Element {
     };
 
     const updated = [newAnnotation, ...annotations];
-    setAnnotations(updated);
+    setAnnotationsWithHistory(updated);
     saveAnnotations(updated);
     const notifications = extractMentionedUsers(annotationText).map((mentionedUser): MentionNotification => ({
       id: generateId(),
@@ -217,7 +248,7 @@ export default function AnnotationsPanel(): React.JSX.Element {
         [annotationId]: prevVote === direction ? null : direction,
       };
 
-      setAnnotations(updatedAnnotations);
+      setAnnotationsWithHistory(updatedAnnotations);
       saveAnnotations(updatedAnnotations);
       setVotes(newVotes);
       saveVotes(newVotes);
@@ -230,7 +261,7 @@ export default function AnnotationsPanel(): React.JSX.Element {
       const updated = annotations.map((a) =>
         a.id === annotationId ? { ...a, flagged: !a.flagged } : a
       );
-      setAnnotations(updated);
+      setAnnotationsWithHistory(updated);
       saveAnnotations(updated);
       showToast('Annotation flagged for review');
     },
@@ -242,7 +273,7 @@ export default function AnnotationsPanel(): React.JSX.Element {
       const updated = annotations.map((a) =>
         a.id === annotationId ? { ...a, pinned: !a.pinned } : a
       );
-      setAnnotations(updated);
+      setAnnotationsWithHistory(updated);
       saveAnnotations(updated);
       const pinned = updated.filter((a) => a.pinned).map((a) => a.id);
       localStorage.setItem(PINNED_KEY, JSON.stringify(pinned));
@@ -256,7 +287,7 @@ export default function AnnotationsPanel(): React.JSX.Element {
       const updated = annotations.map((a) =>
         a.id === annotationId ? { ...a, archived: !a.archived } : a
       );
-      setAnnotations(updated);
+      setAnnotationsWithHistory(updated);
       saveAnnotations(updated);
       showToast(updated.find((a) => a.id === annotationId)?.archived ? 'Archived' : 'Restored');
     },
@@ -266,7 +297,7 @@ export default function AnnotationsPanel(): React.JSX.Element {
   const handleDelete = useCallback(
     (annotationId: string) => {
       const updated = annotations.filter((a) => a.id !== annotationId);
-      setAnnotations(updated);
+      setAnnotationsWithHistory(updated);
       saveAnnotations(updated);
       showToast('Annotation deleted');
     },
@@ -281,7 +312,7 @@ export default function AnnotationsPanel(): React.JSX.Element {
       } else if (action === 'archive-flagged') {
         updated = updated.map((a) => (a.flagged ? { ...a, archived: true, flagged: false } : a));
       }
-      setAnnotations(updated);
+      setAnnotationsWithHistory(updated);
       saveAnnotations(updated);
       showToast('Moderation action applied');
     },
@@ -332,6 +363,28 @@ export default function AnnotationsPanel(): React.JSX.Element {
       </div>
 
       {toast && <div className="mock-toast">{toast}</div>}
+
+      {/* Undo / Redo toolbar (issue #443) */}
+      <div className="annotations-undo-bar" style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', alignItems: 'center' }}>
+        <button
+          className="mock-btn mock-btn-sm mock-btn-ghost"
+          onClick={undo}
+          disabled={!canUndo}
+          title="Undo last change (Ctrl+Z)"
+          aria-label="Undo"
+        >
+          ↩ Undo
+        </button>
+        <button
+          className="mock-btn mock-btn-sm mock-btn-ghost"
+          onClick={redo}
+          disabled={!canRedo}
+          title="Redo last undone change (Ctrl+Y)"
+          aria-label="Redo"
+        >
+          ↪ Redo
+        </button>
+      </div>
 
       {/* User auth bar */}
       <div className="annotations-user-bar">

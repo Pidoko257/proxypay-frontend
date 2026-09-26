@@ -1,24 +1,46 @@
 import React, { useState, useMemo, useCallback, ReactNode } from 'react';
 
 // ── Types ──────────────────────────────────────────────────────────
+/** Category of a changelog entry. */
 type EntryType = 'new' | 'fix' | 'deprecation';
+/**
+ * Developer-impact rating of a changelog entry.
+ * - `low` – additive, no migration needed.
+ * - `medium` – minor integration adjustment may be required.
+ * - `high` – breaking or deprecated behaviour; migration guide recommended.
+ * - `critical` – breaking change affecting all consumers.
+ */
 type ImpactLevel = 'low' | 'medium' | 'high' | 'critical';
+/** Layout mode for the list of entries. */
 type ViewMode = 'timeline' | 'compact';
 
+/** A single entry in the API changelog. */
 interface ChangelogEntry {
+  /** Unique identifier, used as the HTML anchor (`#cl-1`). */
   id: string;
+  /** Semantic version string, e.g. `"v2.4.0"`. */
   version: string;
+  /** ISO 8601 date string, e.g. `"2026-07-14"`. */
   date: string;
+  /** Category of the change. */
   type: EntryType;
+  /** Short headline displayed as the card title. */
   title: string;
+  /** Full description of the change shown in the card body. */
   description: string;
+  /** Impact level indicating migration effort required. */
   impact: ImpactLevel;
+  /** Affected endpoint paths, e.g. `["POST /payments/bulk"]`. */
   endpoints: string[];
+  /** Free-form tags for additional filtering, e.g. `["payments", "security"]`. */
   tags: string[];
 }
 
+/** A matched substring range returned by {@link findMatches}. */
 interface HighlightMatch {
+  /** Start index (inclusive) of the match within the source string. */
   start: number;
+  /** End index (exclusive) of the match within the source string. */
   end: number;
 }
 
@@ -532,6 +554,30 @@ ${items}
 }
 
 // ── Component ─────────────────────────────────────────────────────
+/**
+ * ChangelogViewer
+ *
+ * Renders a filterable, searchable list of ProxyPay API changelog entries with
+ * search-result highlighting, RSS/Atom export, and email-subscription UI.
+ *
+ * Supports two layout modes:
+ * - **Timeline** (default) – full cards with a vertical line, expand-on-click
+ *   to reveal tags and the entry ID.
+ * - **Compact** – single-row list suitable for dense dashboards.
+ *
+ * This component is self-contained: it ships with embedded mock data so it
+ * renders correctly out of the box without any props.
+ *
+ * @example
+ * ```tsx
+ * // Drop in to any Docusaurus page – no props needed.
+ * import ChangelogViewer from '@site/src/components/ChangelogViewer';
+ *
+ * export default function ChangelogPage() {
+ *   return <ChangelogViewer />;
+ * }
+ * ```
+ */
 export default function ChangelogViewer(): React.JSX.Element {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<EntryType | 'all'>('all');
