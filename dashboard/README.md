@@ -98,6 +98,10 @@ src/
 
 The dashboard connects to a ProxyPay backend API at `/api`. Update the base URL in `src/services/api.ts` if needed.
 
+### Error Monitoring
+
+Set `VITE_SENTRY_DSN` in the deployment environment to enable Sentry component error reporting and the in-app feedback dialog. Reports include the page and React component stack; form values and default PII are not sent.
+
 ### Required Endpoints
 
 - `GET /api/transactions` - List transactions with filters

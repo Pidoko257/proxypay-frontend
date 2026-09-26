@@ -101,6 +101,53 @@
   font-size: 0.95rem;
 }
 
+.dashboard-error-boundary {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 1.5rem;
+  background: var(--color-neutral-50);
+}
+
+.dashboard-error-boundary section {
+  width: min(100%, 34rem);
+  padding: 1.5rem;
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 0.5rem;
+  background: white;
+  color: var(--color-neutral-800);
+}
+
+.dashboard-error-boundary h1 {
+  margin-bottom: 0.5rem;
+  font-size: 1.25rem;
+}
+
+.dashboard-error-boundary p {
+  color: var(--color-neutral-600);
+}
+
+.dashboard-error-boundary__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.dashboard-error-boundary__actions button {
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--color-neutral-300);
+  border-radius: 0.35rem;
+  background: white;
+  color: var(--color-neutral-800);
+  cursor: pointer;
+}
+
+.dashboard-error-boundary__note {
+  margin-top: 1rem;
+  font-size: 0.8rem;
+}
+
 .loading-cell,
 .empty-cell {
   text-align: center;
