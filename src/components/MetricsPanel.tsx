@@ -18,8 +18,14 @@ interface FavoriteData {
   timestamp: number;
 }
 
+interface MetricsCache {
+  data: EndpointMetric[];
+  cachedAt: number;
+}
+
 const METRICS_KEY = 'proxypay-metrics-data';
 const FAVORITES_KEY = 'proxypay-favorites';
+const METRICS_CACHE_TTL = 60 * 60 * 1000;
 
 // Simulated initial metrics data
 function getDefaultMetrics(): EndpointMetric[] {
@@ -171,17 +177,50 @@ function getDefaultMetrics(): EndpointMetric[] {
   ];
 }
 
-function loadMetrics(): EndpointMetric[] {
+function isMetricsData(value: unknown): value is EndpointMetric[] {
+  return Array.isArray(value) && value.every((item) => {
+    if (!item || typeof item !== 'object') return false;
+    const metric = item as Partial<EndpointMetric>;
+    return typeof metric.id === 'string'
+      && typeof metric.path === 'string'
+      && typeof metric.method === 'string'
+      && typeof metric.name === 'string'
+      && typeof metric.callsPerDay === 'number'
+      && typeof metric.trend === 'number'
+      && Array.isArray(metric.commonlyUsedWith)
+      && typeof metric.category === 'string'
+      && typeof metric.addedDate === 'string';
+  });
+}
+
+function loadMetricsCache(): MetricsCache | null {
   try {
     const raw = localStorage.getItem(METRICS_KEY);
-    return raw ? JSON.parse(raw) : getDefaultMetrics();
+    if (!raw) return null;
+    const saved: unknown = JSON.parse(raw);
+    if (isMetricsData(saved)) {
+      const cachedAt = Date.now();
+      saveMetrics(saved, cachedAt);
+      return { data: saved, cachedAt };
+    }
+    if (saved && typeof saved === 'object') {
+      const cache = saved as Partial<MetricsCache>;
+      if (isMetricsData(cache.data) && typeof cache.cachedAt === 'number') {
+        return { data: cache.data, cachedAt: cache.cachedAt };
+      }
+    }
+    return null;
   } catch {
-    return getDefaultMetrics();
+    return null;
   }
 }
 
-function saveMetrics(metrics: EndpointMetric[]): void {
-  localStorage.setItem(METRICS_KEY, JSON.stringify(metrics));
+function saveMetrics(metrics: EndpointMetric[], cachedAt: number): void {
+  try {
+    localStorage.setItem(METRICS_KEY, JSON.stringify({ data: metrics, cachedAt }));
+  } catch {
+    // Storage may be unavailable in private browsing or restricted contexts.
+  }
 }
 
 function loadFavorites(): FavoriteData[] {
@@ -225,19 +264,8 @@ export default function MetricsPanel(): React.JSX.Element {
   const [searchQuery, setSearchQuery] = useState('');
   const [toast, setToast] = useState('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-
-  useEffect(() => {
-    const saved = loadMetrics();
-    // Ensure defaults are seeded if no saved data
-    if (saved.length === 0) {
-      const defaults = getDefaultMetrics();
-      setMetrics(defaults);
-      saveMetrics(defaults);
-    } else {
-      setMetrics(saved);
-    }
-    setFavorites(loadFavorites());
-  }, []);
+  const [cachedAt, setCachedAt] = useState<number | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const categories = useMemo(() => {
     const cats = new Set(metrics.map((m) => m.category));
@@ -263,18 +291,48 @@ export default function MetricsPanel(): React.JSX.Element {
   );
 
   const refreshData = useCallback(() => {
-    // Simulate refreshing metrics data
-    setMetrics((prev) => {
-      const updated = prev.map((m) => ({
-        ...m,
-        callsPerDay: m.callsPerDay + Math.floor(Math.random() * 200 - 100),
-        trend: parseFloat((m.trend + (Math.random() * 2 - 1)).toFixed(1)),
-      }));
-      saveMetrics(updated);
-      return updated;
-    });
-    setToast('Metrics refreshed! 🔄');
-    setTimeout(() => setToast(''), 1500);
+    setIsRefreshing(true);
+    window.setTimeout(() => {
+      const refreshedAt = Date.now();
+      setMetrics((prev) => {
+        const updated = prev.map((metric) => ({
+          ...metric,
+          callsPerDay: metric.callsPerDay + Math.floor(Math.random() * 200 - 100),
+          trend: parseFloat((metric.trend + (Math.random() * 2 - 1)).toFixed(1)),
+        }));
+        saveMetrics(updated, refreshedAt);
+        return updated;
+      });
+      setCachedAt(refreshedAt);
+      setIsRefreshing(false);
+      setToast('Metrics refreshed');
+      window.setTimeout(() => setToast(''), 1500);
+    }, 250);
+  }, []);
+
+  useEffect(() => {
+    const cache = loadMetricsCache();
+    if (cache) {
+      setMetrics(cache.data);
+      setCachedAt(cache.cachedAt);
+      if (Date.now() - cache.cachedAt >= METRICS_CACHE_TTL) refreshData();
+    } else {
+      setMetrics(getDefaultMetrics());
+      refreshData();
+    }
+    setFavorites(loadFavorites());
+  }, [refreshData]);
+
+  const invalidateCache = useCallback(() => {
+    try {
+      localStorage.removeItem(METRICS_KEY);
+    } catch {
+      // Keep the in-memory defaults usable if storage is unavailable.
+    }
+    setMetrics(getDefaultMetrics());
+    setCachedAt(null);
+    setToast('Metrics cache cleared');
+    window.setTimeout(() => setToast(''), 1500);
   }, []);
 
   const handleSort = (key: typeof sortBy) => {
@@ -335,6 +393,13 @@ export default function MetricsPanel(): React.JSX.Element {
         <h2>📊 API Usage Metrics</h2>
         <p className="metrics-subtitle">
           Discover popular endpoints and see how the community uses the API. Data is simulated for demo purposes.
+        </p>
+        <p className="metrics-subtitle" aria-live="polite">
+          {isRefreshing
+            ? 'Refreshing metrics; showing saved data…'
+            : cachedAt
+              ? `Cached ${new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(cachedAt)}`
+              : 'Metrics are not cached'}
         </p>
       </div>
 
@@ -409,8 +474,11 @@ export default function MetricsPanel(): React.JSX.Element {
               {opt.label} {sortBy === opt.key ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
             </button>
           ))}
-          <button className="mock-btn mock-btn-ghost mock-btn-sm" onClick={refreshData} title="Refresh data">
-            🔄
+          <button className="mock-btn mock-btn-ghost mock-btn-sm" onClick={refreshData} title="Refresh data" disabled={isRefreshing}>
+            {isRefreshing ? 'Refreshing…' : 'Refresh'}
+          </button>
+          <button className="mock-btn mock-btn-ghost mock-btn-sm" onClick={invalidateCache} title="Clear cached metrics">
+            Clear cache
           </button>
         </div>
       </div>
