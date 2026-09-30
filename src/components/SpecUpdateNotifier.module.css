@@ -1,0 +1,167 @@
+/**
+ * SpecUpdateNotifier Styles
+ */
+
+.container {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 1000;
+  max-width: 400px;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(500px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.content {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  display: flex;
+  gap: 12px;
+  color: white;
+}
+
+.icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.message {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.description {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  line-height: 1.4;
+  opacity: 0.95;
+}
+
+.details {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.details summary {
+  cursor: pointer;
+  user-select: none;
+  text-decoration: underline;
+  transition: opacity 0.2s;
+}
+
+.details summary:hover {
+  opacity: 1;
+}
+
+.versionInfo {
+  margin: 8px 0 0 0;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.button {
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.updateButton {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.updateButton:hover {
+  background: rgba(255, 255, 255, 0.35);
+  border-color: rgba(255, 255, 255, 0.7);
+  transform: scale(1.05);
+}
+
+.updateButton:active {
+  transform: scale(0.98);
+}
+
+.dismissButton {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dismissButton:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .container {
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+
+  .content {
+    flex-direction: column;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .updateButton,
+  .dismissButton {
+    width: 100%;
+  }
+}

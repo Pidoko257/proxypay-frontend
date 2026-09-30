@@ -1,0 +1,232 @@
+/* Skeleton Loading Animation */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+/* Base Skeleton Styles */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-neutral-200) 0%,
+    var(--color-neutral-100) 50%,
+    var(--color-neutral-200) 100%
+  );
+  background-size: 1000px 100%;
+  animation: skeleton-shimmer 2s infinite;
+  border-radius: 0.375rem;
+}
+
+.skeleton-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.skeleton-line {
+  display: block;
+}
+
+/* Skeleton Variants */
+.skeleton-rect {
+  border-radius: 0.375rem;
+}
+
+.skeleton-circle {
+  border-radius: 50%;
+}
+
+.skeleton-text {
+  gap: 0.5rem;
+}
+
+/* Table Skeleton */
+.skeleton-table-row {
+  opacity: 0.7;
+}
+
+.skeleton-table-row .skeleton-cell {
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-neutral-100);
+}
+
+.skeleton-table-row .skeleton-cell:first-child {
+  padding-left: 1rem;
+}
+
+.skeleton-table-row .skeleton-cell:last-child {
+  padding-right: 1rem;
+}
+
+.skeleton-loading {
+  animation: skeleton-fade 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-fade {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Card Skeleton */
+.skeleton-card {
+  background: white;
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.skeleton-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-card-header .skeleton {
+  max-width: 200px;
+}
+
+.skeleton-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.skeleton-card-body .skeleton:last-child {
+  margin-top: 0.5rem;
+}
+
+/* List Skeleton */
+.skeleton-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .skeleton-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Stat Cards Grid */
+.stat-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .stat-cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+}
+
+/* Notification Settings Skeleton */
+.skeleton-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .skeleton-settings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Smooth transition from skeleton to content */
+.skeleton {
+  will-change: background-position;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton,
+  .skeleton-loading {
+    animation: none;
+    background: var(--color-neutral-200);
+  }
+}
+
+/* Loading container state */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 3rem;
+  color: var(--color-neutral-600);
+}
+
+.loading-state .spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Pulse alternative animation (subtle) */
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Optional: Use pulse instead of shimmer */
+.skeleton.skeleton-pulse {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  background: var(--color-neutral-200);
+}
+
+/* Skeleton content wrapper - maintains aspect ratio */
+.skeleton-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Skeleton height presets */
+.skeleton-sm {
+  height: 0.75rem;
+}
+
+.skeleton-md {
+  height: 1rem;
+}
+
+.skeleton-lg {
+  height: 1.5rem;
+}
+
+.skeleton-xl {
+  height: 2rem;
+}
+
+/* Ensure skeleton maintains layout */
+.skeleton {
+  flex-shrink: 0;
+}

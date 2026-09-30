@@ -1,0 +1,187 @@
+.status-filter {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ── Toggle button ───────────────────────────────────────────────────────────── */
+.sf-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.4375rem 0.875rem;
+  border: 1px solid var(--color-neutral-300);
+  border-radius: 0.5rem;
+  background: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-neutral-700);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.sf-toggle:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background-color: rgba(99, 102, 241, 0.04);
+}
+
+.sf-toggle--active {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background-color: rgba(99, 102, 241, 0.07);
+}
+
+.sf-toggle--open {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+/* ── Active filter count badge ───────────────────────────────────────────────── */
+.sf-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-primary);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  padding: 0 0.25rem;
+  border-radius: 1rem;
+  line-height: 1;
+}
+
+/* ── Chevron icon ────────────────────────────────────────────────────────────── */
+.sf-chevron {
+  transition: transform var(--transition-fast);
+  color: var(--color-neutral-400);
+}
+
+.sf-chevron--open {
+  transform: rotate(180deg);
+}
+
+/* ── Dropdown ────────────────────────────────────────────────────────────────── */
+.sf-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 200px;
+  background: white;
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow-md);
+  z-index: 50;
+  overflow: hidden;
+}
+
+.sf-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.625rem 0.875rem;
+  border-bottom: 1px solid var(--color-neutral-100);
+}
+
+.sf-dropdown-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-neutral-600);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sf-clear-btn {
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  color: var(--color-primary);
+  cursor: pointer;
+  padding: 0;
+  font-weight: 500;
+  transition: opacity var(--transition-fast);
+}
+
+.sf-clear-btn:hover {
+  opacity: 0.75;
+}
+
+/* ── Options list ────────────────────────────────────────────────────────────── */
+.sf-options {
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0;
+}
+
+.sf-option {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.875rem;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.sf-option:hover {
+  background-color: var(--color-neutral-50);
+}
+
+.sf-option--selected {
+  background-color: rgba(99, 102, 241, 0.04);
+}
+
+/* ── Checkbox ────────────────────────────────────────────────────────────────── */
+.sf-check-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  border: 1.5px solid var(--color-neutral-300);
+  border-radius: 0.25rem;
+  background: white;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+  color: white;
+}
+
+.sf-check-box--checked {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* ── Status label inside option ──────────────────────────────────────────────── */
+.sf-status-label {
+  flex: 1;
+  font-size: 0.8125rem;
+}
+
+/* ── Transaction count ───────────────────────────────────────────────────────── */
+.sf-count {
+  font-size: 0.75rem;
+  color: var(--color-neutral-500);
+  font-weight: 500;
+  background-color: var(--color-neutral-100);
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.75rem;
+  min-width: 1.5rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* ── Mobile ──────────────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .sf-dropdown {
+    right: auto;
+    left: 0;
+    min-width: 180px;
+  }
+
+  .sf-toggle {
+    font-size: 0.8125rem;
+    padding: 0.375rem 0.75rem;
+  }
+}

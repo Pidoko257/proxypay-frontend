@@ -1,0 +1,164 @@
+.page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+}
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--ifm-color-emphasis-300);
+}
+
+.header h1 {
+  margin: 0 0 0.5rem;
+  font-size: 2rem;
+}
+
+.header p {
+  margin: 0;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.header .eyebrow {
+  margin-bottom: 0.5rem;
+  color: var(--ifm-color-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.toolbar {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--ifm-color-emphasis-300);
+}
+
+.toolbar label,
+.source {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.source {
+  flex: 1 1 19rem;
+  min-width: min(100%, 17rem);
+}
+
+.source span {
+  overflow: hidden;
+  color: var(--ifm-color-emphasis-600);
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toolbar input,
+.toolbar select {
+  max-width: 100%;
+  min-height: 2.4rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--ifm-color-emphasis-400);
+  border-radius: 3px;
+  background: var(--ifm-background-color);
+  color: var(--ifm-font-color-base);
+  font-weight: 400;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.actions button {
+  min-height: 2.4rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--ifm-color-primary);
+  border-radius: 3px;
+  background: var(--ifm-color-primary);
+  color: white;
+  cursor: pointer;
+}
+
+.actions .secondaryAction {
+  background: transparent;
+  color: var(--ifm-color-primary);
+}
+
+.actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.status,
+.error {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  border-left: 3px solid var(--ifm-color-primary);
+  background: var(--ifm-background-surface-secondary);
+}
+
+.error {
+  border-color: var(--ifm-color-danger);
+  color: var(--ifm-color-danger-dark);
+}
+
+.output {
+  margin-top: 1.25rem;
+}
+
+.outputHeading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.outputHeading h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.outputHeading span {
+  color: var(--ifm-color-emphasis-600);
+  font-size: 0.82rem;
+}
+
+.output pre {
+  max-height: 68vh;
+  overflow: auto;
+  padding: 1rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 4px;
+  background: var(--ifm-background-surface-secondary);
+  font-size: 0.78rem;
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 1.25rem 0.85rem 3rem;
+  }
+
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .header h1 {
+    font-size: 1.55rem;
+  }
+
+  .source {
+    flex-basis: 100%;
+  }
+}

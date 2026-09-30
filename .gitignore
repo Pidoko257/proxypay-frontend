@@ -1,40 +1,59 @@
 # Dependencies
 node_modules/
+dashboard/node_modules/
 
-# Docusaurus build output
+# Docusaurus generated files
 .docusaurus/
 build/
 
-# OS files
+# ── Build artifacts ────────────────────────────────────────────────────────────
+dashboard/dist/
+
+# ── Test artifacts ────────────────────────────────────────────────────────────
+# Jest / Vitest snapshots
+**/__snapshots__/
+*.snap
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# ── OS / Editor artefacts ──────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
-
-# IDE
-.vscode/
 .idea/
+.vscode/
+*.swp
+*.swo
+*~
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 
+# ── Environment / secrets ──────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
 # Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Test snapshots
+# Test artifacts
+coverage/
+.nyc_output/
 **/__snapshots__/
 *.snap
 
-# Coverage
-coverage/
-.nyc_output/
+# TypeScript build info
+*.tsbuildinfo
 
-# Env files
-.env
+# Build / tooling caches
+.cache/
+
+# Environment files
 .env.local
 .env.*.local
-
-# Misc
-*.tgz
-.cache/
