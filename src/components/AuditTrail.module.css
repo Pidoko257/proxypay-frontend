@@ -1,0 +1,232 @@
+/* AuditTrail component styles */
+
+.container {
+  font-family: var(--ifm-font-family-base, system-ui, sans-serif);
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 1.5rem 0;
+}
+
+.title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--ifm-color-emphasis-900, #1a1a2e);
+}
+
+/* Filter bar */
+.filterBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.filterBtn {
+  padding: 0.3rem 0.85rem;
+  border-radius: 999px;
+  border: 1.5px solid #c0c8d8;
+  background: transparent;
+  color: #555e7a;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.filterBtn:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.filterBtnActive {
+  composes: filterBtn;
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #fff;
+}
+
+/* Event list */
+.eventList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+/* Event row */
+.eventRow {
+  border: 1.5px solid #e4e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.15s;
+}
+
+.eventRow:hover {
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+.eventRowExpanded {
+  composes: eventRow;
+  border-color: #3b82f6;
+}
+
+.eventHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  user-select: none;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+}
+
+.eventHeader:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: -2px;
+}
+
+.timestamp {
+  font-size: 0.78rem;
+  color: #8895af;
+  white-space: nowrap;
+  min-width: 120px;
+}
+
+.actorId {
+  font-size: 0.82rem;
+  color: #374151;
+  font-weight: 500;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Action badges */
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.73rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.badgeCreated {
+  composes: badge;
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.badgeUpdated {
+  composes: badge;
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.badgeFailed {
+  composes: badge;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badgePending {
+  composes: badge;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badgeCompleted {
+  composes: badge;
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.chevron {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  transition: transform 0.25s;
+  flex-shrink: 0;
+}
+
+.chevronOpen {
+  composes: chevron;
+  transform: rotate(180deg);
+}
+
+/* Expandable detail panel */
+.detailPanel {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.3s ease;
+}
+
+.detailPanelOpen {
+  composes: detailPanel;
+  max-height: 600px;
+}
+
+.detailInner {
+  padding: 0.9rem 1rem 1.1rem;
+  border-top: 1px solid #e4e8f0;
+  background: #f8fafc;
+}
+
+.description {
+  font-size: 0.88rem;
+  color: #374151;
+  margin: 0 0 0.85rem;
+  line-height: 1.5;
+}
+
+.diffGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.diffBox {
+  border-radius: 7px;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.8rem;
+  font-family: var(--ifm-font-family-monospace, 'SFMono-Regular', Menlo, monospace);
+  line-height: 1.55;
+}
+
+.diffBefore {
+  composes: diffBox;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #9f1239;
+}
+
+.diffAfter {
+  composes: diffBox;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #14532d;
+}
+
+.diffLabel {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.diffValue {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
