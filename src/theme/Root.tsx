@@ -1,6 +1,8 @@
 import React, { ReactNode } from 'react';
 import styles from './Root.module.css';
 import EnvValidationError from '../components/EnvValidationError';
+import { ApiCacheProvider } from '../context/ApiCacheContext';
+import { ApiCacheDebugPanel } from '../components/ApiCacheDebugPanel';
 
 interface BoundaryState {
   error: Error | null;
@@ -52,7 +54,12 @@ class ErrorBoundary extends React.Component<{ children: ReactNode }, BoundarySta
 export default function Root({ children }: { children: ReactNode }): React.JSX.Element {
   return (
     <EnvValidationError>
-      <ErrorBoundary>{children}</ErrorBoundary>
+      <ErrorBoundary>
+        <ApiCacheProvider>
+          {children}
+          <ApiCacheDebugPanel />
+        </ApiCacheProvider>
+      </ErrorBoundary>
     </EnvValidationError>
   );
 }
