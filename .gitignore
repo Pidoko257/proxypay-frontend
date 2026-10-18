@@ -2,3 +2,21 @@ node_modules/
 .docusaurus/
 build/
 .DS_Store
+
+# Snapshots
+**/__snapshots__/
+**/*.snap
+
+# Logs
+*.log
+
+# Local environment files
+.env.local
+.env*.local
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Cache
+.cache-loader/
