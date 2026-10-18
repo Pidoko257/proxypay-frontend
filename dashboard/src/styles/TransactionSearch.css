@@ -1,0 +1,196 @@
+.transaction-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* ── Input wrapper ───────────────────────────────────────────────────────────── */
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 220px;
+  max-width: 400px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.75rem;
+  color: var(--color-neutral-400);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.5rem 2.25rem 0.5rem 2.25rem;
+  border: 1px solid var(--color-neutral-300);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-neutral-900);
+  background: white;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  outline: none;
+}
+
+.search-input::placeholder {
+  color: var(--color-neutral-400);
+}
+
+.search-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+/* Remove browser default search cancel button */
+.search-input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.search-clear {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  padding: 0.125rem;
+  cursor: pointer;
+  color: var(--color-neutral-400);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.search-clear:hover {
+  color: var(--color-neutral-700);
+  background-color: var(--color-neutral-100);
+}
+
+/* ── Result count ────────────────────────────────────────────────────────────── */
+.search-result-count {
+  font-size: 0.8rem;
+  color: var(--color-neutral-600);
+  white-space: nowrap;
+  font-weight: 500;
+  background-color: var(--color-neutral-100);
+  padding: 0.25rem 0.625rem;
+  border-radius: 1rem;
+}
+
+/* ── Suggestions dropdown ────────────────────────────────────────────────────── */
+.search-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: 420px;
+  background: white;
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow-md);
+  z-index: 50;
+  list-style: none;
+  padding: 0.25rem 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+.suggestions-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-neutral-500);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: default;
+  border-bottom: 1px solid var(--color-neutral-100);
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--color-neutral-700);
+  transition: background-color var(--transition-fast);
+}
+
+.suggestion-item:hover {
+  background-color: var(--color-neutral-50);
+}
+
+.suggestion-icon {
+  color: var(--color-neutral-400);
+  flex-shrink: 0;
+}
+
+.suggestion-item span {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suggestion-remove {
+  background: none;
+  border: none;
+  padding: 0.125rem;
+  cursor: pointer;
+  color: var(--color-neutral-400);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity var(--transition-fast), color var(--transition-fast),
+    background-color var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.suggestion-item:hover .suggestion-remove {
+  opacity: 1;
+}
+
+.suggestion-remove:hover {
+  color: var(--color-neutral-700);
+  background-color: var(--color-neutral-200);
+}
+
+/* ── Highlight ───────────────────────────────────────────────────────────────── */
+.search-highlight {
+  background-color: #fef08a;
+  color: inherit;
+  padding: 0 1px;
+  border-radius: 2px;
+}
+
+/* ── Mobile ──────────────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .transaction-search {
+    width: 100%;
+  }
+
+  .search-input-wrapper {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .search-result-count {
+    font-size: 0.75rem;
+  }
+
+  .search-suggestions {
+    max-width: 100%;
+    width: 100%;
+  }
+}

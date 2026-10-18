@@ -1,0 +1,249 @@
+.container {
+  border-radius: 8px;
+  background: white;
+  border: 1px solid #e0e0e0;
+  padding: 16px;
+  transition: all 0.3s ease;
+}
+
+.container.ok {
+  border-color: #49cc90;
+  background: #f0f9f5;
+}
+
+.container.warning {
+  border-color: #fca130;
+  background: #fff9f0;
+  animation: pulse-warning 2s ease-in-out infinite;
+}
+
+.container.critical {
+  border-color: #f93e3e;
+  background: #fff0f0;
+  animation: pulse-critical 1s ease-in-out infinite;
+}
+
+@keyframes pulse-warning {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(252, 161, 48, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(252, 161, 48, 0);
+  }
+}
+
+@keyframes pulse-critical {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(249, 62, 62, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(249, 62, 62, 0);
+  }
+}
+
+.header {
+  margin-bottom: 12px;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.label {
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+}
+
+.status {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.status.ok {
+  color: #49cc90;
+  background: rgba(73, 204, 144, 0.1);
+}
+
+.status.warning {
+  color: #fca130;
+  background: rgba(252, 161, 48, 0.1);
+}
+
+.status.critical {
+  color: #f93e3e;
+  background: rgba(249, 62, 62, 0.1);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Progress bar */
+.progressContainer {
+  height: 24px;
+  background: #f5f5f5;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+  position: relative;
+}
+
+.progressBar {
+  height: 100%;
+  background: linear-gradient(90deg, #49cc90 0%, #49cc90 100%);
+  transition: width 0.3s ease;
+  border-radius: 11px;
+  position: relative;
+}
+
+.progressBar.warning {
+  background: linear-gradient(90deg, #fca130 0%, #fca130 100%);
+}
+
+.progressBar.critical {
+  background: linear-gradient(90deg, #f93e3e 0%, #f93e3e 100%);
+  animation: progress-pulse 1s ease-in-out infinite;
+}
+
+@keyframes progress-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Stats grid */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.stat {
+  background: #fafafa;
+  border-radius: 6px;
+  padding: 12px;
+  text-align: center;
+}
+
+.stat:hover {
+  background: #f0f0f0;
+}
+
+.statLabel {
+  font-size: 12px;
+  color: #888;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.statValue {
+  font-size: 20px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.statContext {
+  font-size: 11px;
+  color: #999;
+}
+
+/* Message */
+.message {
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.message.warning {
+  background: #fffbf0;
+  color: #8b5c00;
+  border-left: 4px solid #fca130;
+}
+
+.message.critical {
+  background: #fff5f5;
+  color: #8b0000;
+  border-left: 4px solid #f93e3e;
+}
+
+/* Compact variant */
+.compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  transition: all 0.2s ease;
+}
+
+.compact.ok {
+  color: #49cc90;
+  border-color: #49cc90;
+  background: rgba(73, 204, 144, 0.05);
+}
+
+.compact.warning {
+  color: #fca130;
+  border-color: #fca130;
+  background: rgba(252, 161, 48, 0.05);
+}
+
+.compact.critical {
+  color: #f93e3e;
+  border-color: #f93e3e;
+  background: rgba(249, 62, 62, 0.05);
+}
+
+.indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.text {
+  display: inline-block;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .stats {
+    grid-template-columns: 1fr;
+  }
+
+  .compact {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+}

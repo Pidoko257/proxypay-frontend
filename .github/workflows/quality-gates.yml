@@ -1,0 +1,116 @@
+name: Quality gates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Security, accessibility, Lighthouse, and visual checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            dashboard/package-lock.json
+
+      - name: Install portal dependencies
+        run: npm ci
+
+      - name: Install dashboard dependencies
+        run: npm ci --prefix dashboard
+
+      - name: Audit dependencies
+        run: npm run audit:dependencies
+
+      - name: Build portal and validate security headers
+        run: npm run build
+
+      - name: Install browser engines
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Start built portal in background
+        run: |
+          npm run serve &
+          sleep 5
+          echo "Portal started on http://localhost:3000"
+        env:
+          PORT: 3000
+
+      - name: Run Lighthouse audits
+        run: npm run test:lighthouse
+        env:
+          LIGHTHOUSE_BASE_URL: http://localhost:3000
+
+      - name: Run accessibility audits
+        run: npm run test:accessibility
+
+      - name: Run visual regression checks
+        env:
+          PERCY_TOKEN: ${{ secrets.PERCY_TOKEN }}
+        run: |
+          if [[ -z "$PERCY_TOKEN" ]]; then
+            echo 'Visual regression checks require the repository PERCY_TOKEN secret; configure Percy to enable this gate.' >> "$GITHUB_STEP_SUMMARY"
+            echo 'Skipping Percy visual snapshots because PERCY_TOKEN is not configured.'
+          else
+            npm run test:visual
+          fi
+
+      - name: Upload quality reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-reports
+          path: .quality-reports/
+          if-no-files-found: ignore
+          retention-days: 90
+
+      - name: Comment on PR with Lighthouse results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            try {
+              const reportPath = '.quality-reports/lighthouse-report.json';
+              if (fs.existsSync(reportPath)) {
+                const report = JSON.parse(fs.readFileSync(reportPath, 'utf-8'));
+                const scores = report.scores;
+                
+                let comment = '## 📊 Lighthouse Audit Results\n\n';
+                comment += '| Category | Score | Threshold |\n';
+                comment += '|----------|-------|----------|\n';
+                
+                for (const [key, score] of Object.entries(scores)) {
+                  const threshold = report.thresholds[key];
+                  const status = score >= threshold ? '✅' : '❌';
+                  comment += `| ${key} | ${status} ${score}/100 | ${threshold}/100 |\n`;
+                }
+                
+                github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: comment
+                });
+              }
+            } catch (err) {
+              console.log('Could not post Lighthouse results:', err.message);
+            }
