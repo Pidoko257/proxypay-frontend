@@ -1,19 +1,8 @@
 import React, { ReactNode } from 'react';
 import styles from './Root.module.css';
 import EnvValidationError from '../components/EnvValidationError';
-import { SwipeNavigationWrapper } from '../components/SwipeNavigationWrapper';
-
-/** Main portal routes for swipe gesture navigation */
-const PORTAL_ROUTES = [
-  '/',
-  '/docs/intro',
-  '/docs/quickstart',
-  '/docs/authentication',
-  '/docs/transactions',
-  '/docs/webhooks',
-  '/api',
-  '/settings',
-];
+import { ApiCacheProvider } from '../context/ApiCacheContext';
+import { ApiCacheDebugPanel } from '../components/ApiCacheDebugPanel';
 
 interface BoundaryState {
   error: Error | null;
@@ -65,9 +54,12 @@ class ErrorBoundary extends React.Component<{ children: ReactNode }, BoundarySta
 export default function Root({ children }: { children: ReactNode }): React.JSX.Element {
   return (
     <EnvValidationError>
-      <SwipeNavigationWrapper routes={PORTAL_ROUTES}>
-        <ErrorBoundary>{children}</ErrorBoundary>
-      </SwipeNavigationWrapper>
+      <ErrorBoundary>
+        <ApiCacheProvider>
+          {children}
+          <ApiCacheDebugPanel />
+        </ApiCacheProvider>
+      </ErrorBoundary>
     </EnvValidationError>
   );
 }
