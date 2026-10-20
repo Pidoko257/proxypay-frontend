@@ -5285,3 +5285,59 @@ body {
   font-size: 0.9rem;
   font-weight: 500;
 }
+
+
+/* ==========================================================================
+   Issue #763: Responsive Chart Dimensions, Tick Density & Mobile Legends
+   ========================================================================== */
+
+.metrics-chart-container,
+.recharts-responsive-container,
+.chart-card-wrapper {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+}
+
+/* Mobile viewport adjustments (< 640px down to 375px) */
+@media screen and (max-width: 640px) {
+  .metrics-chart-container,
+  .recharts-responsive-container {
+    min-height: 240px !important;
+    max-height: 320px !important;
+  }
+
+  /* Reduce tick density and font size on narrow screens */
+  .recharts-cartesian-axis-tick text {
+    font-size: 0.72rem !important;
+    transform-origin: top left;
+  }
+
+  /* Move legends below chart to prevent side-clipping */
+  .recharts-legend-wrapper {
+    position: static !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justifyContent: center !important;
+    padding: 0.5rem 0 !important;
+    margin-top: 0.75rem !important;
+  }
+
+  .recharts-legend-item {
+    margin: 0.2rem 0.5rem !important;
+    font-size: 0.78rem !important;
+  }
+
+  /* Ensure tooltip stays within viewport */
+  .recharts-tooltip-wrapper {
+    max-width: 85vw !important;
+    white-space: normal !important;
+  }
+
+  .recharts-default-tooltip {
+    padding: 0.4rem 0.6rem !important;
+    font-size: 0.78rem !important;
+    border-radius: 6px !important;
+  }
+}
