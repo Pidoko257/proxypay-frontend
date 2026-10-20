@@ -22,10 +22,25 @@ export const NotificationSettings: React.FC = () => {
   const [testResult, setTestResult] = useState<WebhookTestResult | null>(null)
   const [testError, setTestError] = useState<string | null>(null)
   const [testHistory, setTestHistory] = useState<WebhookTestHistoryEntry[]>([])
+  const [retrying, setRetrying] = useState(false)
+  const [retrySuccess, setRetrySuccess] = useState(false)
 
   useEffect(() => {
     fetchSettings()
   }, [fetchSettings])
+
+  const handleRetry = async () => {
+    setRetrying(true)
+    setRetrySuccess(false)
+    clearError()
+    try {
+      await fetchSettings()
+      setRetrySuccess(true)
+      setTimeout(() => setRetrySuccess(false), 3000)
+    } finally {
+      setRetrying(false)
+    }
+  }
 
   useEffect(() => {
     if (!testEventType && settings.length > 0) setTestEventType(settings[0].eventType)
@@ -124,11 +139,31 @@ export const NotificationSettings: React.FC = () => {
         </section>
       )}
 
+      {/* aria-live region announces successful retry to screen readers */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {retrySuccess ? 'Notification settings loaded successfully.' : ''}
+      </div>
+
       {error && (
         <div className="alert alert-error" role="alert" aria-live="assertive">
-          <AlertCircle size={18} />
-          <span>{error}</span>
-          <button onClick={clearError}>Dismiss</button>
+          <AlertCircle size={18} aria-hidden="true" />
+          <div className="alert-body">
+            <span className="alert-section-label">Notification Settings — </span>
+            <span>{error}</span>
+          </div>
+          <div className="alert-actions">
+            <button
+              className="alert-retry-btn"
+              onClick={() => void handleRetry()}
+              disabled={retrying}
+              aria-busy={retrying}
+            >
+              {retrying ? 'Retrying…' : 'Retry'}
+            </button>
+            <button className="alert-dismiss-btn" onClick={clearError} aria-label="Dismiss error">
+              Dismiss
+            </button>
+          </div>
         </div>
       )}
 
