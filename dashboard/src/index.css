@@ -1,4 +1,4 @@
-* {
+﻿* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -32,6 +32,23 @@
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Focus-visible design tokens (Issue #772) */
+  --focus-visible-color: var(--color-primary, #3b82f6);
+  --focus-visible-color-contrast: #2563eb;
+  --focus-visible-offset: 2px;
+  --focus-visible-width: 2px;
+  --focus-visible-outline: 2px solid var(--focus-visible-color);
+  --focus-visible-shadow: 0 0 0 2px #ffffff, 0 0 0 4px var(--focus-visible-color);
+}
+
+[data-theme='dark'],
+.dark-theme,
+.theme-dark {
+  --focus-visible-color: #60a5fa;
+  --focus-visible-color-contrast: #93c5fd;
+  --focus-visible-outline: 2px solid var(--focus-visible-color);
+  --focus-visible-shadow: 0 0 0 2px var(--color-neutral-900, #111827), 0 0 0 4px var(--focus-visible-color);
 }
 
 html,
@@ -101,4 +118,30 @@ code {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-neutral-400);
+}
+
+
+/* ============================================================
+   Visible focus indicators for custom buttons, tabs, chips, and icon controls (Issue #772)
+   ============================================================ */
+button:focus-visible,
+[role='button']:focus-visible,
+[role='tab']:focus-visible,
+.export-button:focus-visible,
+.action-button:focus-visible,
+.sf-toggle:focus-visible,
+.sf-clear-btn:focus-visible,
+.preferences-button:focus-visible,
+.reset-preferences-button:focus-visible,
+.btn-reset:focus-visible,
+.btn-done:focus-visible,
+.nav-tab:focus-visible,
+.provider-filter__trigger:focus-visible,
+.sf-option:focus-visible,
+.notification-center summary:focus-visible,
+.panel-close-btn:focus-visible,
+.error-screenshot-dialog__close:focus-visible {
+  outline: var(--focus-visible-outline) !important;
+  outline-offset: var(--focus-visible-offset) !important;
+  box-shadow: var(--focus-visible-shadow);
 }
