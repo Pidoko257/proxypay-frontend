@@ -95,10 +95,41 @@
   padding: 1rem 1.5rem;
   border-radius: 0.5rem;
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  align-items: flex-start;
+  gap: 0.75rem;
   font-size: 0.95rem;
   animation: slideDown 300ms ease-out;
+  flex-wrap: wrap;
+}
+
+.alert-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.alert-section-label {
+  font-weight: 600;
+}
+
+.alert-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Visually hidden but available to screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 @keyframes slideDown {
@@ -118,8 +149,9 @@
   border: 1px solid #fecaca;
 }
 
-.alert button {
-  margin-left: auto;
+.alert button,
+.alert-retry-btn,
+.alert-dismiss-btn {
   background: none;
   border: none;
   color: inherit;
@@ -129,10 +161,22 @@
   padding: 0.25rem 0.75rem;
   border-radius: 0.25rem;
   transition: all var(--transition-fast);
+  white-space: nowrap;
 }
 
-.alert button:hover {
+.alert button:hover,
+.alert-retry-btn:hover,
+.alert-dismiss-btn:hover {
   background-color: rgba(0, 0, 0, 0.1);
+}
+
+.alert-retry-btn {
+  border: 1px solid currentColor;
+}
+
+.alert-retry-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .loading-state {
@@ -222,14 +266,22 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  flex-wrap: wrap;          /* labels wrap under toggle at high zoom */
+  min-height: 44px;         /* WCAG 2.5.5: minimum touch target height */
 }
 
 .toggle-label {
   position: relative;
-  display: inline-block;
-  width: 44px;
-  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  /* Use em so the toggle scales with font-size at high zoom levels */
+  width: 2.75em;   /* ~44px at 1rem base */
+  height: 1.5em;   /* ~24px at 1rem base */
   flex-shrink: 0;
+  /* Ensure a tap/click area of at least 44×44px (WCAG 2.5.5) */
+  min-width: 44px;
+  min-height: 44px;
+  justify-content: flex-start;
 }
 
 .toggle-input {
@@ -241,12 +293,14 @@
 .toggle-track {
   position: absolute;
   cursor: pointer;
-  top: 0;
+  /* Positioned within the 2.75em × 1.5em label */
+  top: 50%;
   left: 0;
-  right: 0;
-  bottom: 0;
+  transform: translateY(-50%);
+  width: 2.75em;
+  height: 1.5em;
   background-color: var(--color-neutral-300);
-  border-radius: 24px;
+  border-radius: 1.5em;
   transition: all var(--transition-fast);
 }
 
@@ -257,17 +311,19 @@
 .toggle-thumb {
   position: absolute;
   content: '';
-  height: 20px;
-  width: 20px;
+  height: calc(1.5em - 4px);
+  width: calc(1.5em - 4px);
   left: 2px;
-  bottom: 2px;
+  top: 50%;
+  transform: translateY(-50%);
   background-color: white;
   border-radius: 50%;
   transition: all var(--transition-fast);
 }
 
 .toggle-input:checked + .toggle-track .toggle-thumb {
-  transform: translateX(20px);
+  /* Slide right: track-width minus thumb-width minus 4px padding */
+  transform: translateY(-50%) translateX(calc(2.75em - 1.5em));
 }
 
 .toggle-input:disabled + .toggle-track {
@@ -279,6 +335,11 @@
   font-size: 0.95rem;
   color: var(--color-neutral-700);
   user-select: none;
+  /* Allow text to wrap instead of overflowing at high zoom levels */
+  overflow-wrap: break-word;
+  word-break: break-word;
+  flex: 1;
+  min-width: 8ch; /* ensure at least a short label is readable */
 }
 
 .toggle-input:disabled ~ .toggle-text {
@@ -336,6 +397,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap; /* wraps label+select at high zoom instead of overflowing */
 }
 
 .webhook-test-controls label,
@@ -349,7 +411,9 @@
   border: 1px solid var(--color-neutral-300);
   border-radius: 0.35rem;
   padding: 0.55rem 0.75rem;
-  min-width: 220px;
+  /* Allow the select to shrink/grow rather than overflow at high zoom */
+  min-width: min(220px, 100%);
+  max-width: 100%;
   background: white;
 }
 
@@ -476,5 +540,51 @@
   .toggle-track,
   .toggle-thumb {
     transition: none;
+  }
+}
+
+/*
+ * At 200% zoom the viewport effective width halves.
+ * At 400% zoom it drops to ~320px on a 1280px screen.
+ * Use max-width breakpoints matching these effective widths so controls
+ * wrap rather than overlap when the user zooms in substantially.
+ */
+
+/* 200% zoom equivalent (~640px on a 1280px screen) */
+@media (max-width: 640px) {
+  .toggle-item {
+    /* Already wraps; increase gap slightly for readability */
+    gap: 0.5rem 0.75rem;
+  }
+
+  .webhook-test-controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .webhook-test-controls label {
+    margin-bottom: 0.25rem;
+  }
+
+  .webhook-test-controls select {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+/* 400% zoom equivalent (~320px on a 1280px screen) */
+@media (max-width: 360px) {
+  .toggle-group {
+    gap: 1.25rem;
+  }
+
+  .toggle-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.375rem;
+  }
+
+  .setting-card {
+    padding: 1rem;
   }
 }
