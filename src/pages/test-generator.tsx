@@ -10,6 +10,7 @@ import {
   type TestOutputFormat,
 } from '../utils/openApiTestGenerator';
 import styles from './test-generator.module.css';
+import Breadcrumb from '../components/Breadcrumb';
 
 function parseSpec(text: string): OpenAPISpec {
   const parsed = yaml.load(text) as OpenAPISpec | undefined;
@@ -67,6 +68,7 @@ export default function TestGeneratorPage(): React.JSX.Element {
 
   return (
     <Layout title="OpenAPI Test Generator" description="Generate mocked API test suites from OpenAPI specifications">
+      <Breadcrumb />
       <main className={styles.page}>
         <header className={styles.header}>
           <div>

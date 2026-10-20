@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import Layout from '@theme/Layout';
 import BrowserOnly from '@docusaurus/BrowserOnly';
+import Breadcrumb from '../components/Breadcrumb';
 
 export default function ComponentsPage(): React.JSX.Element {
   return (
     <Layout title="Component Demos" description="ProxyPay UI component demos">
+      <Breadcrumb />
       <BrowserOnly fallback={<p style={{ padding: '2rem' }}>Loading demos...</p>}>
         {() => {
           const ExportButton = require('../components/ExportButton').default;

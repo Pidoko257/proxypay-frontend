@@ -5,6 +5,7 @@ import {
   performanceMetricEvent,
   readPerformanceMetrics,
 } from '../services/performance'
+import { ResizableWidget } from './ResizableWidget'
 import '../styles/PerformanceDashboard.css'
 
 const metricNames = [
@@ -14,7 +15,7 @@ const metricNames = [
   { key: 'page-load', label: 'Page load', unit: 'ms', threshold: 3000 },
   { key: 'ttfb', label: 'Time to first byte', unit: 'ms', threshold: 800 },
   { key: 'api-response', label: 'API response time', unit: 'ms', threshold: 1000 },
-  { key: 'component-render', label: 'Dashboard render', unit: 'ms', threshold: 50 },
+  { key: 'component-render', label: 'Last component render', unit: 'ms', threshold: 16.7 },
 ]
 
 const displayValue = (value: number, unit: string) =>
@@ -65,11 +66,19 @@ export const PerformanceDashboard = () => {
           const metric = latestByName.get(definition.key)
           const degraded = Boolean(metric && metric.value > definition.threshold)
           return (
-            <article className={`performance-metric ${degraded && alertsEnabled ? 'degraded' : ''}`} key={definition.key}>
-              <span>{definition.label}</span>
-              <strong>{metric ? displayValue(metric.value, definition.unit) : 'Waiting for data'}</strong>
-              {degraded && alertsEnabled && <small role="status">Above target</small>}
-            </article>
+            <ResizableWidget
+              key={definition.key}
+              widgetId={`perf-metric-${definition.key}`}
+              defaultWidth={260}
+              defaultHeight={120}
+              title={definition.label}
+            >
+              <article className={`performance-metric ${degraded && alertsEnabled ? 'degraded' : ''}`}>
+                <span>{definition.label}</span>
+                <strong>{metric ? displayValue(metric.value, definition.unit) : 'Waiting for data'}</strong>
+                {degraded && alertsEnabled && <small role="status">Above target</small>}
+              </article>
+            </ResizableWidget>
           )
         })}
       </div>

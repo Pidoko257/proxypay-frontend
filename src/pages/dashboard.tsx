@@ -5,6 +5,7 @@ import { transactions } from '../data/transactions';
 import { dashboardMessages, type DashboardLocale } from '../i18n/dashboard';
 import { getTransactionAnalytics } from '../utils/transactionAnalytics';
 import Toast from '../components/Toast';
+import Breadcrumb from '../components/Breadcrumb';
 
 export default function DashboardPage(): React.JSX.Element {
   const [query, setQuery] = useState('');
@@ -17,6 +18,7 @@ export default function DashboardPage(): React.JSX.Element {
 
   return (
     <Layout title="Transaction Dashboard" description="ProxyPay transaction dashboard">
+      <Breadcrumb />
       <main className="dashboard">
         {showFailureNotice && (
           <Toast onDismiss={() => setShowFailureNotice(false)}>

@@ -3,6 +3,7 @@ import jsYaml from 'js-yaml';
 import { Highlight, themes } from 'prism-react-renderer';
 import { useBaseUrl } from '@docusaurus/useBaseUrl';
 import { useRequestHistory } from '../hooks/useRequestHistory';
+import { useErrorTranslation } from '../hooks/useErrorTranslation';
 import type { OpenAPISpec, ParsedEndpoint } from '../utils/apiSpecParser';
 import {
   buildPostmanAssets,
@@ -79,6 +80,7 @@ export default function ApiTools(): React.JSX.Element {
   const [sending, setSending] = useState(false);
   const [copied, setCopied] = useState(false);
   const { history, addEntry, clearHistory } = useRequestHistory();
+  const { formatError, currentLocale, setLocale } = useErrorTranslation();
 
   useEffect(() => {
     let active = true;
@@ -96,12 +98,16 @@ export default function ApiTools(): React.JSX.Element {
         }
       })
       .catch((error: unknown) => {
-        if (active) setLoadError(error instanceof Error ? error.message : 'Unable to load the OpenAPI file.');
+        if (active) {
+          const errorMessage = error instanceof Error ? error.message : 'Unable to load the OpenAPI file.';
+          const translated = formatError(errorMessage);
+          setLoadError(translated);
+        }
       });
     return () => {
       active = false;
     };
-  }, [specUrl]);
+  }, [specUrl, formatError]);
 
   const endpoints = useMemo(() => (spec ? getApiEndpoints(spec) : []), [spec]);
   const selectedEndpoint = endpoints.find((endpoint) => endpoint.id === selectedId) || endpoints[0];
@@ -204,9 +210,10 @@ export default function ApiTools(): React.JSX.Element {
     } catch (error) {
       const duration = Math.round(performance.now() - startedAt);
       if (error instanceof SyntaxError) {
-        setRequestError('Request body is not valid JSON.');
+        setRequestError(formatError('INVALID_JSON'));
       } else {
-        setRequestError(error instanceof Error ? error.message : 'The request could not be completed.');
+        const errorMsg = error instanceof Error ? error.message : 'The request could not be completed.';
+        setRequestError(formatError(errorMsg));
         addEntry(selectedEndpoint.method.toUpperCase(), path, 0, duration);
       }
     } finally {
@@ -220,7 +227,7 @@ export default function ApiTools(): React.JSX.Element {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
     } catch {
-      setRequestError('Clipboard access is unavailable in this browser.');
+      setRequestError(formatError('Unable to access clipboard'));
     }
   };
 

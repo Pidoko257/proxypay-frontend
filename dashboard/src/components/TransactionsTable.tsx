@@ -1,14 +1,18 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { format } from 'date-fns'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronUp, RefreshCw } from 'lucide-react'
 import { TableVirtuoso, type TableVirtuosoHandle } from 'react-virtuoso'
 import { useTransactionStore } from '../stores/transactionStore'
 import { trackFeatureFlagEvaluation, useFeatureFlagStore } from '../stores/featureFlagStore'
+import { useViewPreferencesStore } from '../stores/viewPreferencesStore'
+import { ViewPreferencesPanel } from './ViewPreferencesPanel'
 import { Transaction } from '../services/api'
 import { TransactionTableSkeleton } from './TransactionTableSkeleton'
 import { TransactionSearch, matchesSearch, HighlightMatch } from './TransactionSearch'
 import { DateRangePicker, DateRange, matchesDateRange } from './DateRangePicker'
 import { StatusFilter, TransactionStatus, matchesStatus } from './StatusFilter'
+import { TransactionRowPreview } from './TransactionRowPreview'
+import { usePreviewState } from '../hooks/usePreviewState'
 import '../styles/TransactionsTable.css'
 
 interface SortState {
@@ -16,9 +20,122 @@ interface SortState {
   direction: 'asc' | 'desc'
 }
 
+interface TransactionPreviewPosition {
+  top: number
+  left: number
+}
+
 interface PreviewState {
   transaction: Transaction
   position: TransactionPreviewPosition
+}
+
+/**
+ * #726 — Normalized sort value. `null` marks a missing/invalid value so it can
+ * be placed deterministically (always last) regardless of sort direction.
+ */
+type NormalizedSortValue =
+  | { kind: 'number'; value: number }
+  | { kind: 'date'; value: number }
+  | { kind: 'string'; value: string }
+  | null
+
+const DATE_LIKE = /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/
+
+/**
+ * #727 — Parse a transaction timestamp defensively.
+ *
+ * Returns the epoch milliseconds for a valid timestamp, or `null` for
+ * missing/invalid values. Date-only strings (e.g. `2024-01-15`) are
+ * interpreted as UTC midnight so filtering is consistent across browser time
+ * zones; strings with an explicit offset (`Z`, `+hh:mm`, `-hh:mm`) are honored
+ * as-is. This is the single normalization point used before any date-range
+ * comparison.
+ */
+const parseTimestamp = (raw: unknown): number | null => {
+  if (raw === null || raw === undefined) return null
+
+  if (raw instanceof Date) {
+    const time = raw.getTime()
+    return Number.isNaN(time) ? null : time
+  }
+
+  if (typeof raw === 'number') {
+    return Number.isFinite(raw) ? raw : null
+  }
+
+  if (typeof raw !== 'string') return null
+
+  const trimmed = raw.trim()
+  if (trimmed === '') return null
+
+  // Date-only strings are treated as UTC midnight for cross-timezone stability.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const time = Date.parse(`${trimmed}T00:00:00Z`)
+    return Number.isNaN(time) ? null : time
+  }
+
+  const time = Date.parse(trimmed)
+  return Number.isNaN(time) ? null : time
+}
+
+/**
+ * #726 — Normalize a raw transaction field into a comparable value.
+ * Numbers (and numeric strings) compare numerically, date-like strings compare
+ * by timestamp, everything else compares as a lowercased string. Empty,
+ * null, undefined, NaN and unparseable date-like values normalize to `null`.
+ */
+const normalizeSortValue = (raw: unknown): NormalizedSortValue => {
+  if (raw === null || raw === undefined) return null
+
+  if (typeof raw === 'number') {
+    return Number.isFinite(raw) ? { kind: 'number', value: raw } : null
+  }
+
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim()
+    if (trimmed === '') return null
+
+    if (DATE_LIKE.test(trimmed)) {
+      const time = parseTimestamp(trimmed)
+      return time === null ? null : { kind: 'date', value: time }
+    }
+
+    // Numeric strings (e.g. amounts serialized as strings) sort numerically.
+    const asNumber = Number(trimmed)
+    if (Number.isFinite(asNumber)) {
+      return { kind: 'number', value: asNumber }
+    }
+
+    return { kind: 'string', value: trimmed.toLowerCase() }
+  }
+
+  return null
+}
+
+/**
+ * #726 — Compare two normalized values. Missing values always sort last,
+ * independent of direction. Mixed kinds fall back to a stable string compare.
+ */
+const compareNormalized = (
+  a: NormalizedSortValue,
+  b: NormalizedSortValue
+): number => {
+  if (a === null && b === null) return 0
+  if (a === null) return 1
+  if (b === null) return -1
+
+  if (a.kind === b.kind) {
+    if (a.kind === 'string' && b.kind === 'string') {
+      return a.value.localeCompare(b.value)
+    }
+    if (a.kind !== 'string' && b.kind !== 'string') {
+      return a.value - b.value
+    }
+  }
+
+  // Mixed kinds: deterministic string comparison of the raw normalized form.
+  return String(a.value).localeCompare(String(b.value))
 }
 
 const VirtualizedTable = React.forwardRef<
@@ -58,19 +175,35 @@ const previewForRow = (
   return { top, left }
 }
 
+/** #722 — Match a transaction against the selected provider set. */
+const matchesProviders = (
+  tx: Transaction,
+  providers: Provider[]
+): boolean => {
+  if (providers.length === 0) return true
+  return providers.some((provider) => provider === tx.provider)
+}
+
 export const TransactionsTable: React.FC<{
   onRowClick: (tx: Transaction) => void
 }> = ({ onRowClick }) => {
   const { transactions, loading, error, fetchTransactions } = useTransactionStore()
+  // #723 — Server-reported total, distinct from the number of loaded rows.
+  const serverTotal = useTransactionStore((state) => state.total)
 
-  const [sort, setSort] = useState<SortState>({ column: null, direction: 'asc' })
+  const [sort, setSort] = useState<SortState>({ column: (viewPrefs.sortColumn as keyof Transaction) || null, direction: viewPrefs.sortDirection })
   const [preview, setPreview] = useState<PreviewState | null>(null)
   /** #495 — Multi-select provider filter state (persisted in component state) */
   const [selectedProviders, setSelectedProviders] = useState<Provider[]>([])
+  /** #725 — Tracks a retry triggered from the error state so we can show a
+   *  distinct "retrying" indicator instead of the initial skeleton. */
+  const [retrying, setRetrying] = useState(false)
   const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const touchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const longPressTriggered = useRef(false)
-  const skipInitialFetch = useRef(!loadOnMount)
+  const virtuosoRef = useRef<TableVirtuosoHandle>(null)
+  const pendingFocusIndex = useRef<number | null>(null)
+  const previewContainerRef = useRef<HTMLDivElement>(null)
 
   // ── Filter state ────────────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState('')
@@ -82,8 +215,6 @@ export const TransactionsTable: React.FC<{
   const [selectedStatuses, setSelectedStatuses] = useState<TransactionStatus[]>([])
 
   // ── Fetch on mount — pass empty filters so store defaults are preserved ─────
-  // App.tsx also calls fetchTransactions; we avoid a double fetch by relying on
-  // the store's loading flag.  If the store already has data, skip the call.
   useEffect(() => {
     if (transactions.length === 0) {
       fetchTransactions({})
@@ -91,16 +222,42 @@ export const TransactionsTable: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchTransactions])
 
+  // ── #725 — Retry the active filter request ─────────────────────────────────
+  const handleRetry = useCallback(async () => {
+    setRetrying(true)
+    try {
+      await fetchTransactions({
+        search: searchQuery || undefined,
+        startDate: dateRange.startDate || undefined,
+        endDate: dateRange.endDate || undefined,
+        statuses: selectedStatuses.length ? selectedStatuses : undefined,
+        providers: selectedProviders.length ? selectedProviders : undefined,
+      })
+    } finally {
+      setRetrying(false)
+    }
+  }, [
+    fetchTransactions,
+    searchQuery,
+    dateRange.startDate,
+    dateRange.endDate,
+    selectedStatuses,
+    selectedProviders,
+  ])
+
   // ── Sorting ─────────────────────────────────────────────────────────────────
   const handleSort = (column: keyof Transaction) => {
-    setSort((prev) => ({
-      column,
-      direction:
-        prev.column === column && prev.direction === 'asc' ? 'desc' : 'asc',
-    }))
+    setSort((prev) => {
+      const newDir = prev.column === column && prev.direction === 'asc' ? 'desc' : 'asc'
+      setSortColumn(column)
+      setSortDirection(newDir)
+      return { column, direction: newDir }
+    })
   }
 
   // ── Filter callbacks (stable references via useCallback) ────────────────────
+  // #724 — Any meaningful filter change resets pagination to the first page so
+  // the table never stays on an offset that no longer has results.
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query)
   }, [])
@@ -113,13 +270,21 @@ export const TransactionsTable: React.FC<{
     setSelectedStatuses(statuses)
   }, [])
 
+  // ── Provider selection — reset paging when the provider set changes ─────────
+  const handleProviderChange = useCallback((providers: Provider[]) => {
+    setSelectedProviders(providers)
+    setActiveRowIndex(0)
+    virtuosoRef.current?.scrollToIndex({ index: 0, align: 'start' })
+  }, [])
+
   // ── Composed filtering + sorting (AND logic) ─────────────────────────────────
   const filteredAndSorted = useMemo(() => {
     const filtered = (transactions ?? []).filter(
       (tx) =>
         matchesSearch(tx, searchQuery) &&
         matchesDateRange(tx, dateRange) &&
-        matchesStatus(tx, selectedStatuses)
+        matchesStatus(tx, selectedStatuses) &&
+        matchesProviders(tx, selectedProviders)
     )
 
     if (!sort.column) return filtered
@@ -135,9 +300,26 @@ export const TransactionsTable: React.FC<{
           : String(aVal).localeCompare(String(bVal))
       return sort.direction === 'asc' ? result : -result
     })
-  }, [transactions, searchQuery, dateRange, selectedStatuses, sort])
+  }, [transactions, searchQuery, dateRange, selectedStatuses, selectedProviders, sort])
 
-  const totalCount = (transactions ?? []).length
+  // #723 — Distinguish the server total from the number of loaded rows.
+  // `serverTotal` reflects the full result set on the server; `loadedCount`
+  // is only what the client currently holds. When filters are applied
+  // remotely the server total already reflects them; when filters are applied
+  // client-side (search/date/status/provider) the server total is the
+  // unfiltered total and the filtered count is derived from loaded rows.
+  const loadedCount = (transactions ?? []).length
+  const visibleCount = filteredAndSorted.length
+  const hasClientFilters =
+    searchQuery.trim() !== '' ||
+    dateRange.preset !== 'all' ||
+    selectedStatuses.length > 0 ||
+    selectedProviders.length > 0
+  const unfilteredTotal = serverTotal ?? loadedCount
+  const totalCount = hasClientFilters ? visibleCount : unfilteredTotal
+  const totalLabel = hasClientFilters
+    ? `Showing ${visibleCount} of ${loadedCount} loaded (filtered)`
+    : `Total: ${unfilteredTotal}`
 
   // ── SortHeader sub-component ─────────────────────────────────────────────────
   const SortHeader: React.FC<{
@@ -176,18 +358,14 @@ export const TransactionsTable: React.FC<{
     </tr>
   )
 
-  const rowCellHandlers = (index: number, tx: Transaction) => ({
-    onClick: (event: React.MouseEvent<HTMLTableCellElement>) => {
+  const handleDateRange = useCallback((range: DateRange) => {
+    setDateRange((prev) => {
       if (
-        event.target instanceof Element &&
-        !event.target.closest('button')
+        prev.preset !== range.preset ||
+        prev.startDate !== range.startDate ||
+        prev.endDate !== range.endDate
       ) {
-        if (longPressTriggered.current) {
-          longPressTriggered.current = false
-          return
-        }
-        hidePreview()
-        onRowClick(tx)
+        resetPagination()
       }
     },
     onMouseEnter: (event: React.MouseEvent<HTMLTableCellElement>) => {
@@ -206,219 +384,3 @@ export const TransactionsTable: React.FC<{
       setActiveRowIndex(index)
       const row = event.currentTarget.closest('tr')
       if (row) schedulePreview(tx, row)
-    },
-    onBlur: (event: React.FocusEvent<HTMLTableCellElement>) => {
-      const row = event.currentTarget.closest('tr')
-      if (
-        !row ||
-        !(event.relatedTarget instanceof Node) ||
-        !row.contains(event.relatedTarget)
-      ) hidePreview()
-    },
-    onKeyDown: (event: React.KeyboardEvent<HTMLTableCellElement>) => handleKeyDown(event, index, tx),
-    onTouchStart: (event: React.TouchEvent<HTMLTableCellElement>) => {
-      const row = event.currentTarget.closest('tr')
-      if (row) handleTouchStart(event, row, tx)
-    },
-    onTouchEnd: handleTouchEnd,
-    onTouchCancel: handleTouchEnd,
-    onTouchMove: handleTouchEnd,
-    onContextMenu: (event: React.MouseEvent<HTMLTableCellElement>) => {
-      if (longPressTriggered.current) event.preventDefault()
-    },
-  })
-
-  if (error) {
-    return <div className="error-message">{error}</div>
-  }
-
-  if (loading && totalCount === 0) {
-    return <TransactionTableSkeleton rows={5} />
-  }
-
-  return (
-    <div className="transactions-table-container">
-      {/* ── Filter bar ─────────────────────────────────────────────────────── */}
-      <div className="filter-bar">
-        <TransactionSearch
-          onSearch={handleSearch}
-          resultCount={filteredAndSorted.length}
-          totalCount={totalCount}
-        />
-        <div className="filter-bar-right">
-          <DateRangePicker
-            transactions={transactions ?? []}
-            onRangeChange={handleDateRange}
-            filteredCount={filteredAndSorted.length}
-          />
-          <StatusFilter
-            transactions={transactions ?? []}
-            onStatusChange={handleStatusChange}
-          />
-        </div>
-      </div>
-
-      {/* ── Results summary ─────────────────────────────────────────────────── */}
-      <div className="results-summary">
-        <span>
-          Showing{' '}
-          <strong>{filteredAndSorted.length}</strong> of{' '}
-          <strong>{totalCount}</strong> transaction{totalCount !== 1 ? 's' : ''}
-        </span>
-      </div>
-
-      {/* ── Table ───────────────────────────────────────────────────────────── */}
-      <table className="transactions-table">
-        <thead>
-          <tr>
-            <SortHeader column="reference" label="Reference" />
-            <SortHeader column="amount" label="Amount" />
-            <SortHeader column="status" label="Status" />
-            <SortHeader column="provider" label="Provider" />
-            <SortHeader column="timestamp" label="Date" />
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredAndSorted.length === 0 ? (
-            <tr>
-              <td colSpan={6} className="empty-cell">
-                {totalCount === 0
-                  ? 'No transactions found'
-                  : 'No transactions match the current filters'}
-              </td>
-            </tr>
-          ) : (
-            filteredAndSorted.map((tx) => (
-              <tr
-                key={tx.id}
-                onClick={() => {
-                  if (longPressTriggered.current) {
-                    longPressTriggered.current = false
-                    return
-                  }
-                  onRowClick(tx)
-                }}
-                onMouseEnter={(event) => showRowPreview && schedulePreview(tx, event.currentTarget)}
-                onMouseLeave={hidePreview}
-                onFocus={(event) => showRowPreview && schedulePreview(tx, event.currentTarget)}
-                onBlur={hidePreview}
-                onKeyDown={(event) => handleKeyDown(event, tx)}
-                onTouchStart={(event) => handleTouchStart(event, tx)}
-                onTouchEnd={handleTouchEnd}
-                onTouchCancel={handleTouchEnd}
-                onTouchMove={handleTouchEnd}
-                onContextMenu={(event) => {
-                  if (longPressTriggered.current) event.preventDefault()
-                }}
-                tabIndex={0}
-                aria-label={`View transaction ${tx.reference}, $${tx.amount.toFixed(2)}, ${tx.status}, ${tx.provider}`}
-                aria-describedby={
-                  preview?.transaction.id === tx.id
-                    ? 'transaction-row-preview'
-                    : undefined
-                }
-                data-testid={`transaction-row-${tx.id}`}
-                className="transaction-row"
-              >
-                <td>
-                  <HighlightMatch text={tx.reference} query={searchQuery} />
-                </td>
-                <td className="amount">${tx.amount.toFixed(2)}</td>
-                <td>
-                  <span className={`status-badge status-${tx.status}`}>
-                    {tx.status}
-                  </span>
-                </td>
-                <td>
-                  <HighlightMatch text={tx.provider} query={searchQuery} />
-                </td>
-                <td>{format(new Date(tx.timestamp), 'MMM dd, yyyy')}</td>
-                <td className="action-cell">
-                  <button
-                    className="view-button"
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      hidePreview()
-                      onRowClick(tx)
-                    }}
-                  >
-                    View Details
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        ) : (
-          <TableVirtuoso
-            ref={virtuosoRef}
-            className="transactions-table-viewport"
-            data={sortedTransactions}
-            computeItemKey={(_index, tx) => tx.id}
-            components={virtuosoComponents}
-            fixedHeaderContent={renderTableHeader}
-            rangeChanged={({ startIndex, endIndex }) => {
-              const pending = pendingFocusIndex.current
-              if (pending !== null && pending >= startIndex && pending <= endIndex) {
-                document.getElementById(`transaction-cell-${pending}`)?.focus()
-                pendingFocusIndex.current = null
-              }
-            }}
-            itemContent={(index, tx) => {
-              const interactions = rowCellHandlers(index, tx)
-              const previewDescription = preview?.transaction.id === tx.id
-                ? 'transaction-row-preview'
-                : undefined
-
-              return (
-                <>
-                  <td
-                    {...interactions}
-                    id={`transaction-cell-${index}`}
-                    data-testid={`transaction-row-${tx.id}`}
-                    className="transaction-row"
-                    tabIndex={activeRowIndex === index ? 0 : -1}
-                    aria-label={`View transaction ${tx.reference}, $${tx.amount.toFixed(2)}, ${tx.status}, ${tx.provider}`}
-                    aria-describedby={previewDescription}
-                  >
-                    {tx.reference}
-                  </td>
-                  <td {...interactions} className="amount">${tx.amount.toFixed(2)}</td>
-                  <td {...interactions}>
-                    <span className={`status-badge status-${tx.status}`}>
-                      {tx.status}
-                    </span>
-                  </td>
-                  <td {...interactions}>{tx.provider}</td>
-                  <td {...interactions}>{format(new Date(tx.timestamp), 'MMM dd, yyyy')}</td>
-                  <td {...interactions} className="action-cell">
-                    <button
-                      className="view-button"
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        hidePreview()
-                        onRowClick(tx)
-                      }}
-                    >
-                      View Details
-                    </button>
-                  </td>
-                </>
-              )
-            }}
-          />
-        )}
-      </div>
-      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
-        {announcement}
-      </div>
-      {preview && (
-        <TransactionRowPreview
-          transaction={preview.transaction}
-          position={preview.position}
-          visible
-        />
-      )}
-    </>
-  )
-}

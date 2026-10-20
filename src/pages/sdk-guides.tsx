@@ -2,6 +2,7 @@ import React, {useEffect, useState} from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
 import * as yaml from 'js-yaml';
+import Breadcrumb from '../components/Breadcrumb';
 
 type OpenApiInfo = {title?: string; version?: string; description?: string};
 
@@ -80,6 +81,7 @@ export default function SdkGuides(): React.JSX.Element {
 
   return (
     <Layout title="SDK Guides" description="Auto-generated SDK installation and quickstarts">
+      <Breadcrumb />
       <main style={{ padding: '2rem 1.5rem', maxWidth: 900, margin: '0 auto' }} className="sdk-guides">
         <h1>SDK Guides</h1>
         <p>

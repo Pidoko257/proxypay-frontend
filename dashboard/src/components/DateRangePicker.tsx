@@ -12,9 +12,30 @@ export interface DateRange {
 }
 
 // ── Utility helpers ───────────────────────────────────────────────────────────
+//
+// Date-range boundaries are interpreted in the user's LOCAL time zone. Preset
+// ranges are computed from the local calendar day, and transaction timestamps
+// are normalized to their local calendar date before comparison. This keeps the
+// filter consistent with what the user sees in the browser regardless of the
+// offset embedded in the API timestamp.
 
 function toISODate(date: Date): string {
-  return date.toISOString().split('T')[0]
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+/**
+ * Defensively parses a transaction timestamp into its local calendar date
+ * (YYYY-MM-DD). Returns null for missing or invalid values so callers can treat
+ * them as non-matching instead of throwing or silently mis-filtering.
+ */
+export function normalizeTimestamp(timestamp: string | number | Date | null | undefined): string | null {
+  if (timestamp === null || timestamp === undefined || timestamp === '') return null
+  const date = timestamp instanceof Date ? timestamp : new Date(timestamp)
+  if (Number.isNaN(date.getTime())) return null
+  return toISODate(date)
 }
 
 function getPresetRange(preset: PresetRange): { startDate: string; endDate: string } {
@@ -42,11 +63,13 @@ function getPresetRange(preset: PresetRange): { startDate: string; endDate: stri
 
 /**
  * Returns true if the transaction falls within the given date range (inclusive).
+ * Timestamps that are missing or invalid never match a bounded range.
  */
 export function matchesDateRange(tx: Transaction, range: DateRange): boolean {
   if (range.preset === 'all' || (!range.startDate && !range.endDate)) return true
 
-  const txDate = toISODate(new Date(tx.timestamp))
+  const txDate = normalizeTimestamp(tx.timestamp)
+  if (txDate === null) return false
 
   if (range.startDate && txDate < range.startDate) return false
   if (range.endDate && txDate > range.endDate) return false

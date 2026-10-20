@@ -1,0 +1,306 @@
+/* ColorSchemeSelector.module.css */
+
+.container {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 1.5rem 0;
+}
+
+.heading {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.4rem;
+  color: var(--ifm-color-content);
+}
+
+.description {
+  font-size: 0.9rem;
+  color: var(--ifm-color-content-secondary);
+  margin: 0 0 1.5rem;
+}
+
+/* ── Scheme grid ─────────────────────────────────────────────────────────── */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0.5rem;
+  border: 2px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  background: var(--ifm-background-surface-color, #fff);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+.card:hover {
+  border-color: var(--ifm-color-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.card:focus-visible {
+  outline: 3px solid var(--ifm-color-primary);
+  outline-offset: 2px;
+}
+
+.cardSelected {
+  border-color: var(--ifm-color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ifm-color-primary) 20%, transparent);
+}
+
+.cardActive {
+  background: color-mix(in srgb, var(--ifm-color-primary) 6%, var(--ifm-background-surface-color, #fff));
+}
+
+.swatchRow {
+  display: flex;
+  gap: 4px;
+}
+
+.swatch {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
+}
+
+.cardName {
+  font-weight: 600;
+  color: var(--ifm-color-content);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.activeBadge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ifm-color-primary);
+  background: color-mix(in srgb, var(--ifm-color-primary) 12%, transparent);
+  border-radius: 99px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+/* ── Custom section ──────────────────────────────────────────────────────── */
+
+.customSection {
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.customToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: none;
+  background: var(--ifm-background-surface-color, #fff);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ifm-color-content);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.customToggle:hover {
+  background: var(--ifm-color-emphasis-100);
+}
+
+.customToggle:focus-visible {
+  outline: 3px solid var(--ifm-color-primary);
+  outline-offset: -3px;
+}
+
+.customToggleIcon {
+  font-size: 0.75rem;
+  transition: transform 0.15s;
+}
+
+.customPanel {
+  padding: 1rem;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+  background: var(--ifm-background-color, #fff);
+}
+
+.pickerRow {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.pickerLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ifm-color-content);
+  cursor: pointer;
+}
+
+.colorInput {
+  width: 56px;
+  height: 36px;
+  padding: 2px;
+  border: 2px solid var(--ifm-color-emphasis-300);
+  border-radius: 6px;
+  cursor: pointer;
+  background: none;
+}
+
+.colorInput:focus-visible {
+  outline: 3px solid var(--ifm-color-primary);
+  outline-offset: 2px;
+}
+
+.colorHex {
+  font-size: 0.75rem;
+  font-family: monospace;
+  color: var(--ifm-color-content-secondary);
+}
+
+/* ── Preview elements ────────────────────────────────────────────────────── */
+
+.previewBox {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  background: var(--ifm-color-emphasis-100);
+}
+
+.previewBar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  background: var(--ifm-color-emphasis-100);
+  margin-bottom: 1.25rem;
+}
+
+.previewBarLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ifm-color-content-secondary);
+  white-space: nowrap;
+}
+
+.previewSwatches {
+  display: flex;
+  gap: 6px;
+}
+
+.previewSwatch {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  flex-shrink: 0;
+}
+
+.previewLabel {
+  font-size: 0.8rem;
+  color: var(--ifm-color-content-secondary);
+}
+
+/* ── Action buttons ──────────────────────────────────────────────────────── */
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.applyButton {
+  padding: 0.55rem 1.2rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--ifm-color-primary);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.applyButton:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.applyButton:focus-visible {
+  outline: 3px solid var(--ifm-color-primary);
+  outline-offset: 3px;
+}
+
+.applyButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.exportButton {
+  padding: 0.55rem 1.2rem;
+  border: 2px solid var(--ifm-color-primary);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ifm-color-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.exportButton:hover {
+  background: color-mix(in srgb, var(--ifm-color-primary) 10%, transparent);
+}
+
+.exportButton:focus-visible {
+  outline: 3px solid var(--ifm-color-primary);
+  outline-offset: 3px;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pickerRow {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .applyButton,
+  .exportButton {
+    width: 100%;
+    text-align: center;
+  }
+}

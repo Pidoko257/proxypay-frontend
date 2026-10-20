@@ -5,9 +5,26 @@ export interface PerformanceMetric {
   tags?: Record<string, string>
 }
 
+export interface ComponentRenderSummary {
+  component: string
+  renderCount: number
+  rendersPerMinute: number
+  averageDuration: number
+  maxDuration: number
+  latestDuration: number
+  slow: boolean
+  excessive: boolean
+  recommendations: string[]
+}
+
 const STORAGE_KEY = 'proxypay.performance.metrics'
 const METRIC_EVENT = 'proxypay:performance-metric'
 const MAX_METRICS = 1000
+const SLOW_RENDER_THRESHOLD_MS = 16.7
+const EXCESSIVE_RENDER_THRESHOLD = 10
+const RECENT_RENDER_WINDOW_MS = 60_000
+let metricCache: PerformanceMetric[] | undefined
+let componentMetricFlushTimer: ReturnType<typeof setTimeout> | undefined
 
 const persistMetrics = (metrics: PerformanceMetric[]) => {
   try {
@@ -26,12 +43,34 @@ declare global {
 }
 
 export const readPerformanceMetrics = (): PerformanceMetric[] => {
-  if (typeof localStorage === 'undefined') return []
+  if (metricCache) return [...metricCache]
+  if (typeof localStorage === 'undefined') {
+    metricCache = []
+    return []
+  }
   try {
     const saved: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
-    return Array.isArray(saved) ? (saved as PerformanceMetric[]) : []
+    metricCache = Array.isArray(saved) ? (saved as PerformanceMetric[]) : []
   } catch {
-    return []
+    metricCache = []
+  }
+  return [...metricCache]
+}
+
+const appendMetric = (metric: PerformanceMetric, persistImmediately: boolean, reportToDatadog: boolean) => {
+  metricCache = [...readPerformanceMetrics(), metric].slice(-MAX_METRICS)
+  if (persistImmediately) {
+    persistMetrics(metricCache)
+  } else if (typeof window !== 'undefined') {
+    if (componentMetricFlushTimer) window.clearTimeout(componentMetricFlushTimer)
+    componentMetricFlushTimer = window.setTimeout(() => {
+      componentMetricFlushTimer = undefined
+      persistMetrics(metricCache || [])
+    }, 1000)
+  }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(METRIC_EVENT, { detail: metric }))
+    if (reportToDatadog) window.DD_RUM?.addAction?.('proxypay.performance.metric', metric)
   }
 }
 
@@ -41,13 +80,91 @@ export const recordPerformanceMetric = (
   tags?: Record<string, string>
 ) => {
   if (!Number.isFinite(value) || value < 0) return
-  const metric: PerformanceMetric = { name, value, recordedAt: new Date().toISOString(), tags }
-  const next = [...readPerformanceMetrics(), metric].slice(-MAX_METRICS)
-  persistMetrics(next)
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent(METRIC_EVENT, { detail: metric }))
-    window.DD_RUM?.addAction?.('proxypay.performance.metric', metric)
+  appendMetric({ name, value, recordedAt: new Date().toISOString(), tags }, true, true)
+}
+
+export const recordComponentRender = (
+  component: string,
+  actualDuration: number,
+  baseDuration: number,
+  phase: string
+) => {
+  if (!component.trim() || !Number.isFinite(actualDuration) || actualDuration < 0 ||
+    !Number.isFinite(baseDuration) || baseDuration < 0) return
+
+  appendMetric({
+    name: 'component-render',
+    value: actualDuration,
+    recordedAt: new Date().toISOString(),
+    tags: { component, baseDuration: baseDuration.toFixed(2), phase },
+  }, false, false)
+  if (import.meta.env.DEV) {
+    console.debug(`[render-profile] ${component}: ${actualDuration.toFixed(2)}ms (${phase})`)
   }
+}
+
+export const clearComponentRenderMetrics = () => {
+  metricCache = readPerformanceMetrics().filter((metric) => metric.name !== 'component-render')
+  if (componentMetricFlushTimer && typeof window !== 'undefined') {
+    window.clearTimeout(componentMetricFlushTimer)
+    componentMetricFlushTimer = undefined
+  }
+  persistMetrics(metricCache)
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(METRIC_EVENT))
+  }
+}
+
+export const summarizeComponentRenders = (
+  metrics: PerformanceMetric[],
+  now = Date.now()
+): ComponentRenderSummary[] => {
+  const components = new Map<string, PerformanceMetric[]>()
+  for (const metric of metrics) {
+    const component = metric.name === 'component-render' ? metric.tags?.component : undefined
+    if (!component) continue
+    const records = components.get(component) || []
+    records.push(metric)
+    components.set(component, records)
+  }
+
+  return [...components.entries()]
+    .map(([component, records]) => {
+      const durations = records.map((record) => record.value)
+      const averageDuration = durations.reduce((total, duration) => total + duration, 0) / durations.length
+      const recentRenders = records.filter((record) => {
+        const recordedAt = Date.parse(record.recordedAt)
+        return Number.isFinite(recordedAt) && now - recordedAt >= 0 && now - recordedAt < RECENT_RENDER_WINDOW_MS
+      }).length
+      const slow = averageDuration >= SLOW_RENDER_THRESHOLD_MS
+      const excessive = recentRenders >= EXCESSIVE_RENDER_THRESHOLD
+      const recommendations: string[] = []
+
+      if (slow) {
+        recommendations.push('Average render time exceeds 16.7ms; split expensive work or memoize stable calculations.')
+      }
+      if (excessive) {
+        recommendations.push('Rendered 10 or more times in the last minute; check parent updates and unstable props.')
+      }
+      if (!recommendations.length) recommendations.push('Render timing and update frequency are within current targets.')
+
+      const latest = records.reduce((current, record) =>
+        Date.parse(record.recordedAt) >= Date.parse(current.recordedAt) ? record : current
+      )
+
+      return {
+        component,
+        renderCount: records.length,
+        rendersPerMinute: recentRenders,
+        averageDuration,
+        maxDuration: Math.max(...durations),
+        latestDuration: latest.value,
+        slow,
+        excessive,
+        recommendations,
+      }
+    })
+    .sort((left, right) => right.averageDuration - left.averageDuration || right.rendersPerMinute - left.rendersPerMinute)
 }
 
 export const startPerformanceMonitoring = () => {

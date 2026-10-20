@@ -118,6 +118,18 @@ export const StatusFilter: React.FC<StatusFilterProps> = ({
 
   const activeCount = selected.length
 
+  // Statuses that are selected but currently have no matching transactions.
+  // These are the filters that would hide a deep-linked selection.
+  const hiddenStatuses = selected.filter((s) => countByStatus[s] === 0)
+
+  // One-action reveal: drop the filters that hide the selected operation.
+  const revealHidden = () => {
+    const next = selected.filter((s) => countByStatus[s] > 0)
+    setSelected(next)
+    writeStatusesToURL(next)
+    onStatusChange(next)
+  }
+
   return (
     <div className="status-filter" ref={containerRef}>
       <button
@@ -141,6 +153,22 @@ export const StatusFilter: React.FC<StatusFilterProps> = ({
           aria-hidden="true"
         />
       </button>
+
+      {hiddenStatuses.length > 0 && (
+        <div className="sf-hidden-notice" role="status">
+          <span>
+            Active filters hide the selected operation
+          </span>
+          <button
+            type="button"
+            className="sf-reveal-btn"
+            onClick={revealHidden}
+            aria-label="Reveal hidden selected operation"
+          >
+            Reveal
+          </button>
+        </div>
+      )}
 
       {isOpen && (
         <div className="sf-dropdown" role="listbox" aria-multiselectable="true" aria-label="Transaction statuses">

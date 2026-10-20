@@ -1,0 +1,49 @@
+/* SwipeNavigationWrapper.module.css */
+
+.wrapper {
+  position: relative;
+  min-height: 0;
+}
+
+/* ── Directional indicator overlay ────────────────────────────────────────── */
+
+.indicator {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 999;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+  transition: opacity 0.1s linear;
+}
+
+.indicatorLeft {
+  left: 12px;
+}
+
+.indicatorRight {
+  right: 12px;
+}
+
+.arrow {
+  color: #ffffff;
+  font-size: 2rem;
+  line-height: 1;
+  /* Optical centering adjustment */
+  margin-top: -2px;
+  user-select: none;
+}
+
+/* Only show on touch-capable devices */
+@media (hover: hover) and (pointer: fine) {
+  .indicator {
+    display: none;
+  }
+}

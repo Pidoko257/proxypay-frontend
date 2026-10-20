@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import Layout from '@theme/Layout';
 import BrowserOnly from '@docusaurus/BrowserOnly';
+import Breadcrumb from '../components/Breadcrumb';
 
 /**
  * ApiPage
@@ -14,6 +15,7 @@ import BrowserOnly from '@docusaurus/BrowserOnly';
 export default function ApiPage(): React.JSX.Element {
   return (
     <Layout title="API Reference" description="ProxyPay REST API reference">
+      <Breadcrumb />
       <BrowserOnly fallback={<div style={{ padding: '2rem' }}>Loading API reference…</div>}>
         {() => {
           const IntegratedApiReference = require('../components/IntegratedApiReference').default;

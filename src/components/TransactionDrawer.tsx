@@ -1,6 +1,7 @@
 import React from 'react';
 import CopyField from './CopyField';
 import FeeTooltip, { type FeeBreakdown } from './FeeTooltip';
+import TransactionDateField from './TransactionDateField';
 
 // ── Mock data ──────────────────────────────────────────────────────────────────
 
@@ -116,6 +117,7 @@ const dividerStyle: React.CSSProperties = {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
+// Deprecated: Use TransactionDateField component instead
 function formatDateTime(iso: string): string {
   try {
     return new Date(iso).toLocaleString(undefined, {
@@ -170,14 +172,8 @@ export default function TransactionDrawer(): React.JSX.Element {
             <span style={metaLabelStyle}>Recipient</span>
             <span style={metaValueStyle}>{tx.recipient}</span>
           </div>
-          <div style={metaItemStyle}>
-            <span style={metaLabelStyle}>Created</span>
-            <span style={metaValueStyle}>{formatDateTime(tx.createdAt)}</span>
-          </div>
-          <div style={metaItemStyle}>
-            <span style={metaLabelStyle}>Settled</span>
-            <span style={metaValueStyle}>{formatDateTime(tx.settledAt)}</span>
-          </div>
+          <TransactionDateField label="Created" timestamp={tx.createdAt} />
+          <TransactionDateField label="Settled" timestamp={tx.settledAt} />
         </div>
       </div>
 

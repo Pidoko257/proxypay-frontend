@@ -1,0 +1,97 @@
+/* RetryToast.css — Issue #600 */
+
+.rtt-panel {
+  position: fixed;
+  bottom: 5rem; /* above the main toast stack */
+  right: 1rem;
+  z-index: 9998;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+/* ── Item ────────────────────────────────────────────── */
+
+.rtt-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: var(--ifm-background-surface-color, #1e1e1e);
+  border: 1px solid var(--ifm-color-emphasis-300, #3a3a3a);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  font-size: 0.82rem;
+  min-width: 260px;
+  padding: 0.55rem 0.85rem;
+  pointer-events: auto;
+  color: var(--ifm-font-color-base, #e0e0e0);
+}
+
+/* Status stripe */
+.rtt-status-retrying  { border-left: 3px solid #d29922; }
+.rtt-status-pending   { border-left: 3px solid #888; }
+.rtt-status-succeeded { border-left: 3px solid #3fb950; }
+.rtt-status-failed    { border-left: 3px solid #e04545; }
+.rtt-status-cancelled { border-left: 3px solid #888; opacity: 0.7; }
+
+/* ── Info area ───────────────────────────────────────── */
+
+.rtt-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.rtt-label {
+  font-family: var(--ifm-font-family-monospace, monospace);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rtt-attempt {
+  color: #d29922;
+  font-size: 0.75rem;
+}
+
+/* ── Badges ──────────────────────────────────────────── */
+
+.rtt-badge {
+  border-radius: 3px;
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 1px 5px;
+}
+
+.rtt-badge-success   { background: rgba(63, 185, 80,  0.2); color: #3fb950; }
+.rtt-badge-failed    { background: rgba(224, 69,  69,  0.2); color: #e04545; }
+.rtt-badge-cancelled { background: rgba(136, 136, 136, 0.2); color: #888; }
+
+/* ── Buttons ─────────────────────────────────────────── */
+
+.rtt-cancel-btn,
+.rtt-dismiss-btn {
+  background: transparent;
+  border: 1px solid var(--ifm-color-emphasis-400, #555);
+  border-radius: 4px;
+  color: var(--ifm-font-color-base, #e0e0e0);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.55rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.rtt-cancel-btn:hover {
+  border-color: #e04545;
+  color: #e04545;
+}
+
+.rtt-dismiss-btn:hover {
+  background: var(--ifm-color-emphasis-200, #2a2a2a);
+}

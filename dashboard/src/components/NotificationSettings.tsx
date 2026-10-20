@@ -15,7 +15,7 @@ interface WebhookTestHistoryEntry extends WebhookTestResult {
 }
 
 export const NotificationSettings: React.FC = () => {
-  const { settings, loading, error, optimisticUpdates, fetchSettings, updateSetting, clearError } =
+  const { settings, loading, error, optimisticUpdates, fetchSettings, updateSetting, clearError, undo, redo, pastChanges, futureChanges } =
     useNotificationStore()
   const [testEventType, setTestEventType] = useState('')
   const [testLoading, setTestLoading] = useState(false)

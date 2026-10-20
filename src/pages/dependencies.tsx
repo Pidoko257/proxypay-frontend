@@ -1,6 +1,7 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import Layout from '@theme/Layout';
 import BrowserOnly from '@docusaurus/BrowserOnly';
+import Breadcrumb from '../components/Breadcrumb';
 
 const DependencyGraph = React.lazy(() => import('../components/DependencyGraph'));
 
@@ -24,6 +25,7 @@ function LoadingFallback(): React.JSX.Element {
 export default function DependenciesPage(): React.JSX.Element {
   return (
     <Layout title="Endpoint Dependencies" description="Interactive graph of ProxyPay API endpoint dependencies">
+      <Breadcrumb />
       <BrowserOnly fallback={<p style={{ padding: '2rem' }}>Loading dependency graph...</p>}>
         {() => (
           <Suspense fallback={<LoadingFallback />}>

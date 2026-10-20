@@ -2,23 +2,40 @@
 node_modules/
 dashboard/node_modules/
 
-# Docusaurus generated files
+# Docusaurus cache
 .docusaurus/
-build/
 
-# ── Build artifacts ────────────────────────────────────────────────────────────
+# Build outputs
+build/
 dashboard/dist/
 
-# ── Test artifacts ────────────────────────────────────────────────────────────
-# Jest / Vitest snapshots
+# Test snapshots
 **/__snapshots__/
 *.snap
+
+# Playwright / visual test artifacts
+test-results/
+playwright-report/
+.playwright/
+tests/visual-snapshots/
+tests/snapshots/
+*.png
+*.jpg
+*.jpeg
+*.webp
+
+# Quality reports (generated, not source)
+.quality-reports/
+
+# Load test artifacts
+load-test-results/
+*.load-test.json
 
 # Coverage reports
 coverage/
 .nyc_output/
 
-# ── OS / Editor artefacts ──────────────────────────────────────────────────────
+# OS/Editor
 .DS_Store
 Thumbs.db
 .idea/
@@ -31,10 +48,12 @@ Thumbs.db
 *.njsproj
 *.sln
 
-# ── Environment / secrets ──────────────────────────────────────────────────────
+# Environment / secrets
 .env
 .env.*
 !.env.example
+.env.local
+.env.*.local
 
 # Logs
 *.log
@@ -42,18 +61,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Test artifacts
-coverage/
-.nyc_output/
-**/__snapshots__/
-*.snap
-
 # TypeScript build info
 *.tsbuildinfo
 
-# Build / tooling caches
+# Cache
 .cache/
-
-# Environment files
-.env.local
-.env.*.local

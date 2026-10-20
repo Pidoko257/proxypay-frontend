@@ -1,0 +1,217 @@
+/* ApiEnvironmentSettings.css — Issue #598 */
+
+/* ── Panel ──────────────────────────────────────────── */
+
+.aes-panel {
+  background: var(--ifm-background-surface-color, #1e1e1e);
+  border: 1px solid var(--ifm-color-emphasis-300, #3a3a3a);
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  margin: 1rem 0;
+  color: var(--ifm-font-color-base, #e0e0e0);
+  font-family: var(--ifm-font-family-base, sans-serif);
+  font-size: 0.875rem;
+}
+
+.aes-title {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  color: var(--ifm-color-primary, #58a6ff);
+}
+
+/* ── Environment grid ───────────────────────────────── */
+
+.aes-env-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.aes-env-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--ifm-color-emphasis-300, #3a3a3a);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.aes-env-card:hover {
+  border-color: var(--ifm-color-primary, #58a6ff);
+  background: var(--ifm-color-emphasis-100, #1a1a1a);
+}
+
+.aes-env-card--active {
+  border-color: var(--ifm-color-primary, #58a6ff);
+  background: rgba(88, 166, 255, 0.08);
+}
+
+.aes-radio {
+  /* visually hidden but still focusable */
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.aes-env-label {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.aes-env-url {
+  font-family: var(--ifm-font-family-monospace, monospace);
+  font-size: 0.72rem;
+  color: var(--ifm-color-emphasis-600, #888);
+  word-break: break-all;
+}
+
+/* ── Custom URL ─────────────────────────────────────── */
+
+.aes-custom-url {
+  margin-bottom: 1rem;
+}
+
+.aes-field-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--ifm-color-emphasis-600, #888);
+  margin-bottom: 0.35rem;
+}
+
+.aes-custom-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.aes-input {
+  flex: 1;
+  background: var(--ifm-background-color, #0d1117);
+  border: 1px solid var(--ifm-color-emphasis-400, #555);
+  border-radius: 4px;
+  color: inherit;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.65rem;
+  outline: none;
+  font-family: var(--ifm-font-family-monospace, monospace);
+}
+
+.aes-input:focus {
+  border-color: var(--ifm-color-primary, #58a6ff);
+}
+
+.aes-input--error {
+  border-color: #e04545;
+}
+
+.aes-field-error {
+  color: #e04545;
+  font-size: 0.78rem;
+  margin: 0.3rem 0 0;
+}
+
+/* ── Current URL ────────────────────────────────────── */
+
+.aes-current-url {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--ifm-background-color, #0d1117);
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.82rem;
+}
+
+.aes-current-label {
+  color: var(--ifm-color-emphasis-600, #888);
+  white-space: nowrap;
+}
+
+.aes-current-value {
+  font-family: var(--ifm-font-family-monospace, monospace);
+  color: var(--ifm-color-primary-light, #79b8ff);
+  word-break: break-all;
+}
+
+/* ── Warning ────────────────────────────────────────── */
+
+.aes-warning {
+  background: rgba(210, 153, 34, 0.12);
+  border: 1px solid rgba(210, 153, 34, 0.4);
+  border-radius: 4px;
+  color: #d29922;
+  font-size: 0.82rem;
+  margin-bottom: 1rem;
+  padding: 0.5rem 0.75rem;
+}
+
+/* ── Connectivity ───────────────────────────────────── */
+
+.aes-connectivity {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.aes-btn {
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  padding: 0.4rem 0.85rem;
+  transition: opacity 0.15s;
+}
+
+.aes-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.aes-btn-primary {
+  background: var(--ifm-color-primary, #58a6ff);
+  color: #fff;
+  border-color: var(--ifm-color-primary, #58a6ff);
+}
+
+.aes-btn-primary:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.aes-btn-secondary {
+  background: transparent;
+  border-color: var(--ifm-color-emphasis-400, #555);
+  color: var(--ifm-font-color-base, #e0e0e0);
+}
+
+.aes-btn-secondary:hover:not(:disabled) {
+  background: var(--ifm-color-emphasis-200, #2a2a2a);
+}
+
+.aes-test-result {
+  font-size: 0.82rem;
+}
+
+.aes-test-ok    { color: #3fb950; }
+.aes-test-error { color: #e04545; }
+
+/* ── Environment badge (header) ─────────────────────── */
+
+.aes-env-badge {
+  border-radius: 4px;
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+  margin-left: 0.5rem;
+}
+
+.aes-env-badge--development { background: rgba(63, 185, 80,  0.2); color: #3fb950; border: 1px solid #3fb950; }
+.aes-env-badge--staging     { background: rgba(210, 153, 34, 0.2); color: #d29922; border: 1px solid #d29922; }
+.aes-env-badge--custom      { background: rgba(163, 113, 247,0.2); color: #a371f7; border: 1px solid #a371f7; }

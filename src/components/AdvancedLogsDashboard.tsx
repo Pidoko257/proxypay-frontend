@@ -1,6 +1,7 @@
 /**
  * Advanced Logs Dashboard with Filters
  * Enhanced dashboard with interactive filters and date range selection
+ * URL-based filter state management for persistence and sharing
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
@@ -8,6 +9,7 @@ import { AnalyticsResult, EndpointMetrics } from '../analytics/analytics-engine'
 import { LogAnalyticsEngine } from '../analytics/analytics-engine';
 import { ParsedLogEntry } from '../analytics/log-parser';
 import { ExportControls, FilterState } from './ExportControls';
+import { useUrlFilters } from '../hooks/useUrlFilters';
 import '../css/logs-dashboard.css';
 
 interface AdvancedDashboardProps {
@@ -17,7 +19,10 @@ interface AdvancedDashboardProps {
 
 export const AdvancedLogsDashboard: React.FC<AdvancedDashboardProps> = ({ logs, initialAnalytics }) => {
   const [selectedTab, setSelectedTab] = useState('overview');
-  const [filters, setFilters] = useState<FilterState>({
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Default filter state
+  const defaultFilters: FilterState = {
     startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
     endpoint: '',
@@ -25,8 +30,23 @@ export const AdvancedLogsDashboard: React.FC<AdvancedDashboardProps> = ({ logs, 
     statusCode: '',
     minResponseTime: 0,
     maxResponseTime: 10000,
+  };
+
+  // Initialize URL-based filter management
+  const { filters, updateFilter, clearFilters, getShareableUrl, copyShareableUrl, isDefaultState } = useUrlFilters({
+    defaultFilters,
+    syncToUrl: true,
+    pushHistory: false,
   });
-  const [showFilters, setShowFilters] = useState(false);
+
+  // Handle copying shareable URL
+  const handleCopyShareableUrl = useCallback(async () => {
+    const success = await copyShareableUrl();
+    if (success) {
+      // Optional: Show toast notification
+      console.log('Filter URL copied to clipboard');
+    }
+  }, [copyShareableUrl]);
 
   // Filter logs based on filter state
   const filteredLogs = useMemo(() => {
@@ -85,22 +105,14 @@ export const AdvancedLogsDashboard: React.FC<AdvancedDashboardProps> = ({ logs, 
 
   const handleFilterChange = useCallback(
     (key: keyof FilterState, value: any) => {
-      setFilters(prev => ({ ...prev, [key]: value }));
+      updateFilter(key, value);
     },
-    []
+    [updateFilter]
   );
 
   const handleResetFilters = useCallback(() => {
-    setFilters({
-      startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      endDate: new Date().toISOString().split('T')[0],
-      endpoint: '',
-      method: '',
-      statusCode: '',
-      minResponseTime: 0,
-      maxResponseTime: 10000,
-    });
-  }, []);
+    clearFilters();
+  }, [clearFilters]);
 
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -167,6 +179,14 @@ export const AdvancedLogsDashboard: React.FC<AdvancedDashboardProps> = ({ logs, 
           </button>
           <button className="filter-reset" onClick={handleResetFilters}>
             Reset Filters
+          </button>
+          <button 
+            className="filter-share" 
+            onClick={handleCopyShareableUrl}
+            title="Copy filter URL to share with colleagues"
+            aria-label="Copy shareable filter URL"
+          >
+            🔗 Share Filters
           </button>
         </div>
 

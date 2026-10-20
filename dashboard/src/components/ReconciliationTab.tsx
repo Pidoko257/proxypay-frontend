@@ -1,10 +1,43 @@
-import React, { useRef, useCallback } from 'react'
+import React, { useRef, useCallback, useEffect } from 'react'
 import { format } from 'date-fns'
 import { Upload, CheckCircle, XCircle, AlertTriangle, Download, Trash2, Filter } from 'lucide-react'
 import { useReconciliationStore, ReconciliationFilter, ReconciliationResult, reconcileRecords } from '../stores/reconciliationStore'
 import { useTransactionStore } from '../stores/transactionStore'
 import { CSVExporter } from '../services/csv'
 import '../styles/ReconciliationTab.css'
+
+// ─── URL state helpers ────────────────────────────────────────────────────────
+
+const FILTER_VALUES: ReconciliationFilter[] = [
+  'all',
+  'matched',
+  'discrepancy',
+  'unmatched_external',
+  'unmatched_dashboard',
+]
+
+const isReconciliationFilter = (value: string | null): value is ReconciliationFilter =>
+  value != null && (FILTER_VALUES as string[]).includes(value)
+
+// Only the non-sensitive filter identifier is persisted in the URL.
+const readFilterFromUrl = (): ReconciliationFilter | null => {
+  if (typeof window === 'undefined') return null
+  const value = new URLSearchParams(window.location.search).get('reconFilter')
+  return isReconciliationFilter(value) ? value : null
+}
+
+const writeFilterToUrl = (filter: ReconciliationFilter) => {
+  if (typeof window === 'undefined') return
+  const params = new URLSearchParams(window.location.search)
+  if (filter === 'all') {
+    params.delete('reconFilter')
+  } else {
+    params.set('reconFilter', filter)
+  }
+  const query = params.toString()
+  const nextUrl = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`
+  window.history.replaceState(null, '', nextUrl)
+}
 
 // ─── Summary card ────────────────────────────────────────────────────────────
 
@@ -139,6 +172,20 @@ export const ReconciliationTab: React.FC = () => {
 
   const { transactions } = useTransactionStore()
 
+  // ── Restore filter from URL on load (ignore invalid values) ──
+  useEffect(() => {
+    const urlFilter = readFilterFromUrl()
+    if (urlFilter && urlFilter !== activeFilter) {
+      setFilter(urlFilter)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // ── Persist filter to URL whenever it changes ──
+  useEffect(() => {
+    writeFilterToUrl(activeFilter)
+  }, [activeFilter])
+
   // ── Upload handlers ──
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -240,178 +287,112 @@ export const ReconciliationTab: React.FC = () => {
         </div>
         {hasResults && (
           <div className="recon-header-actions">
-            <button className="recon-btn recon-btn-outline" onClick={reset}>
-              <Trash2 size={16} /> Start Over
+            <button className="recon-btn recon-btn-secondary" onClick={handleExport}>
+              <Download size={16} /> Export CSV
             </button>
-            <button className="recon-btn recon-btn-primary" onClick={handleExport}>
-              <Download size={16} /> Export Report
+            <button className="recon-btn recon-btn-danger" onClick={reset}>
+              <Trash2 size={16} /> Reset
             </button>
           </div>
         )}
       </div>
 
-      {/* ── Upload area ── */}
-      {!hasResults && (
-        <section className="recon-upload-section">
-          <div
-            className={`recon-dropzone${isUploading ? ' recon-dropzone-loading' : ''}`}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onClick={() => fileInputRef.current?.click()}
-            role="button"
-            tabIndex={0}
-            aria-label="Upload CSV file"
-            onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv,text/csv"
-              className="recon-file-input"
-              onChange={handleFileChange}
-              aria-hidden="true"
-            />
-            {isUploading ? (
-              <div className="recon-uploading">
-                <div className="recon-spinner" />
-                <p>Parsing file…</p>
-              </div>
-            ) : (
-              <>
-                <Upload size={40} className="recon-upload-icon" />
-                <p className="recon-drop-title">Drop your CSV file here</p>
-                <p className="recon-drop-hint">
-                  or <span className="recon-link">browse files</span>
-                </p>
-                <p className="recon-drop-note">
-                  Expected columns: <code>reference</code>, <code>amount</code>
-                  &nbsp;(optional: <code>status</code>, <code>date</code>)
-                </p>
-              </>
-            )}
+      {/* ── Upload zone ── */}
+      {!parseResult && (
+        <div
+          className={`recon-upload-zone${isUploading ? ' recon-uploading' : ''}`}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleFileChange}
+            hidden
+          />
+          <Upload size={32} />
+          <p>{isUploading ? 'Uploading…' : 'Drop a CSV here or click to upload'}</p>
+          <span className="recon-upload-hint">External records CSV</span>
+        </div>
+      )}
+
+      {/* ── File summary ── */}
+      {parseResult && (
+        <div className="recon-file-summary">
+          <div className="recon-file-info">
+            <strong>{fileName}</strong>
+            <span>
+              {parseResult.validRows} valid / {parseResult.totalRows} rows
+            </span>
           </div>
+          <button className="recon-btn recon-btn-primary" onClick={handleCompare}>
+            <Filter size={16} /> Compare
+          </button>
+        </div>
+      )}
 
-          {/* File parsed but not yet compared */}
-          {parseResult && !hasResults && (
-            <div className="recon-file-info">
-              <div className="recon-file-meta">
-                <CheckCircle size={18} className="recon-icon-success" />
-                <span>
-                  <strong>{fileName}</strong> — {parseResult.records.length} record
-                  {parseResult.records.length !== 1 ? 's' : ''} loaded
-                </span>
-              </div>
+      {/* ── Summary cards ── */}
+      {hasResults && (
+        <div className="recon-summary-grid">
+          <SummaryCard
+            label="Matched"
+            count={counts.matched}
+            variant="success"
+            icon={<CheckCircle size={20} />}
+            active={activeFilter === 'matched'}
+            onClick={() => setFilter(activeFilter === 'matched' ? 'all' : 'matched')}
+          />
+          <SummaryCard
+            label="Discrepancy"
+            count={counts.discrepancy}
+            variant="danger"
+            icon={<XCircle size={20} />}
+            active={activeFilter === 'discrepancy'}
+            onClick={() => setFilter(activeFilter === 'discrepancy' ? 'all' : 'discrepancy')}
+          />
+          <SummaryCard
+            label="External Only"
+            count={counts.unmatched_external}
+            variant="warning"
+            icon={<AlertTriangle size={20} />}
+            active={activeFilter === 'unmatched_external'}
+            onClick={() =>
+              setFilter(activeFilter === 'unmatched_external' ? 'all' : 'unmatched_external')
+            }
+          />
+          <SummaryCard
+            label="Dashboard Only"
+            count={counts.unmatched_dashboard}
+            variant="info"
+            icon={<AlertTriangle size={20} />}
+            active={activeFilter === 'unmatched_dashboard'}
+            onClick={() =>
+              setFilter(activeFilter === 'unmatched_dashboard' ? 'all' : 'unmatched_dashboard')
+            }
+          />
+        </div>
+      )}
 
-              {parseResult.errors.length > 0 && (
-                <div className="recon-parse-errors">
-                  <AlertTriangle size={16} />
-                  <ul>
-                    {parseResult.errors.map((e, i) => (
-                      <li key={i}>{e}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <div className="recon-compare-row">
-                <span className="recon-compare-info">
-                  Will compare against <strong>{transactions.length}</strong> dashboard
-                  transaction{transactions.length !== 1 ? 's' : ''}
-                </span>
-                <button
-                  className="recon-btn recon-btn-primary"
-                  onClick={handleCompare}
-                  disabled={parseResult.records.length === 0}
-                >
-                  Run Comparison
-                </button>
-              </div>
-            </div>
-          )}
-        </section>
+      {/* ── Filter pills ── */}
+      {hasResults && (
+        <div className="recon-filter-pills">
+          {FILTERS.map((f) => (
+            <button
+              key={f.value}
+              className={`recon-filter-pill${activeFilter === f.value ? ' recon-pill-active' : ''}`}
+              onClick={() => setFilter(f.value)}
+              aria-pressed={activeFilter === f.value}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       )}
 
       {/* ── Results ── */}
-      {hasResults && (
-        <>
-          {/* Summary cards (act as filter buttons) */}
-          <div className="recon-summary-row">
-            <SummaryCard
-              label="Matched"
-              count={counts.matched}
-              variant="success"
-              icon={<CheckCircle size={22} />}
-              active={activeFilter === 'matched'}
-              onClick={() => setFilter(activeFilter === 'matched' ? 'all' : 'matched')}
-            />
-            <SummaryCard
-              label="Discrepancies"
-              count={counts.discrepancy}
-              variant="warning"
-              icon={<AlertTriangle size={22} />}
-              active={activeFilter === 'discrepancy'}
-              onClick={() => setFilter(activeFilter === 'discrepancy' ? 'all' : 'discrepancy')}
-            />
-            <SummaryCard
-              label="External Only"
-              count={counts.unmatched_external}
-              variant="danger"
-              icon={<XCircle size={22} />}
-              active={activeFilter === 'unmatched_external'}
-              onClick={() =>
-                setFilter(activeFilter === 'unmatched_external' ? 'all' : 'unmatched_external')
-              }
-            />
-            <SummaryCard
-              label="Dashboard Only"
-              count={counts.unmatched_dashboard}
-              variant="info"
-              icon={<XCircle size={22} />}
-              active={activeFilter === 'unmatched_dashboard'}
-              onClick={() =>
-                setFilter(activeFilter === 'unmatched_dashboard' ? 'all' : 'unmatched_dashboard')
-              }
-            />
-          </div>
-
-          {/* Filter bar */}
-          <div className="recon-filter-bar" role="group" aria-label="Filter reconciliation results">
-            <Filter size={16} className="recon-filter-icon" />
-            {FILTERS.map((f) => (
-              <button
-                key={f.value}
-                className={`recon-filter-btn${activeFilter === f.value ? ' active' : ''}`}
-                onClick={() => setFilter(f.value)}
-              >
-                {f.label}
-                {f.value !== 'all' && (
-                  <span className="recon-filter-count">
-                    {f.value === 'matched'
-                      ? counts.matched
-                      : f.value === 'discrepancy'
-                      ? counts.discrepancy
-                      : f.value === 'unmatched_external'
-                      ? counts.unmatched_external
-                      : counts.unmatched_dashboard}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-
-          <div className="recon-results-meta">
-            Showing <strong>{visibleResults.length}</strong> of{' '}
-            <strong>{results.length}</strong> results
-            {fileName && (
-              <span className="recon-results-file">
-                &nbsp;· compared against <em>{fileName}</em>
-              </span>
-            )}
-          </div>
-
-          <ResultsTable results={visibleResults} />
-        </>
-      )}
+      {hasResults && <ResultsTable results={visibleResults} />}
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import Layout from '@theme/Layout';
 import BrowserOnly from '@docusaurus/BrowserOnly';
+import Breadcrumb from '../components/Breadcrumb';
 
 const CodeQualityMetrics = React.lazy(() => import('../components/CodeQualityMetrics'));
 
@@ -27,6 +28,7 @@ export default function QualityPage(): React.JSX.Element {
       title="Code Quality Metrics"
       description="ProxyPay code quality — SonarQube gates, issue tracking, technical debt and trend reports"
     >
+      <Breadcrumb />
       <BrowserOnly fallback={<p style={{ padding: '2rem' }}>Loading quality dashboard…</p>}>
         {() => (
           <Suspense fallback={<LoadingFallback />}>

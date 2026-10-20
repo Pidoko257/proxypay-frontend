@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { proxyPayAPI } from '../services/api'
 
 const WARNING_WINDOW_MS = 5 * 60 * 1000
+const AUTHORIZATION_STORAGE_KEY = 'proxypay-workbench-authorization'
 
 interface SessionState {
   expiresAt: number | null
@@ -20,6 +21,14 @@ function getTokenExpiration(token: string | null): number | null {
   }
 }
 
+function clearAuthorizationSecrets() {
+  try {
+    sessionStorage.removeItem(AUTHORIZATION_STORAGE_KEY)
+  } catch {
+    // Storage may be unavailable (private mode); nothing to clear.
+  }
+}
+
 export function useSessionExpiration(onExpired: () => void) {
   const [session, setSession] = useState<SessionState>(() => {
     const expiresAt = getTokenExpiration(localStorage.getItem('auth_token'))
@@ -35,6 +44,7 @@ export function useSessionExpiration(onExpired: () => void) {
   const signOut = useCallback(() => {
     localStorage.removeItem('auth_token')
     sessionStorage.removeItem('proxypay-incomplete-action')
+    clearAuthorizationSecrets()
     onExpired()
   }, [onExpired])
 
@@ -74,6 +84,10 @@ export function useSessionExpiration(onExpired: () => void) {
 
     return () => window.clearInterval(interval)
   }, [session.expiresAt, signOut])
+
+  useEffect(() => {
+    return () => clearAuthorizationSecrets()
+  }, [])
 
   return { ...session, extendSession, signOut }
 }

@@ -10,6 +10,7 @@
  * - Exit animation before removal
  * - Stacking (newest at bottom)
  * - aria-live="polite" for accessibility
+ * - Optional action button (e.g. reload on spec update) — Issue #711
  */
 
 import React, { useEffect, useRef, useState } from 'react'
@@ -35,6 +36,15 @@ const ToastItem: React.FC<{
     timerRef.current = setTimeout(() => onDismiss(toast.id), 250)
   }
 
+  const handleAction = () => {
+    if (!toast.action) return
+    try {
+      toast.action.onClick()
+    } finally {
+      handleDismiss()
+    }
+  }
+
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
@@ -54,6 +64,15 @@ const ToastItem: React.FC<{
         </span>
         <span className="toast-message">{toast.message}</span>
       </div>
+      {toast.action && (
+        <button
+          className="toast-action"
+          onClick={handleAction}
+          data-testid={`toast-action-${toast.id}`}
+        >
+          {toast.action.label}
+        </button>
+      )}
       <button
         className="toast-close"
         onClick={handleDismiss}

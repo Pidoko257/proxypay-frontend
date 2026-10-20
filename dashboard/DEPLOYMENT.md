@@ -1,5 +1,49 @@
 # ProxyPay Dashboard - Deployment & Backend Integration Guide
 
+## Dashboard Entry Point
+
+The dashboard is a separate Vite application. The portal links to it through the
+`VITE_DASHBOARD_URL` environment variable, which defines the intended dashboard
+deployment URL.
+
+### Configuring the entry point
+
+Set `VITE_DASHBOARD_URL` in the portal's environment (e.g. `.env`):
+
+```env
+# Local development (Vite dev server default)
+VITE_DASHBOARD_URL=http://localhost:3000
+
+# Deployed dashboard
+VITE_DASHBOARD_URL=https://dashboard.proxypay.com
+```
+
+When `VITE_DASHBOARD_URL` is set, the portal renders a clearly labeled
+**Open Dashboard** link pointing at that URL.
+
+### Fallback when the dashboard is not deployed
+
+If `VITE_DASHBOARD_URL` is unset, the portal does not render a broken link.
+Instead it shows environment-aware guidance:
+
+- **Development** (`import.meta.env.DEV`): instructs you to run the dashboard
+  locally with `cd dashboard && npm run dev` (defaults to
+  `http://localhost:3000`).
+- **Production**: indicates the dashboard is not configured and asks an
+  administrator to set `VITE_DASHBOARD_URL`.
+
+### Validating the entry point
+
+1. Start the dashboard locally: `cd dashboard && npm run dev`.
+2. Set `VITE_DASHBOARD_URL=http://localhost:3000` in the portal environment and
+   start the portal.
+3. Confirm the **Open Dashboard** link is visible and navigates to the running
+   dashboard.
+4. Unset `VITE_DASHBOARD_URL`, reload the portal, and confirm the fallback
+   guidance is shown instead of a broken link.
+
+---
+
 ## Backend API Requirements
 
 Your ProxyPay backend must implement these endpoints:
@@ -399,211 +443,27 @@ kubectl apply -f service.yaml
 npm run build
 
 # Upload to S3
-aws s3 sync dist/ s3://proxypay-dashboard/
-
-# Invalidate CloudFront cache
-aws cloudfront create-invalidation \
-  --distribution-id YOUR_DISTRIBUTION_ID \
-  --paths "/*"
-```
-
-### S3 Bucket Configuration
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": "*",
-      "Action": "s3:GetObject",
-      "Resource": "arn:aws:s3:::proxypay-dashboard/*"
-    }
-  ]
-}
+aws s3 sync dist/ s3://proxypay-dashboard --delete
 ```
 
 ### CloudFront Distribution
 - Origin: S3 bucket
 - Default root object: `index.html`
-- Error 404 → `index.html` (for SPA routing)
-- HTTPS only
-- Gzip compression enabled
-
----
-
-## Vercel Deployment
-
-### Connect Repository
-1. Push dashboard code to GitHub
-2. Go to vercel.com
-3. Import project
-4. Select `dashboard` as root directory
-
-### Environment Variables
-In Vercel dashboard:
-```
-VITE_API_BASE_URL = https://api.proxypay.com
-```
-
-### Auto-Deploy
-On push to main branch, Vercel automatically:
-1. Installs dependencies
-2. Builds project
-3. Deploys to CDN
-
----
-
-## Netlify Deployment
-
-### netlify.toml
-```toml
-[build]
-command = "npm run build"
-publish = "dist"
-
-[[redirects]]
-from = "/*"
-to = "/index.html"
-status = 200
-
-[env]
-  [env.production]
-    VITE_API_BASE_URL = "https://api.proxypay.com"
-```
-
-Deploy:
-```bash
-npm install -g netlify-cli
-netlify deploy --prod
-```
-
----
-
-## Performance Optimization
-
-### Compression
-Enable gzip on server:
-```nginx
-gzip on;
-gzip_types text/plain text/css text/javascript application/json;
-gzip_min_length 1000;
-```
-
-### Caching
-```nginx
-location ~* \.(js|css|png|jpg)$ {
-  expires 365d;
-  add_header Cache-Control "public, immutable";
-}
-
-location /index.html {
-  expires 0;
-  add_header Cache-Control "no-cache, no-store, must-revalidate";
-}
-```
-
-### CDN
-Use CloudFront, Cloudflare, or Akamai for global distribution.
-
----
-
-## Monitoring & Logging
-
-### Application Errors
-Integrate error tracking (Sentry, Rollbar):
-
-```typescript
-import * as Sentry from "@sentry/react"
-
-Sentry.init({
-  dsn: process.env.VITE_SENTRY_DSN,
-  environment: process.env.NODE_ENV,
-})
-```
-
-### Analytics
-Track user behavior (Google Analytics, Mixpanel):
-
-```typescript
-gtag('event', 'transaction_view', {
-  transaction_id: tx.id,
-  amount: tx.amount,
-})
-```
-
-### Server Logs
-Monitor API errors:
-```bash
-# Real-time logs
-kubectl logs -f deployment/proxypay-dashboard
-
-# AWS CloudWatch
-aws logs tail /aws/lambda/dashboard --follow
-```
-
----
-
-## Security Checklist
-
-- [ ] HTTPS only (no HTTP)
-- [ ] CORS headers properly configured
-- [ ] Auth tokens stored securely (httpOnly cookies better than localStorage)
-- [ ] Rate limiting on API endpoints
-- [ ] Input validation on both frontend and backend
-- [ ] No sensitive data in localStorage
-- [ ] Security headers (CSP, X-Frame-Options, etc)
-- [ ] Regular dependency updates
-- [ ] SSL certificate valid and up-to-date
-- [ ] API authentication required
-- [ ] Data encryption in transit and at rest
+- Error document: `index.html` (for SPA routing)
+- Cache behavior: `index.html` no-cache, assets long-cache
 
 ---
 
 ## Troubleshooting
 
-### CORS Errors
-**Error:** `Access to XMLHttpRequest has been blocked by CORS policy`
+### Dashboard link missing in portal
+- Confirm `VITE_DASHBOARD_URL` is set in the portal environment.
+- Restart the portal dev server after changing env vars (Vite reads them at startup).
 
-**Solution:**
-1. Backend must send proper CORS headers
-2. Or use JSONP/proxy
-3. Or deploy to same domain
+### CORS errors
+- Verify `Access-Control-Allow-Origin` matches the dashboard origin exactly.
+- Ensure `Access-Control-Allow-Credentials: true` when sending auth cookies.
 
-### 404 on SPA Routes
-**Error:** Direct URL gives 404
-
-**Solution:** Configure server to return `index.html` for all routes
-
-```nginx
-error_page 404 =200 /index.html;
-```
-
-### Environment Variables Not Loading
-**Solution:**
-1. Restart dev server
-2. Check `.env` file exists
-3. Use `VITE_` prefix for frontend env vars
-4. Restart build after env changes
-
-### Slow API Responses
-**Solution:**
-1. Add pagination
-2. Reduce dataset size
-3. Add backend caching
-4. Optimize database queries
-5. Use CDN for assets
-
----
-
-## Support
-
-For issues or questions:
-1. Check QUICKSTART.md for common setup
-2. Review ARCHITECTURE.md for design details
-3. Check browser console for errors
-4. Review network tab in DevTools
-5. Check backend API logs
-
----
-
-**Ready to deploy!** 🚀
+### 401 Unauthorized
+- Confirm `auth_token` is present in localStorage.
+- Verify the backend accepts the `Authorization: Bearer {token}` header.

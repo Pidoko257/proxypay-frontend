@@ -1,0 +1,206 @@
+/* ErrorScreenshotDialog.css */
+
+/* ── Backdrop ──────────────────────────────────────────────────────────────── */
+
+.error-screenshot-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  backdrop-filter: blur(2px);
+}
+
+/* ── Dialog box ────────────────────────────────────────────────────────────── */
+
+.error-screenshot-dialog {
+  position: relative;
+  background: var(--color-neutral-50, #f8fafc);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg, 0 20px 60px rgba(0, 0, 0, 0.25));
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────────── */
+
+.error-screenshot-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem 0.75rem;
+  border-bottom: 1px solid var(--color-neutral-200, #e2e8f0);
+}
+
+.error-screenshot-dialog__title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-neutral-900, #0f172a);
+}
+
+.error-screenshot-dialog__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-neutral-600, #475569);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.error-screenshot-dialog__close:hover {
+  background: var(--color-neutral-200, #e2e8f0);
+}
+
+.error-screenshot-dialog__close:focus-visible {
+  outline: 3px solid var(--color-primary, #2e8555);
+  outline-offset: 2px;
+}
+
+/* ── Meta ──────────────────────────────────────────────────────────────────── */
+
+.error-screenshot-dialog__meta {
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--color-neutral-200, #e2e8f0);
+  background: var(--color-neutral-100, #f1f5f9);
+}
+
+.error-screenshot-dialog__message,
+.error-screenshot-dialog__timestamp {
+  margin: 0 0 0.3rem;
+  font-size: 0.85rem;
+  color: var(--color-neutral-700, #334155);
+  word-break: break-word;
+}
+
+.error-screenshot-dialog__message:last-child,
+.error-screenshot-dialog__timestamp:last-child {
+  margin-bottom: 0;
+}
+
+/* ── Screenshot preview ────────────────────────────────────────────────────── */
+
+.error-screenshot-dialog__preview {
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-neutral-200, #e2e8f0);
+  min-height: 120px;
+}
+
+.error-screenshot-dialog__image {
+  display: block;
+  max-width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  border-radius: 4px;
+  border: 1px solid var(--color-neutral-300, #cbd5e1);
+  background: #fff;
+}
+
+.error-screenshot-dialog__placeholder {
+  font-size: 0.9rem;
+  color: var(--color-neutral-500, #64748b);
+  font-style: italic;
+  text-align: center;
+  padding: 1rem;
+}
+
+/* ── Capture error ─────────────────────────────────────────────────────────── */
+
+.error-screenshot-dialog__capture-error {
+  margin: 0;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.85rem;
+  color: var(--color-danger, #dc2626);
+  background: rgba(220, 38, 38, 0.06);
+  border-top: 1px solid rgba(220, 38, 38, 0.2);
+}
+
+/* ── Action buttons ────────────────────────────────────────────────────────── */
+
+.error-screenshot-dialog__actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.9rem 1.25rem;
+  border-top: 1px solid var(--color-neutral-200, #e2e8f0);
+}
+
+.error-screenshot-dialog__btn {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.error-screenshot-dialog__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.error-screenshot-dialog__btn:focus-visible {
+  outline: 3px solid var(--color-primary, #2e8555);
+  outline-offset: 2px;
+}
+
+.error-screenshot-dialog__btn--primary {
+  border: none;
+  background: var(--color-primary, #2e8555);
+  color: #fff;
+}
+
+.error-screenshot-dialog__btn--primary:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.error-screenshot-dialog__btn--secondary {
+  border: 2px solid var(--color-primary, #2e8555);
+  background: transparent;
+  color: var(--color-primary, #2e8555);
+}
+
+.error-screenshot-dialog__btn--secondary:hover:not(:disabled) {
+  background: rgba(46, 133, 85, 0.08);
+}
+
+.error-screenshot-dialog__btn--ghost {
+  border: 2px solid var(--color-neutral-300, #cbd5e1);
+  background: transparent;
+  color: var(--color-neutral-700, #334155);
+}
+
+.error-screenshot-dialog__btn--ghost:hover {
+  background: var(--color-neutral-100, #f1f5f9);
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .error-screenshot-dialog__actions {
+    flex-direction: column;
+  }
+
+  .error-screenshot-dialog__btn {
+    width: 100%;
+    text-align: center;
+  }
+}
