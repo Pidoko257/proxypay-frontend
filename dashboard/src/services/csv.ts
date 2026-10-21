@@ -71,7 +71,7 @@ export class CSVExporter {
         row.push(auditStr)
       }
 
-      rows.push(row.map((v) => this.escapeCsvValue(String(v))).join(','))
+      rows.push(row.map((value) => this.escapeCsvValue(String(value), typeof value === 'string')).join(','))
     }
 
     return rows.join('\n')
@@ -99,11 +99,15 @@ export class CSVExporter {
   /**
    * Escapes CSV values to handle commas, quotes, and newlines
    */
-  private static escapeCsvValue(value: string): string {
-    if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-      return `"${value.replace(/"/g, '""')}"` // Escape quotes by doubling
+  private static escapeCsvValue(value: string, untrustedText = false): string {
+    const safeValue =
+      untrustedText && /^[\s\u0000-\u001f]*[=+\-@]/.test(value)
+        ? `'${value}`
+        : value
+    if (safeValue.includes(',') || safeValue.includes('"') || /[\r\n]/.test(safeValue)) {
+      return `"${safeValue.replace(/"/g, '""')}"` // Escape quotes by doubling
     }
-    return value
+    return safeValue
   }
 
   /**

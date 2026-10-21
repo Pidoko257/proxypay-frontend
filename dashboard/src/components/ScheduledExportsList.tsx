@@ -42,7 +42,9 @@ export const ScheduledExportsList: FC<ScheduledExportsListProps> = ({
               <span className="schedule-frequency">{frequencyLabel(schedule.frequency)}</span>
             </div>
             <div className="scheduled-export-time">
-              {schedule.active ? `Next run: ${formatNextRun(schedule)}` : 'Paused'}
+              {schedule.active
+                ? `Next run (${schedule.timezone}): ${formatNextRun(schedule)}`
+                : 'Paused'}
             </div>
             <div className="scheduled-export-delivery">
               {schedule.delivery?.type === 'webhook' ? (
@@ -51,7 +53,7 @@ export const ScheduledExportsList: FC<ScheduledExportsListProps> = ({
                 <Mail size={13} aria-hidden="true" />
               )}
               <span>{deliveryLabel(schedule)}</span>
-              <span>· {schedule.time} {schedule.timezone}</span>
+              <span>· {schedule.time} in {schedule.timezone}</span>
             </div>
           </div>
           <div className="scheduled-export-actions">

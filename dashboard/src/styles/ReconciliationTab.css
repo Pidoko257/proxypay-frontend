@@ -1,4 +1,4 @@
-/* ─── Reconciliation Tab ──────────────────────────────────────────────────── */
+﻿/* ─── Reconciliation Tab ──────────────────────────────────────────────────── */
 
 .recon-tab {
   padding: 0 0 2rem;
@@ -91,11 +91,16 @@
   position: relative;
 }
 
-.recon-dropzone:hover,
+.recon-dropzone:hover {
+  border-color: #7c3aed;
+  background: #f3e8ff;
+}
+
 .recon-dropzone:focus-visible {
   border-color: #7c3aed;
   background: #f3e8ff;
-  outline: none;
+  outline: var(--focus-visible-outline, 2px solid #7c3aed);
+  outline-offset: var(--focus-visible-offset, 2px);
 }
 
 .recon-dropzone-loading {

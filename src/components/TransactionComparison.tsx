@@ -277,7 +277,10 @@ function downloadReport(
     triggerDownload(blob, `comparison-report-${ts}.json`);
   } else {
     const header = ['Field', 'Label', 'Left Value', 'Right Value', 'Match'];
-    const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
+    const escape = (value: string) => {
+      const safeValue = /^[\s\u0000-\u001f]*[=+\-@]/.test(value) ? `'${value}` : value;
+      return `"${safeValue.replace(/"/g, '""')}"`;
+    };
     const lines = [
       header.map(escape).join(','),
       ...rows.map((r) =>

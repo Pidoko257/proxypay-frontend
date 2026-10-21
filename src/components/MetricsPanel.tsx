@@ -437,6 +437,7 @@ export default function MetricsPanel(): React.JSX.Element {
           />
           <select
             value={filterCategory}
+            aria-label="Filter metrics by category"
             onChange={(e) => setFilterCategory(e.target.value)}
             className="mock-select metrics-filter-select"
           >
@@ -447,6 +448,7 @@ export default function MetricsPanel(): React.JSX.Element {
           </select>
           <select
             value={filterBadge}
+            aria-label="Filter metrics by badge"
             onChange={(e) => setFilterBadge(e.target.value)}
             className="mock-select metrics-filter-select"
           >
@@ -482,6 +484,41 @@ export default function MetricsPanel(): React.JSX.Element {
           </button>
         </div>
       </div>
+
+      <section aria-labelledby="metrics-data-heading">
+        <h3 id="metrics-data-heading">Filtered metrics data</h3>
+        <p role="status" aria-live="polite">
+          Showing {filteredAndSorted.length} endpoints with{' '}
+          {formatCallsPerDay(filteredAndSorted.reduce((sum, metric) => sum + metric.callsPerDay, 0))}{' '}
+          calls per day.
+        </p>
+        <details>
+          <summary>View filtered metrics data</summary>
+          <table>
+            <caption>Endpoint usage and trend for the current metrics filters</caption>
+            <thead>
+              <tr>
+                <th scope="col">Endpoint</th>
+                <th scope="col">Method</th>
+                <th scope="col">Calls per day</th>
+                <th scope="col">Trend</th>
+                <th scope="col">Category</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAndSorted.map((metric) => (
+                <tr key={metric.id}>
+                  <th scope="row">{metric.path}</th>
+                  <td>{metric.method}</td>
+                  <td>{metric.callsPerDay.toLocaleString()}</td>
+                  <td>{metric.trend}%</td>
+                  <td>{metric.category}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </details>
+      </section>
 
       {/* Endpoint Cards */}
       <div className="metrics-grid">

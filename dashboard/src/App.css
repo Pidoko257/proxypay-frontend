@@ -1,4 +1,4 @@
-.app {
+﻿.app {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -46,6 +46,12 @@
   cursor: pointer;
   list-style: none;
   color: var(--color-neutral-700);
+  border-radius: 4px;
+}
+
+.notification-center summary:focus-visible {
+  outline: var(--focus-visible-outline, 2px solid var(--color-primary));
+  outline-offset: var(--focus-visible-offset, 2px);
 }
 
 .notification-center summary::-webkit-details-marker {
@@ -151,6 +157,12 @@
 .nav-tab.active {
   color: var(--color-primary);
   border-bottom-color: var(--color-primary);
+}
+
+.nav-tab:focus-visible {
+  outline: var(--focus-visible-outline, 2px solid var(--color-primary));
+  outline-offset: var(--focus-visible-offset, 2px);
+  border-radius: 4px;
 }
 
 /* Operation status badges */

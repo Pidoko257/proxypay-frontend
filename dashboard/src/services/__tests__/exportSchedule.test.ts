@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calculateNextRun } from '../exportSchedule'
+import { calculateNextRun, formatNextRun, isValidTimezone } from '../exportSchedule'
 
 describe('export schedule calculations', () => {
   const from = new Date('2026-01-05T08:00:00.000Z')
@@ -61,6 +61,34 @@ describe('export schedule calculations', () => {
     )
 
     expect(next?.toISOString()).toBe('2026-03-08T07:30:00.000Z')
+  })
+
+  it('uses the earlier occurrence for an ambiguous fall-back time', () => {
+    const next = calculateNextRun(
+      { frequency: 'daily', time: '01:30', timezone: 'America/New_York' },
+      new Date('2026-11-01T04:00:00.000Z')
+    )
+
+    expect(next?.toISOString()).toBe('2026-11-01T05:30:00.000Z')
+    expect(formatNextRun({
+      frequency: 'daily',
+      time: '01:30',
+      timezone: 'America/New_York',
+      nextRunAt: next?.toISOString(),
+    }, 'en-US')).toContain('1:30 AM')
+  })
+
+  it('rejects invalid timezone values without silently using UTC', () => {
+    expect(isValidTimezone('Not/A-Timezone')).toBe(false)
+    expect(calculateNextRun(
+      { frequency: 'daily', time: '09:00', timezone: 'Not/A-Timezone' },
+      from
+    )).toBeNull()
+    expect(formatNextRun({
+      frequency: 'daily',
+      time: '09:00',
+      timezone: 'Not/A-Timezone',
+    })).toBe('Not scheduled')
   })
 
   it('rolls monthly schedules into the next year', () => {
