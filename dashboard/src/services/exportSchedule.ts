@@ -126,7 +126,7 @@ const localDateTimeToUtc = (
   return new Date((nextValid || candidates[candidates.length - 1]).instant)
 }
 
-const validTimezone = (timezone: string): boolean => {
+export const isValidTimezone = (timezone: string): boolean => {
   try {
     new Intl.DateTimeFormat('en-US', { timeZone: timezone }).format()
     return true
@@ -139,7 +139,8 @@ export const calculateNextRun = (
   schedule: Pick<ExportSchedule, 'frequency' | 'time' | 'timezone' | 'dayOfWeek' | 'dayOfMonth'>,
   from: Date = new Date()
 ): Date | null => {
-  const timezone = validTimezone(schedule.timezone) ? schedule.timezone : 'UTC'
+  if (!isValidTimezone(schedule.timezone)) return null
+  const timezone = schedule.timezone
   const current = datePartsInTimezone(from, timezone)
   const { hour, minute } = timeParts(schedule.time || DEFAULT_EXPORT_TIME)
   let year = current.year
@@ -209,7 +210,7 @@ export const formatNextRun = (
     schedule.nextRunAt && !Number.isNaN(new Date(schedule.nextRunAt).getTime())
       ? new Date(schedule.nextRunAt)
       : calculateNextRun(schedule)
-  if (!nextRun) return 'Not scheduled'
+  if (!nextRun || !isValidTimezone(schedule.timezone)) return 'Not scheduled'
   try {
     return new Intl.DateTimeFormat(locale, {
       timeZone: schedule.timezone,

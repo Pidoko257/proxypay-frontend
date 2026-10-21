@@ -2,15 +2,21 @@ import { Transaction } from './api'
 
 export type AccountingPlatform = 'quickbooks' | 'xero' | 'generic'
 
-const escapeCsvValue = (value: string): string => {
-  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-    return `"${value.replace(/"/g, '""')}"`
+const escapeCsvValue = (value: string, untrustedText = false): string => {
+  const safeValue =
+    untrustedText && /^[\s\u0000-\u001f]*[=+\-@]/.test(value)
+      ? `'${value}`
+      : value
+  if (safeValue.includes(',') || safeValue.includes('"') || /[\r\n]/.test(safeValue)) {
+    return `"${safeValue.replace(/"/g, '""')}"`
   }
-  return value
+  return safeValue
 }
 
 const toCsv = (headers: string[], rows: Array<Array<string | number>>): string =>
-  [headers, ...rows].map((row) => row.map((value) => escapeCsvValue(String(value))).join(',')).join('\n')
+  [headers, ...rows]
+    .map((row) => row.map((value) => escapeCsvValue(String(value), typeof value === 'string')).join(','))
+    .join('\n')
 
 const transactionDate = (timestamp: string): string => timestamp.slice(0, 10)
 
