@@ -419,7 +419,7 @@ function LatencyChartSvg({ history }: { history: HistoricalPoint[] }) {
     ]);
 
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} style={{ width: '100%', height: 'auto' }}>
+    <svg aria-hidden="true" focusable="false" viewBox={`0 0 ${w} ${h}`} style={{ width: '100%', height: 'auto' }}>
       {Array.from({ length: yTicks + 1 }).map((_, i) => {
         const val = Math.round((maxVal / yTicks) * i);
         const y = scaleY(val);
@@ -506,6 +506,12 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
     });
   }, [search, categoryFilter, slaFilter]);
 
+  React.useEffect(() => {
+    if (selectedEndpoint && !filtered.some((benchmark) => benchmark.endpoint === selectedEndpoint.endpoint)) {
+      setSelectedEndpoint(null);
+    }
+  }, [filtered, selectedEndpoint]);
+
   const history = useMemo(
     () => (selectedEndpoint ? generateHistory(selectedEndpoint) : []),
     [selectedEndpoint]
@@ -573,6 +579,7 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
         />
         <select
           style={styles.filterSelect}
+          aria-label="Filter endpoints by category"
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
         >
@@ -583,6 +590,7 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
         </select>
         <select
           style={styles.filterSelect}
+          aria-label="Filter endpoints by SLA status"
           value={slaFilter}
           onChange={(e) => setSlaFilter(e.target.value)}
         >
@@ -592,6 +600,13 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
           <option value="breach">🔴 Breach</option>
         </select>
       </div>
+
+      <p role="status" aria-live="polite">
+        Showing {filtered.length} of {BENCHMARK_DATA.length} endpoints in the current filters.
+        {filtered.length > 0 && ` Average p50 latency is ${Math.round(
+          filtered.reduce((sum, benchmark) => sum + benchmark.p50, 0) / filtered.length
+        )} ms.`}
+      </p>
 
       {/* Table */}
       {filtered.length === 0 ? (
@@ -691,6 +706,39 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
           <div style={styles.chartContainer}>
             <LatencyChart history={history} />
           </div>
+          {history.length > 0 && (
+            <>
+              <p aria-live="polite">
+                Latest latency values for {selectedEndpoint.endpoint} on {history[history.length - 1].date}:{' '}
+                p50 {history[history.length - 1].p50} ms, p95 {history[history.length - 1].p95} ms,
+                {' '}p99 {history[history.length - 1].p99} ms.
+              </p>
+              <details>
+                <summary>View 30-day latency data</summary>
+                <table>
+                  <caption>Daily latency percentiles for {selectedEndpoint.endpoint}</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Date</th>
+                      <th scope="col">p50 (ms)</th>
+                      <th scope="col">p95 (ms)</th>
+                      <th scope="col">p99 (ms)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {history.map((point) => (
+                      <tr key={point.date}>
+                        <th scope="row">{point.date}</th>
+                        <td>{point.p50}</td>
+                        <td>{point.p95}</td>
+                        <td>{point.p99}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </details>
+            </>
+          )}
           <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.75rem', fontSize: '0.82rem' }}>
             <span><span style={{ color: '#22c55e', fontWeight: 700 }}>— p50</span> median</span>
             <span><span style={{ color: '#f59e0b', fontWeight: 700 }}>- - p95</span> 95th</span>
