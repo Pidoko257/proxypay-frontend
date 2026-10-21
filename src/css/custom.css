@@ -5301,56 +5301,74 @@ body {
 
 
 /* ==========================================================================
-   Issue #763: Responsive Chart Dimensions, Tick Density & Mobile Legends
+   Issue #775 & #774: WCAG 200% / 400% Zoom Reflow & Forced-Colors Accessibility
    ========================================================================== */
 
-.metrics-chart-container,
-.recharts-responsive-container,
-.chart-card-wrapper {
-  width: 100% !important;
-  max-width: 100% !important;
-  box-sizing: border-box;
+/* Prevent page-level horizontal overflow under high zoom / magnification */
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
-/* Mobile viewport adjustments (< 640px down to 375px) */
-@media screen and (max-width: 640px) {
-  .metrics-chart-container,
-  .recharts-responsive-container {
-    min-height: 240px !important;
-    max-height: 320px !important;
-  }
+/* Allow genuine code blocks and data tables to scroll internally */
+pre, code, .table-responsive, [role="table"], .audit-log-container {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
 
-  /* Reduce tick density and font size on narrow screens */
-  .recharts-cartesian-axis-tick text {
-    font-size: 0.72rem !important;
-    transform-origin: top left;
-  }
-
-  /* Move legends below chart to prevent side-clipping */
-  .recharts-legend-wrapper {
-    position: static !important;
-    width: 100% !important;
-    display: flex !important;
+/* Responsive control reflow at 200% and 400% zoom (narrow equivalent viewports) */
+@media screen and (max-width: 996px) {
+  .api-tools-header,
+  .api-tools-controls,
+  .filter-bar,
+  .dashboard-toolbar,
+  .button-group {
     flex-wrap: wrap !important;
-    justifyContent: center !important;
-    padding: 0.5rem 0 !important;
-    margin-top: 0.75rem !important;
+    gap: 0.5rem !important;
   }
 
-  .recharts-legend-item {
-    margin: 0.2rem 0.5rem !important;
-    font-size: 0.78rem !important;
+  .api-tools-sidebar,
+  .api-tools-content {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  /* Under 400% zoom (effective viewport <= 320px - 640px) */
+  .control-group,
+  .form-row,
+  .search-bar-container {
+    flex-direction: column !important;
+    align-items: stretch !important;
   }
 
-  /* Ensure tooltip stays within viewport */
-  .recharts-tooltip-wrapper {
-    max-width: 85vw !important;
+  button, input, select, textarea {
+    min-height: 44px; /* WCAG 2.5.5 touch target size */
+  }
+
+  /* Prevent clipped control text */
+  .badge, .tag, .button {
     white-space: normal !important;
+    word-break: break-word;
+  }
+}
+
+/* Forced Colors (High Contrast Mode) Support (Issue #774) */
+@media (forced-colors: active) {
+  button, input, select, textarea, .badge, .card {
+    border: 1px solid ButtonText !important;
+    forced-color-adjust: auto;
   }
 
-  .recharts-default-tooltip {
-    padding: 0.4rem 0.6rem !important;
-    font-size: 0.78rem !important;
-    border-radius: 6px !important;
+  button:focus-visible, a:focus-visible, input:focus-visible {
+    outline: 2px solid Highlight !important;
+    outline-offset: 2px;
+  }
+
+  .badge[data-status="active"],
+  .badge[data-status="success"] {
+    border: 2px solid Highlight !important;
   }
 }
