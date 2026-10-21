@@ -1,4 +1,4 @@
-import AxeBuilder from '@axe-core/playwright';
+﻿import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
 const routes = [
@@ -51,4 +51,19 @@ test('primary navigation can be reached with the keyboard', async ({ page }) => 
 
   const focusedTag = await page.evaluate(() => document.activeElement?.tagName);
   expect(focusedTag).not.toBe('BODY');
+});
+test('custom controls have visible focus indicator when focused with keyboard', async ({ page }) => {
+  await page.goto('', { waitUntil: 'networkidle' });
+  await page.keyboard.press('Tab');
+
+  const focusedHasIndicator = await page.evaluate(() => {
+    const el = document.activeElement;
+    if (!el || el === document.body) return false;
+    const style = window.getComputedStyle(el);
+    const hasOutline = style.outlineStyle !== 'none' && parseInt(style.outlineWidth || '0', 10) > 0;
+    const hasBoxShadow = style.boxShadow !== 'none' && style.boxShadow.length > 0;
+    return hasOutline || hasBoxShadow;
+  });
+
+  expect(focusedHasIndicator).toBe(true);
 });

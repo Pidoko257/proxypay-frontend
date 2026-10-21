@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    ProxyPay API Portal — Global Styles
    Fixes: #232 (horizontal scroll), #230 (button consistency)
    ============================================================ */
@@ -12,6 +12,15 @@
   --ifm-color-primary-light: #33925e;
   --ifm-color-primary-lighter: #359962;
   --ifm-color-primary-lightest: #3cad6e;
+
+  /* Focus-visible design tokens (Issue #772) */
+  --focus-visible-color: #2e8555;
+  --focus-visible-color-contrast: #1e5c3a;
+  --focus-visible-offset: 2px;
+  --focus-visible-width: 2px;
+  --focus-visible-outline: 2px solid var(--focus-visible-color);
+  --focus-visible-shadow: 0 0 0 2px var(--ifm-background-color, #ffffff),
+    0 0 0 4px var(--focus-visible-color);
 
   /* Button design tokens */
   --proxypay-btn-border-radius: 6px;
@@ -3324,6 +3333,10 @@ html {
 html[data-theme='dark'] {
   background-color: #1b1b1d;
   color: #e3e3e3;
+  --focus-visible-color: #3cad6e;
+  --focus-visible-color-contrast: #6ee7b7;
+  --focus-visible-outline: 2px solid var(--focus-visible-color);
+  --focus-visible-shadow: 0 0 0 2px #1b1b1d, 0 0 0 4px var(--focus-visible-color);
 }
 
 /* Docusaurus injects the custom stylesheet via a <link> tag whose href
@@ -5284,4 +5297,51 @@ body {
   margin-bottom: 1rem;
   font-size: 0.9rem;
   font-weight: 500;
+}
+
+
+/* ============================================================
+   Consistent Focus-Visible Styles for Custom Controls (Issue #772)
+   ============================================================ */
+.proxypay-btn:focus-visible,
+.api-toolbar-btn:focus-visible,
+.copy-button:focus-visible,
+.export-button:focus-visible,
+.btn:focus-visible,
+button.button:focus-visible {
+  outline: var(--focus-visible-outline) !important;
+  outline-offset: var(--focus-visible-offset) !important;
+  box-shadow: var(--focus-visible-shadow) !important;
+}
+
+.api-toolbar-tab:focus-visible,
+.mock-tab:focus-visible,
+.tabs__item:focus-visible,
+[role='tab']:focus-visible {
+  outline: var(--focus-visible-outline) !important;
+  outline-offset: var(--focus-visible-offset) !important;
+  box-shadow: var(--focus-visible-shadow) !important;
+  border-radius: 4px;
+}
+
+.mock-template-chip:focus-visible,
+.audit-filter-chip:focus-visible,
+.metrics-fav-chip:focus-visible,
+.theme-preview-card__chip:focus-visible,
+.chip:focus-visible {
+  outline: var(--focus-visible-outline) !important;
+  outline-offset: var(--focus-visible-offset) !important;
+  box-shadow: var(--focus-visible-shadow) !important;
+}
+
+.icon-btn:focus-visible,
+.icon-button:focus-visible,
+.copy-btn:focus-visible,
+.theme-customizer__close-btn:focus-visible,
+.modal-close-btn:focus-visible,
+summary:focus-visible {
+  outline: var(--focus-visible-outline) !important;
+  outline-offset: var(--focus-visible-offset) !important;
+  box-shadow: var(--focus-visible-shadow) !important;
+  border-radius: 4px;
 }
