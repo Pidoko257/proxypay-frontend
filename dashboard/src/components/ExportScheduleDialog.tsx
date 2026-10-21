@@ -11,6 +11,8 @@ import {
 import {
   createDefaultSchedule,
   getAvailableTimezones,
+  isValidTimezone,
+  formatNextRun,
 } from '../services/exportSchedule'
 import { useExportScheduleStore } from '../stores/exportScheduleStore'
 import { ScheduledExportsList } from './ScheduledExportsList'
@@ -276,6 +278,10 @@ export const ExportScheduleDialog: FC<ExportScheduleDialogProps> = ({
       setFormError('Choose a valid export time')
       return
     }
+    if (!isValidTimezone(values.timezone)) {
+      setFormError('Choose a valid timezone')
+      return
+    }
     if (
       values.frequency === 'weekly' &&
       (!Number.isInteger(values.dayOfWeek) || values.dayOfWeek < 0 || values.dayOfWeek > 6)
@@ -497,17 +503,31 @@ export const ExportScheduleDialog: FC<ExportScheduleDialogProps> = ({
                 </label>
               )}
               <label className="schedule-field">
-                <span>Timezone</span>
+                <span>Timezone for recurrence</span>
                 <select
                   value={values.timezone}
                   onChange={(event) => updateValue('timezone', event.target.value)}
                 >
+                  {!timezones.includes(values.timezone) && (
+                    <option value={values.timezone}>{values.timezone} (invalid)</option>
+                  )}
                   {timezones.map((timezone) => (
                     <option key={timezone} value={timezone}>{timezone}</option>
                   ))}
                 </select>
               </label>
             </div>
+            <p className="schedule-next-run" aria-live="polite">
+              {isValidTimezone(values.timezone)
+                ? `Next run in ${values.timezone}: ${formatNextRun({
+                    frequency: values.frequency,
+                    time: values.time,
+                    timezone: values.timezone,
+                    dayOfWeek: values.dayOfWeek,
+                    dayOfMonth: values.dayOfMonth,
+                  })}`
+                : 'Choose a valid timezone to preview the next run.'}
+            </p>
 
             <label className="schedule-field">
               <span>Delivery method</span>

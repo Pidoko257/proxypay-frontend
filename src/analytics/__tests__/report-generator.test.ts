@@ -230,6 +230,32 @@ describe('ReportGenerator', () => {
       expect(csv).toContain('Error with ""quotes"" and');
     });
 
+    it('neutralizes formula-leading endpoint and filter text', () => {
+      const analytics = {
+        ...createMockAnalytics(),
+        topEndpoints: [
+          {
+            ...createMockAnalytics().topEndpoints[0],
+            endpoint: '=HYPERLINK("https://example.test")',
+          },
+        ],
+      };
+      const filters: FilterMetadata = {
+        startDate: '2026-08-20',
+        endDate: '2026-08-25',
+        endpoint: '+SUM(1,2)',
+        method: '',
+        statusCode: '',
+        minResponseTime: 0,
+        maxResponseTime: 1000,
+      };
+
+      const csv = ReportGenerator.generateCsvReport(analytics, filters);
+
+      expect(csv).toContain("Endpoint Filter,\"'+SUM(1,2)\"");
+      expect(csv).toContain(`"'=HYPERLINK(""https://example.test"")"`);
+    });
+
     it('should include user and IP data with last activity timestamps', () => {
       const analytics = createMockAnalytics();
       const csv = ReportGenerator.generateCsvReport(analytics);

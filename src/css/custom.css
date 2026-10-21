@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    ProxyPay API Portal — Global Styles
    Fixes: #232 (horizontal scroll), #230 (button consistency)
    ============================================================ */
@@ -12,6 +12,15 @@
   --ifm-color-primary-light: #33925e;
   --ifm-color-primary-lighter: #359962;
   --ifm-color-primary-lightest: #3cad6e;
+
+  /* Focus-visible design tokens (Issue #772) */
+  --focus-visible-color: #2e8555;
+  --focus-visible-color-contrast: #1e5c3a;
+  --focus-visible-offset: 2px;
+  --focus-visible-width: 2px;
+  --focus-visible-outline: 2px solid var(--focus-visible-color);
+  --focus-visible-shadow: 0 0 0 2px var(--ifm-background-color, #ffffff),
+    0 0 0 4px var(--focus-visible-color);
 
   /* Button design tokens */
   --proxypay-btn-border-radius: 6px;
@@ -3324,6 +3333,10 @@ html {
 html[data-theme='dark'] {
   background-color: #1b1b1d;
   color: #e3e3e3;
+  --focus-visible-color: #3cad6e;
+  --focus-visible-color-contrast: #6ee7b7;
+  --focus-visible-outline: 2px solid var(--focus-visible-color);
+  --focus-visible-shadow: 0 0 0 2px #1b1b1d, 0 0 0 4px var(--focus-visible-color);
 }
 
 /* Docusaurus injects the custom stylesheet via a <link> tag whose href
