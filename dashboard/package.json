@@ -14,7 +14,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@sentry/react": "^11.0.0",
+    "@sentry/react": "^11.8.0",
     "ajv": "^8.17.1",
     "axios": "^1.7.7",
     "date-fns": "^3.6.0",
