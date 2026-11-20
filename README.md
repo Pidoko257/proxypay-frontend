@@ -13,12 +13,12 @@ npm run serve    # serve the production build locally
 
 ## First-run developer path
 
-New to the API? Follow this ordered path from setup to a first successful request. All links are relative to the published base URL (`https://sublime247.github.io/proxypay/`).
+New to the API? Follow this ordered path from setup to a first successful request. The documentation plugin is disabled in this site, so the `/docs/` routes are not generated — use the pages that actually exist below. All links are relative to the published base URL (`https://sublime247.github.io/proxypay/`).
 
-1. **Prerequisites** — review the required accounts, credentials, and environment before you begin: [`/docs/getting-started/prerequisites`](https://sublime247.github.io/proxypay/docs/getting-started/prerequisites)
-2. **Authentication** — obtain and use your API credentials: [`/docs/getting-started/authentication`](https://sublime247.github.io/proxypay/docs/getting-started/authentication)
-3. **First API call** — make your first request end to end: [`/docs/getting-started/first-api-call`](https://sublime247.github.io/proxypay/docs/getting-started/first-api-call)
-4. **Workbench** — explore and try requests interactively: [`/workbench`](https://sublime247.github.io/proxypay/workbench)
+1. **Prerequisites** — review the required accounts, credentials, and environment before you begin: see the [OpenAPI spec](#openapi-spec) section below.
+2. **Authentication** — obtain and use your API credentials: see the [OpenAPI spec](#openapi-spec) section below.
+3. **First API call** — make your first request end to end: explore and try requests in the [`/workbench`](https://sublime247.github.io/proxypay/workbench) page.
+4. **API reference** — browse the full endpoint reference: [`/api`](https://sublime247.github.io/proxypay/api)
 
 ## OpenAPI spec
 
