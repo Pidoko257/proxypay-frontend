@@ -238,11 +238,6 @@ export const ReconciliationTab: React.FC = () => {
       'Discrepancies',
     ]
 
-    const escape = (v: string) =>
-      v.includes(',') || v.includes('"') || v.includes('\n')
-        ? `"${v.replace(/"/g, '""')}"`
-        : v
-
     const rows = results.map((r) =>
       [
         r.externalRecord?.reference ?? r.dashboardTransaction?.reference ?? '',
@@ -252,35 +247,57 @@ export const ReconciliationTab: React.FC = () => {
         r.dashboardTransaction?.status ?? '',
         r.externalRecord?.date ??
           (r.dashboardTransaction?.timestamp
-            ? format(new Date(r.dashboardTransaction.timestamp), 'yyyy-MM-dd')
+            ? format(new Date(r.dashboardTransaction.timestamp), 'MMM dd, yyyy')
             : ''),
         r.status,
         r.discrepancies.join('; '),
-      ].map(escape).join(',')
+      ].map((field) => CSVExporter.escapeCsvValue(String(field)))
     )
 
-    const csv = [headers.join(','), ...rows].join('\n')
+    const csv = [headers.map((h) => CSVExporter.escapeCsvValue(h)).join(','), ...rows.map((row) => row.join(','))].join('\n')
+
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
     link.download = `reconciliation-${format(new Date(), 'yyyy-MM-dd')}.csv`
+    document.body.appendChild(link)
     link.click()
+    document.body.removeChild(link)
     URL.revokeObjectURL(url)
   }
 
+  // ── Render ──
   return (
-    <div className="reconciliation-tab">
+    <div className="recon-tab">
       <div className="recon-header">
-        <h2>Reconciliation</h2>
-        <p className="recon-subtitle">
-          Upload an external transaction file and compare it against dashboard records.
-        </p>
+        <div>
+          <h2>Reconciliation</h2>
+          <p className="recon-subtitle">
+            Upload an external statement and compare it against dashboard transactions.
+          </p>
+        </div>
+        <div className="recon-header-actions">
+          <button
+            className="recon-btn recon-btn-secondary"
+            onClick={reset}
+            disabled={isUploading || results.length === 0}
+          >
+            <Trash2 size={16} /> Reset
+          </button>
+          <button
+            className="recon-btn recon-btn-primary"
+            onClick={handleExport}
+            disabled={results.length === 0}
+          >
+            <Download size={16} /> Export CSV
+          </button>
+        </div>
       </div>
 
       {/* Upload zone */}
       <div
-        className={`recon-upload-zone${isUploading ? ' recon-uploading' : ''}`}
+        className={`recon-dropzone${isUploading ? ' recon-dropzone-busy' : ''}`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onClick={() => fileInputRef.current?.click()}
@@ -292,61 +309,59 @@ export const ReconciliationTab: React.FC = () => {
           onChange={handleFileChange}
           hidden
         />
-        <Upload size={32} />
-        <p>{fileName ? fileName : 'Drop a CSV or JSON file here, or click to browse'}</p>
-        {isUploading && <span className="recon-spinner" />}
+        {isUploading ? (
+          <>
+            <Loader2 size={32} className="recon-spin" />
+            <p>Parsing {fileName}…</p>
+          </>
+        ) : (
+          <>
+            <Upload size={32} />
+            <p>
+              {fileName ? (
+                <>
+                  <strong>{fileName}</strong> loaded — drop another file to replace
+                </>
+              ) : (
+                'Drag & drop a CSV or JSON statement, or click to browse'
+              )}
+            </p>
+          </>
+        )}
       </div>
 
+      {/* Parse summary */}
       {parseResult && (
         <div className="recon-parse-summary">
           <span>
-            <CheckCircle size={16} /> {parseResult.valid} valid
+            <CheckCircle size={16} /> {parseResult.valid.length} valid
           </span>
-          {parseResult.errors.length > 0 && (
-            <span className="recon-parse-errors">
-              <XCircle size={16} /> {parseResult.errors.length} errors
+          {parseResult.invalid.length > 0 && (
+            <span className="recon-parse-invalid">
+              <XCircle size={16} /> {parseResult.invalid.length} invalid
             </span>
           )}
+          <button
+            className="recon-btn recon-btn-primary"
+            onClick={handleCompare}
+            disabled={isComparing || parseResult.valid.length === 0}
+          >
+            {isComparing ? <Loader2 size={16} className="recon-spin" /> : <Filter size={16} />}
+            {isComparing ? 'Comparing…' : 'Run Reconciliation'}
+          </button>
         </div>
       )}
 
-      {/* Actions */}
-      <div className="recon-actions">
-        <button
-          className="recon-btn recon-btn-primary"
-          onClick={handleCompare}
-          disabled={!parseResult || isComparing}
-        >
-          {isComparing ? (
-            <>
-              <Loader2 size={16} className="recon-spin" /> Comparing…
-            </>
-          ) : (
-            'Compare'
-          )}
-        </button>
-        <button
-          className="recon-btn"
-          onClick={handleExport}
-          disabled={results.length === 0}
-        >
-          <Download size={16} /> Export CSV
-        </button>
-        <button className="recon-btn recon-btn-danger" onClick={reset}>
-          <Trash2 size={16} /> Reset
-        </button>
-      </div>
-
       {/* Summary cards */}
       {results.length > 0 && (
-        <div className="recon-summary">
+        <div className="recon-summary-grid">
           <SummaryCard
             label="Matched"
             count={results.filter((r) => r.status === 'matched').length}
             variant="success"
             icon={<CheckCircle size={20} />}
             active={activeFilter === 'matched'}
-            onClick={() => setFilter('matched')}
+            onClick={() => setFilter(activeFilter === 'matched' ? 'all' : 'matched')}
           />
           <SummaryCard
             label="Discrepancies"
@@ -354,29 +369,39 @@ export const ReconciliationTab: React.FC = () => {
             variant="danger"
             icon={<AlertTriangle size={20} />}
             active={activeFilter === 'discrepancy'}
-            onClick={() => setFilter('discrepancy')}
+            onClick={() => setFilter(activeFilter === 'discrepancy' ? 'all' : 'discrepancy')}
           />
           <SummaryCard
             label="External Only"
             count={results.filter((r) => r.status === 'unmatched_external').length}
             variant="warning"
-            icon={<Filter size={20} />}
+            icon={<XCircle size={20} />}
             active={activeFilter === 'unmatched_external'}
-            onClick={() => setFilter('unmatched_external')}
+            onClick={() =>
+              setFilter(activeFilter === 'unmatched_external' ? 'all' : 'unmatched_external')
+            }
           />
           <SummaryCard
             label="Dashboard Only"
             count={results.filter((r) => r.status === 'unmatched_dashboard').length}
             variant="info"
-            icon={<Filter size={20} />}
+            icon={<AlertTriangle size={20} />}
             active={activeFilter === 'unmatched_dashboard'}
-            onClick={() => setFilter('unmatched_dashboard')}
+            onClick={() =>
+              setFilter(activeFilter === 'unmatched_dashboard' ? 'all' : 'unmatched_dashboard')
+            }
           />
         </div>
       )}
 
       {/* Results */}
-      {results.length > 0 && <ResultsTable results={results} />}
+      {results.length > 0 && (
+        <ResultsTable
+          results={
+            activeFilter === 'all' ? results : results.filter((r) => r.status === activeFilter)
+          }
+        />
+      )}
     </div>
   )
 }
