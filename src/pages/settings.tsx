@@ -9,9 +9,12 @@
 
 import React, { useState, lazy, Suspense } from 'react';
 import Layout from '@theme/Layout';
+import Breadcrumb from '../components/Breadcrumb';
 import { FeatureFlagProvider, useFeatureFlag } from '@site/src/featureFlags';
 import { FeatureFlagSettings } from '@site/src/components/FeatureFlagSettings';
 import { FeatureFlagDebugPanel } from '@site/src/components/FeatureFlagDebugPanel';
+import { ApiEnvironmentSettings } from '@site/src/components/ApiEnvironmentSettings';
+import { InterceptorDebugPanel } from '@site/src/components/InterceptorDebugPanel';
 import DataRetentionPolicy from '@site/src/components/DataRetentionPolicy';
 
 export default function SettingsPage(): React.JSX.Element {
