@@ -125,9 +125,6 @@ export const getStatusTransitions = (
   ]
 }
 
-export const inferStatusTransitions = getStatusTransitions
-export const buildStatusTimeline = getStatusTransitions
-
 const statusClass = (status: TransactionStatus): string =>
   `status-${status.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
 
@@ -253,18 +250,16 @@ export const StatusTimeline: FC<StatusTimelineProps> = ({
                         ? `${transition.fromStatus} → ${transition.toStatus}`
                         : transition.toStatus}
                     </span>
-                    <time dateTime={transition.timestamp}>
+                    <span className="status-timeline-timestamp">
                       {formatTimestamp(transition.timestamp)}
-                    </time>
+                    </span>
                   </div>
-                  <div className="status-timeline-actor">
-                    Changed by {transition.actor || 'System'}
+                  <div className="status-timeline-meta">
+                    <span className="status-timeline-actor">{transition.actor}</span>
+                    {transition.reason && (
+                      <span className="status-timeline-reason">{transition.reason}</span>
+                    )}
                   </div>
-                  {(transition.reason || transition.details) && (
-                    <div className="status-timeline-reason">
-                      {transition.reason || transition.details}
-                    </div>
-                  )}
                 </div>
               </li>
             )
@@ -274,5 +269,3 @@ export const StatusTimeline: FC<StatusTimelineProps> = ({
     </section>
   )
 }
-
-export default StatusTimeline
