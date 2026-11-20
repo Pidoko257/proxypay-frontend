@@ -16,6 +16,7 @@
     "test:coverage": "jest --coverage",
     "test:lighthouse": "node scripts/lighthouse-audit.js",
     "test:accessibility": "node scripts/accessibility-audit.js",
+    "test:dashboard-accessibility": "npx playwright test --config=playwright.dashboard.config.ts",
     "test:visual": "npx percy exec -- npm run test:visual:snapshot",
     "test:visual:snapshot": "npx playwright test tests/visual-snapshot.spec.ts",
     "load-test": "ts-node src/load-test.ts",
