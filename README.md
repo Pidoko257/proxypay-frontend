@@ -69,3 +69,12 @@ this file or configuring an equivalent edge/CDN policy.
 
 <!-- handsoff-issue-709 -->
 - #709: Add schema navigation from operation details
+
+<!-- handsoff-issue-880 -->
+- #880: `src/utils/envValidator.ts` — Uses `REACT_APP_` prefix but the project is Vite, not Create React App
+
+<!-- handsoff-issue-881 -->
+- #881: `BATCH_88_TRANSACTION_TABLE_ENHANCEMENTS.md` — Contains Angular code in a React project
+
+<!-- handsoff-issue-882 -->
+- #882: `BATCH_85_FEATURES.md` — Export-to-Google-Sheets section documents a server-side Node.js implementation
