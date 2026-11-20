@@ -13,12 +13,12 @@ npm run serve    # serve the production build locally
 
 ## First-run developer path
 
-New to the API? Follow this ordered path from setup to a first successful request. All links are relative to the published base URL (`https://sublime247.github.io/proxypay/`).
+New to the API? Follow this ordered path from setup to a first successful request. All links are relative to the published base URL (`https://Pidoko257.github.io/proxypay-frontend/`).
 
-1. **Prerequisites** — review the required accounts, credentials, and environment before you begin: [`/docs/getting-started/prerequisites`](https://sublime247.github.io/proxypay/docs/getting-started/prerequisites)
-2. **Authentication** — obtain and use your API credentials: [`/docs/getting-started/authentication`](https://sublime247.github.io/proxypay/docs/getting-started/authentication)
-3. **First API call** — make your first request end to end: [`/docs/getting-started/first-api-call`](https://sublime247.github.io/proxypay/docs/getting-started/first-api-call)
-4. **Workbench** — explore and try requests interactively: [`/workbench`](https://sublime247.github.io/proxypay/workbench)
+1. **Prerequisites** — review the required accounts, credentials, and environment before you begin: [`/docs/getting-started/prerequisites`](https://Pidoko257.github.io/proxypay-frontend/docs/getting-started/prerequisites)
+2. **Authentication** — obtain and use your API credentials: [`/docs/getting-started/authentication`](https://Pidoko257.github.io/proxypay-frontend/docs/getting-started/authentication)
+3. **First API call** — make your first request end to end: [`/docs/getting-started/first-api-call`](https://Pidoko257.github.io/proxypay-frontend/docs/getting-started/first-api-call)
+4. **Workbench** — explore and try requests interactively: [`/workbench`](https://Pidoko257.github.io/proxypay-frontend/workbench)
 
 ## OpenAPI spec
 
@@ -37,7 +37,7 @@ TypeScript strict mode is enabled in `tsconfig.json`. Keep declarations for dire
 
 ## Deploy
 
-Configured for GitHub Pages under `sublime247/proxypay`.
+Configured for GitHub Pages under `Pidoko257/proxypay-frontend`.
 
 ```bash
 npm run deploy
