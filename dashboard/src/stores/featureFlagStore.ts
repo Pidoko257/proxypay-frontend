@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { decodeJwtPayload } from '../utils/jwt'
 
 export type FlagScope = 'user' | 'session'
 
@@ -45,17 +46,8 @@ const userId = () => {
     if (explicitId) return explicitId
     const token = localStorage.getItem('auth_token')
     if (!token) return 'anonymous'
-    const payload = token.split('.')[1]
-    if (payload) {
-      try {
-        const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
-        const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')
-        const claims = JSON.parse(atob(padded)) as { sub?: unknown }
-        if (typeof claims.sub === 'string' && claims.sub) return claims.sub
-      } catch {
-        return tokenNamespace(token)
-      }
-    }
+    const claims = decodeJwtPayload(token)
+    if (claims && typeof claims.sub === 'string' && claims.sub) return claims.sub
     return tokenNamespace(token)
   } catch {
     return 'anonymous'
