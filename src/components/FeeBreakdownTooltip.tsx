@@ -140,11 +140,11 @@ function FeeBreakdownTooltipInner({
 
         <p className="fee-tooltip-heading">Fee Breakdown</p>
 
-        <table className="fee-tooltip-table">
+        <table className="fee-tooltip-table" aria-label="Fee Breakdown">
           <thead>
             <tr>
-              <th>Fee</th>
-              <th>Amount</th>
+              <th scope="col">Fee</th>
+              <th scope="col">Amount</th>
             </tr>
           </thead>
           <tbody>
