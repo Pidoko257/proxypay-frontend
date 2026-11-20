@@ -75,3 +75,6 @@ this file or configuring an equivalent edge/CDN policy.
 
 <!-- handsoff-issue-881 -->
 - #881: `BATCH_88_TRANSACTION_TABLE_ENHANCEMENTS.md` — Contains Angular code in a React project
+
+<!-- handsoff-issue-882 -->
+- #882: `BATCH_85_FEATURES.md` — Export-to-Google-Sheets section documents a server-side Node.js implementation
