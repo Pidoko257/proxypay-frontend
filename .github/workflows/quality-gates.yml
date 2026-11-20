@@ -35,6 +35,9 @@ jobs:
       - name: Install dashboard dependencies
         run: npm ci --prefix dashboard
 
+      - name: Type-check dashboard
+        run: npx tsc --noEmit --project dashboard/tsconfig.json
+
       - name: Audit dependencies
         run: npm run audit:dependencies
 
