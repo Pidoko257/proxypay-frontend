@@ -69,3 +69,6 @@ this file or configuring an equivalent edge/CDN policy.
 
 <!-- handsoff-issue-709 -->
 - #709: Add schema navigation from operation details
+
+<!-- handsoff-issue-893 -->
+- #893: `TransactionSearch.tsx` — `PortalSearchDialog` is defined and exported but never used
