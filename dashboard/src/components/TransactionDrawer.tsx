@@ -11,6 +11,7 @@ interface TransactionDrawerProps {
   loading: boolean
   error: string | null
   onClose: () => void
+  onCancel?: () => void
   fullPage?: boolean
   onOpenFullPage?: () => void
 }
@@ -21,6 +22,7 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
   loading,
   error,
   onClose,
+  onCancel,
   fullPage = false,
   onOpenFullPage,
 }) => {
@@ -131,7 +133,18 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
         {/* Scrollable Content */}
         <div className="drawer-content">
           {loading ? (
-            <TransactionDetailSkeleton />
+            <>
+              <TransactionDetailSkeleton />
+              {onCancel && (
+                <button
+                  type="button"
+                  className="close-footer-button"
+                  onClick={onCancel}
+                >
+                  Cancel
+                </button>
+              )}
+            </>
           ) : error ? (
             <div className="drawer-error" role="alert">
               {error}
