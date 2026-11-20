@@ -519,15 +519,15 @@ export default function ComplianceReport(): JSX.Element {
         {/* ── Section 2: Transaction Audit Trail ── */}
         <div className="cr-card">
           <h3>2. Transaction Audit Trail (10 sample transactions)</h3>
-          <table className="cr-table">
+          <table className="cr-table" aria-label="Transaction Audit Trail">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Date</th>
-                <th>Amount</th>
-                <th>Currency</th>
-                <th>Status</th>
-                <th>Counterparty</th>
+                <th scope="col">ID</th>
+                <th scope="col">Date</th>
+                <th scope="col">Amount</th>
+                <th scope="col">Currency</th>
+                <th scope="col">Status</th>
+                <th scope="col">Counterparty</th>
               </tr>
             </thead>
             <tbody>

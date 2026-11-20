@@ -554,12 +554,12 @@ export default function RateLimitDashboard(): React.JSX.Element {
           <div className="rate-limit-endpoints-section">
             <h3>Endpoint Usage</h3>
             <div className="rate-limit-table-container">
-              <table className="rate-limit-table">
+              <table className="rate-limit-table" aria-label="Endpoint Usage">
                 <thead>
                   <tr>
-                    <th>Endpoint</th>
-                    <th className="rate-limit-usage-header">Usage</th>
-                    <th className="rate-limit-stats-header">Requests</th>
+                    <th scope="col">Endpoint</th>
+                    <th scope="col" className="rate-limit-usage-header">Usage</th>
+                    <th scope="col" className="rate-limit-stats-header">Requests</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -597,8 +597,8 @@ export default function RateLimitDashboard(): React.JSX.Element {
           {status.usageHistory && status.usageHistory.length > 0 && (
             <section className="rate-limit-history-section">
               <h3>Recent Consumption</h3>
-              <table className="rate-limit-history-table">
-                <thead><tr><th>Recorded</th><th>Requests used</th></tr></thead>
+              <table className="rate-limit-history-table" aria-label="Recent Consumption">
+                <thead><tr><th scope="col">Recorded</th><th scope="col">Requests used</th></tr></thead>
                 <tbody>
                   {[...status.usageHistory].reverse().map((point) => (
                     <tr key={point.timestamp}>
