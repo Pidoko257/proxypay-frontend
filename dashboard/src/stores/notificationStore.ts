@@ -61,20 +61,25 @@ interface NotificationStore {
   fetchNotifications: () => Promise<void>
   markNotificationRead: (id: string) => Promise<void>
   bulkMarkRead: (ids: string[]) => Promise<void>
+  undo: () => Promise<void>
+  redo: () => Promise<void>
+
+  // Internal helpers
+  _isUpdateStale: (eventType: string, version: number) => boolean
+  _getNextVersion: (eventType: string) => number
 }
 
 const MAX_HISTORY_SIZE = 20
 
-export const useNotificationStore = create<NotificationStore>((set, get) => ({
-  settings: [],
-  loading: false,
-  error: null,
-  optimisticUpdates: new Map(),
-  notifications: [],
-  notificationsLoading: false,
-  bulkReadInProgress: new Set(),
-  pastChanges: [],
-  futureChanges: [],
+export const useNotificationStore = create<NotificationStore>((set, get) => {
+  /**
+   * Process the update queue for a specific event type.
+   * Ensures updates are serialized: only one update in flight at a time.
+   * This prevents race conditions where multiple concurrent requests compete for the same resource.
+   */
+  const processUpdateQueue = async (eventType: string) => {
+    const state = get()
+    const updateQueue = state.updateQueues.get(eventType)
 
     if (!updateQueue || updateQueue.queue.length === 0) {
       return
@@ -88,7 +93,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
 
       try {
         await performSingleUpdate(eventType, update.emailEnabled, update.webhookEnabled)
-      } catch (error) {
+      } catch {
         // Error is already handled in performSingleUpdate
         // Continue processing queue even if one update fails
       }
@@ -99,15 +104,6 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
 
   /**
    * Perform a single notification update with version tracking and optimistic UI.
-   *
-   * Version tracking flow:
-   * 1. Increment version number for this event type
-   * 2. Apply optimistic update immediately
-   * 3. Send API request with version number attached
-   * 4. On response: verify version hasn't been superseded
-   * 5. If stale (newer version exists): discard response, keep optimistic state
-   * 6. If current: reconcile optimistic state with server response
-   * 7. On error: rollback optimistic update
    */
   const performSingleUpdate = async (
     eventType: string,
@@ -161,7 +157,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
         return
       }
 
-      // Response is current; reconcile with server state
+      // Response is current; reconcile with server state and record history
       optimisticUpdates.delete(eventType)
       state.pendingRequests.delete(eventType)
 
@@ -170,6 +166,17 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
           s.eventType === eventType ? updated : s
         ),
         optimisticUpdates,
+        pastChanges: previousSetting
+          ? [
+              ...state.pastChanges,
+              {
+                eventType,
+                previous: previousSetting,
+                next: updated,
+              },
+            ].slice(-MAX_HISTORY_SIZE)
+          : state.pastChanges,
+        futureChanges: [],
         error: null,
       }))
     } catch (error) {
@@ -199,6 +206,9 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
     optimisticUpdates: new Map(),
     notifications: [],
     notificationsLoading: false,
+    bulkReadInProgress: new Set(),
+    pastChanges: [],
+    futureChanges: [],
     requestVersions: new Map(),
     pendingRequests: new Map(),
     updateQueues: new Map(),
@@ -264,61 +274,98 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
         webhookEnabled,
       })
 
-  bulkMarkRead: async (ids: string[]) => {
-    if (ids.length === 0) return
+      // If no update is in progress, start processing the queue
+      if (!wasProcessing) {
+        await processUpdateQueue(eventType)
+      }
+    },
 
-    const state = get()
-    
-    // Store previous state for rollback
-    const previousNotifications = state.notifications
-    const bulkReadInProgress = new Set(state.bulkReadInProgress)
-    ids.forEach(id => bulkReadInProgress.add(id))
+    clearError: () => {
+      set({ error: null })
+    },
 
-    // Optimistic update - mark all as read atomically
-    const optimisticNotifications = previousNotifications.map((notification) =>
-      ids.includes(notification.id) ? { ...notification, read: true } : notification
-    )
+    fetchNotifications: async () => {
+      set({ notificationsLoading: true })
+      try {
+        const notifications = await proxyPayAPI.getNotifications()
+        set({ notifications, notificationsLoading: false })
+      } catch (error) {
+        set({
+          notificationsLoading: false,
+          error:
+            error instanceof Error ? error.message : 'Failed to fetch notifications',
+        })
+      }
+    },
 
-    set({
-      notifications: optimisticNotifications,
-      bulkReadInProgress,
-      error: null,
-    })
+    markNotificationRead: async (id: string) => {
+      try {
+        await proxyPayAPI.markNotificationRead(id)
+        set((state) => ({
+          notifications: state.notifications.map((notification) =>
+            notification.id === id ? { ...notification, read: true } : notification
+          ),
+        }))
+      } catch (error) {
+        set({
+          error:
+            error instanceof Error ? error.message : 'Failed to update notification',
+        })
+      }
+    },
 
-    try {
-      // Attempt API call - server returns updated notifications for atomic confirmation
-      const updatedNotifications = await proxyPayAPI.markNotificationsRead(ids)
-      
-      bulkReadInProgress.forEach(id => bulkReadInProgress.delete(id))
+    bulkMarkRead: async (ids: string[]) => {
+      if (ids.length === 0) return
+
+      const state = get()
+
+      // Store previous state for rollback
+      const previousNotifications = state.notifications
+      const bulkReadInProgress = new Set(state.bulkReadInProgress)
+      ids.forEach((id) => bulkReadInProgress.add(id))
+
+      // Optimistic update - mark all as read atomically
+      const optimisticNotifications = previousNotifications.map((notification) =>
+        ids.includes(notification.id) ? { ...notification, read: true } : notification
+      )
 
       set({
-        notifications: updatedNotifications,
+        notifications: optimisticNotifications,
         bulkReadInProgress,
+        error: null,
       })
-    } catch (error) {
-      // Rollback on failure - restore previous state atomically
-      bulkReadInProgress.forEach(id => bulkReadInProgress.delete(id))
 
-      set({
-        notifications: previousNotifications,
-        bulkReadInProgress,
-        error:
-          error instanceof Error
-            ? `Failed to mark notifications as read: ${error.message}`
-            : 'Failed to mark notifications as read',
-      })
-    }
-  },
+      try {
+        // Attempt API call - server returns updated notifications for atomic confirmation
+        const updatedNotifications = await proxyPayAPI.markNotificationsRead(ids)
 
-  clearError: () => {
-    set({ error: null })
-  },
+        bulkReadInProgress.forEach((id) => bulkReadInProgress.delete(id))
 
-  undo: async () => {
-    // Placeholder for future undo functionality
-  },
+        set({
+          notifications: updatedNotifications,
+          bulkReadInProgress,
+        })
+      } catch (error) {
+        // Rollback on failure - restore previous state atomically
+        bulkReadInProgress.forEach((id) => bulkReadInProgress.delete(id))
 
-  redo: async () => {
-    // Placeholder for future redo functionality
-  },
-}))
+        set({
+          notifications: previousNotifications,
+          bulkReadInProgress,
+          error:
+            error instanceof Error
+              ? `Failed to mark notifications as read: ${error.message}`
+              : 'Failed to mark notifications as read',
+        })
+      }
+    },
+
+    undo: async () => {
+      // Placeholder for future undo functionality
+    },
+
+    redo: async () => {
+      // Placeholder for future redo functionality
+    },
+  }
+})
