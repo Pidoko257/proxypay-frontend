@@ -69,3 +69,6 @@ this file or configuring an equivalent edge/CDN policy.
 
 <!-- handsoff-issue-709 -->
 - #709: Add schema navigation from operation details
+
+<!-- handsoff-issue-880 -->
+- #880: `src/utils/envValidator.ts` — Uses `REACT_APP_` prefix but the project is Vite, not Create React App
