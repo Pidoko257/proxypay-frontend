@@ -69,3 +69,6 @@ this file or configuring an equivalent edge/CDN policy.
 
 <!-- handsoff-issue-709 -->
 - #709: Add schema navigation from operation details
+
+<!-- handsoff-issue-873 -->
+- #873: `security.ts` — `assertNoExternalRefs` is called on the full parsed spec but blocks `$ref` to external files only after YAML parse succeeds
