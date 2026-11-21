@@ -8,6 +8,8 @@
     "build": "docusaurus build",
     "serve": "docusaurus serve",
     "deploy": "docusaurus deploy",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "load-test": "ts-node src/load-test.ts",
     "load-test:smoke": "ts-node src/load-test.ts --profile smoke-test",
     "load-test:normal": "ts-node src/load-test.ts --profile normal-load",
@@ -23,23 +25,28 @@
     "load-test:list": "ts-node src/load-test.ts --list-profiles"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.13",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.0.0",
+    "@vitejs/plugin-react": "^4.7.0",
     "axios": "^1.7.7",
+    "jsdom": "^25.0.1",
     "ts-node": "^10.9.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vite": "^5.4.21",
+    "vitest": "^2.1.9"
   },
   "dependencies": {
-    "js-yaml": "^4.1.0",
     "@docusaurus/core": "3.9.2",
     "@docusaurus/preset-classic": "3.9.2",
     "@mdx-js/react": "^3.1.1",
     "clsx": "^2.1.1",
+    "js-yaml": "^4.1.0",
     "prism-react-renderer": "^2.4.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "redoc": "^2.5.1",
-    "js-yaml": "^4.1.0"
+    "redoc": "^2.5.1"
   }
 }
-
