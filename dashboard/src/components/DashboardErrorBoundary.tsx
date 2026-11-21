@@ -11,6 +11,8 @@ interface DashboardErrorBoundaryState {
   error: Error | null
   eventId: string | null
   detailsOpen: boolean
+  screenshotDataUrl?: string | null
+  showScreenshotDialog?: boolean
 }
 
 export interface ValidationIssue {
@@ -37,10 +39,16 @@ export class DashboardErrorBoundary extends React.Component<
   DashboardErrorBoundaryProps,
   DashboardErrorBoundaryState
 > {
-  state: DashboardErrorBoundaryState = { error: null, eventId: null, detailsOpen: false }
+  state: DashboardErrorBoundaryState = {
+    error: null,
+    eventId: null,
+    detailsOpen: false,
+    screenshotDataUrl: null,
+    showScreenshotDialog: false,
+  }
 
   static getDerivedStateFromError(error: Error): DashboardErrorBoundaryState {
-    return { error, eventId: null, detailsOpen: false }
+    return { error, eventId: null, detailsOpen: false, screenshotDataUrl: null, showScreenshotDialog: false }
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
@@ -86,7 +94,7 @@ export class DashboardErrorBoundary extends React.Component<
   }
 
   render() {
-    const { error, eventId, detailsOpen } = this.state
+    const { error, eventId, detailsOpen, screenshotDataUrl, showScreenshotDialog } = this.state
     if (!error) return this.props.children
 
     const issues = getValidationIssues(error)
@@ -169,7 +177,7 @@ export class DashboardErrorBoundary extends React.Component<
         </section>
 
         <ErrorScreenshotDialog
-          isOpen={showScreenshotDialog}
+          isOpen={showScreenshotDialog ?? false}
           onClose={() => this.setState({ showScreenshotDialog: false })}
           errorMessage={error.message}
           timestamp={new Date().toISOString()}

@@ -31,14 +31,6 @@ const definitions: Omit<FeatureFlag, 'scope' | 'enabled'>[] = [
   },
 ]
 
-const tokenNamespace = (token: string) => {
-  let hashValue = 2166136261
-  for (let index = 0; index < token.length; index += 1) {
-    hashValue = Math.imul(hashValue ^ token.charCodeAt(index), 16777619)
-  }
-  return `token-${(hashValue >>> 0).toString(36)}`
-}
-
 const userId = () => {
   try {
     const explicitId = localStorage.getItem('auth_user_id')
@@ -47,26 +39,25 @@ const userId = () => {
     if (!token) return 'anonymous'
     const payload = token.split('.')[1]
     if (payload) {
-      try {
-        const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
-        const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')
-        const claims = JSON.parse(atob(padded)) as { sub?: unknown }
-        if (typeof claims.sub === 'string' && claims.sub) return claims.sub
-      } catch {
-        return tokenNamespace(token)
-      }
+      const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
+      const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')
+      const claims = JSON.parse(atob(padded)) as { sub?: unknown }
+      if (typeof claims.sub === 'string' && claims.sub) return claims.sub
     }
-    return tokenNamespace(token)
   } catch {
-    return 'anonymous'
+    return null
   }
+  return null
 }
 
-const userConfigKey = () => `proxypay.feature-flags.config.${encodeURIComponent(userId())}`
-const userValuesKey = () => `proxypay.feature-flags.user.${encodeURIComponent(userId())}`
+const userStorageKey = (kind: 'config' | 'user') => {
+  const id = userId()
+  return id === null ? null : `proxypay.feature-flags.${kind}.${encodeURIComponent(id)}`
+}
 const sessionValuesKey = 'proxypay.feature-flags.session'
 
-const readObject = (storage: Storage, key: string): Record<string, unknown> => {
+const readObject = (storage: Storage, key: string | null): Record<string, unknown> => {
+  if (key === null) return {}
   try {
     const value: unknown = JSON.parse(storage.getItem(key) || '{}')
     return value && typeof value === 'object' && !Array.isArray(value)
@@ -77,7 +68,8 @@ const readObject = (storage: Storage, key: string): Record<string, unknown> => {
   }
 }
 
-const writeObject = (storage: Storage, key: string, value: Record<string, unknown>) => {
+const writeObject = (storage: Storage, key: string | null, value: Record<string, unknown>) => {
+  if (key === null) return
   try {
     storage.setItem(key, JSON.stringify(value))
   } catch {
@@ -86,8 +78,8 @@ const writeObject = (storage: Storage, key: string, value: Record<string, unknow
 }
 
 const readFlags = (): FeatureFlag[] => {
-  const config = typeof localStorage === 'undefined' ? {} : readObject(localStorage, userConfigKey())
-  const userValues = typeof localStorage === 'undefined' ? {} : readObject(localStorage, userValuesKey())
+  const config = typeof localStorage === 'undefined' ? {} : readObject(localStorage, userStorageKey('config'))
+  const userValues = typeof localStorage === 'undefined' ? {} : readObject(localStorage, userStorageKey('user'))
   const sessionValues = typeof sessionStorage === 'undefined' ? {} : readObject(sessionStorage, sessionValuesKey)
 
   return definitions.map((definition) => {
@@ -111,7 +103,7 @@ const persistFlags = (flags: FeatureFlag[]) => {
     scope: flag.scope,
     defaultEnabled: flag.defaultEnabled,
   }]))
-  writeObject(localStorage, userConfigKey(), config)
+  writeObject(localStorage, userStorageKey('config'), config)
 }
 
 const trackFlagChange = (flag: FeatureFlag, event: 'evaluated' | 'toggled') => {
@@ -139,7 +131,7 @@ export const useFeatureFlagStore = create<FeatureFlagStore>((set, get) => ({
     const flag = flags.find((candidate) => candidate.key === key)
     if (!flag) return
     const storage = flag.scope === 'session' ? sessionStorage : localStorage
-    const keyName = flag.scope === 'session' ? sessionValuesKey : userValuesKey()
+    const keyName = flag.scope === 'session' ? sessionValuesKey : userStorageKey('user')
     const values = readObject(storage, keyName)
     writeObject(storage, keyName, { ...values, [key]: enabled })
     set({ flags })
@@ -151,10 +143,10 @@ export const useFeatureFlagStore = create<FeatureFlagStore>((set, get) => ({
     const flags = get().flags.map((flag) => flag.key === key ? { ...flag, scope } : flag)
     persistFlags(flags)
     const storage = scope === 'session' ? sessionStorage : localStorage
-    const keyName = scope === 'session' ? sessionValuesKey : userValuesKey()
+    const keyName = scope === 'session' ? sessionValuesKey : userStorageKey('user')
     const values = readObject(storage, keyName)
     writeObject(storage, keyName, { ...values, [key]: currentFlag.enabled })
-    set({ flags: readFlags() })
+    set({ flags: userStorageKey('config') === null ? flags : readFlags() })
   },
 }))
 

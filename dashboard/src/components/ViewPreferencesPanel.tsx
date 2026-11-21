@@ -21,7 +21,7 @@ export const ViewPreferencesPanel: React.FC<{
 
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        panelRef.current &&
+        !panelRef.current ||
         !(event.target instanceof Node) ||
         !panelRef.current.contains(event.target)
       ) {
