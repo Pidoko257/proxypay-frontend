@@ -73,7 +73,7 @@ function saveTxUsername(name: string): void {
 
 function formatTimestamp(ts: number): string {
   try {
-    return new Intl.DateTimeFormat(undefined, {
+    return new Intl.DateTimeFormat('en-GB', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -81,7 +81,7 @@ function formatTimestamp(ts: number): string {
       minute: '2-digit',
     }).format(new Date(ts));
   } catch {
-    return new Date(ts).toLocaleString();
+    return new Date(ts).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' });
   }
 }
 
