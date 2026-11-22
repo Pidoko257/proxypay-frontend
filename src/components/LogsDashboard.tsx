@@ -3,9 +3,11 @@
  * React component for visualizing log analytics with timezone support
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { AnalyticsResult, EndpointMetrics, ErrorAnalysis } from '../analytics/analytics-engine';
 import TimeZoneSelector, { formatDateInTimezone, detectUserTimezone } from './TimeZoneSelector';
+import { sanitizeInput } from '../utils/sanitize';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import '../css/logs-dashboard.css';
 
 /**
@@ -117,6 +119,50 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
     ? analytics.usageByHour
     : analytics.usageByHour.slice(-HOUR_WINDOW);
   const hasMoreHours = analytics.usageByHour.length > HOUR_WINDOW;
+
+  /**
+   * #449 — Infinite scroll for endpoints list.
+   * We page through analytics.topEndpoints in chunks of PAGE_SIZE.
+   * Scrolling to the bottom of the endpoints list loads the next page.
+   */
+  const PAGE_SIZE = 20;
+  const [endpointsPage, setEndpointsPage] = useState(1);
+  const [endpointsLoading, setEndpointsLoading] = useState(false);
+
+  // Reset pagination when the tab changes so we don't retain stale page state
+  useEffect(() => {
+    if (selectedTab === 'endpoints') {
+      setEndpointsPage(1);
+    }
+  }, [selectedTab]);
+
+  const filteredEndpoints = analytics.topEndpoints.filter(
+    (ep) =>
+      !filterText ||
+      ep.endpoint.toLowerCase().includes(filterText.toLowerCase()) ||
+      ep.method.toLowerCase().includes(filterText.toLowerCase())
+  );
+  const visibleEndpoints = filteredEndpoints.slice(0, endpointsPage * PAGE_SIZE);
+  const hasMoreEndpoints = visibleEndpoints.length < filteredEndpoints.length;
+
+  const loadMoreEndpoints = useCallback(() => {
+    if (endpointsLoading || !hasMoreEndpoints) return;
+    setEndpointsLoading(true);
+    // Simulate async load (data is already in memory; timeout prevents layout jump)
+    setTimeout(() => {
+      setEndpointsPage((prev) => prev + 1);
+      setEndpointsLoading(false);
+    }, 300);
+  }, [endpointsLoading, hasMoreEndpoints]);
+
+  const endpointsContainerRef = useRef<HTMLDivElement | null>(null);
+  const { sentinelRef: endpointsSentinelRef } = useInfiniteScroll({
+    onLoadMore: loadMoreEndpoints,
+    hasMore: hasMoreEndpoints,
+    isLoading: endpointsLoading,
+    threshold: 80,
+    scrollContainerRef: endpointsContainerRef,
+  });
 
   // Save timezone preference to localStorage
   useEffect(() => {
@@ -369,15 +415,22 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
                 placeholder="Filter endpoints..."
                 value={filterText}
                 onChange={(e) => {
-                  setFilterText(e.target.value);
-                  onFilterChange?.(e.target.value);
+                  const safe = sanitizeInput(e.target.value);
+                  setFilterText(safe);
+                  onFilterChange?.(safe);
                 }}
                 className="filter-input"
               />
             </div>
 
-            <div className="endpoints-list">
-              {analytics.topEndpoints.map((endpoint, idx) => (
+            {/* #449 — Infinite scroll container */}
+            <div
+              className="endpoints-list"
+              ref={endpointsContainerRef}
+              style={{ maxHeight: '600px', overflowY: 'auto' }}
+              data-testid="endpoints-scroll-container"
+            >
+              {visibleEndpoints.map((endpoint, idx) => (
                 <div key={`${endpoint.method}-${endpoint.endpoint}`} className="endpoint-item">
                   <div className="endpoint-rank">{idx + 1}</div>
                   <div className="endpoint-details">
@@ -404,6 +457,36 @@ export const LogsDashboard: React.FC<DashboardProps> = ({
                   </div>
                 </div>
               ))}
+
+              {/* Sentinel element — triggers next page load via IntersectionObserver */}
+              <div
+                ref={endpointsSentinelRef}
+                data-testid="infinite-scroll-sentinel"
+                aria-hidden="true"
+              />
+
+              {/* Loading indicator — no layout jump (min-height reserved) */}
+              {endpointsLoading && (
+                <div
+                  className="infinite-scroll-loading"
+                  role="status"
+                  aria-live="polite"
+                  data-testid="infinite-scroll-loading"
+                  style={{ textAlign: 'center', padding: '1rem', color: '#64748b' }}
+                >
+                  <span aria-hidden="true">⏳</span> Loading more endpoints…
+                </div>
+              )}
+
+              {!hasMoreEndpoints && filteredEndpoints.length > 0 && (
+                <div
+                  className="infinite-scroll-end"
+                  data-testid="infinite-scroll-end"
+                  style={{ textAlign: 'center', padding: '0.75rem', color: '#94a3b8', fontSize: '0.85rem' }}
+                >
+                  All {filteredEndpoints.length} endpoint{filteredEndpoints.length !== 1 ? 's' : ''} loaded
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -5,6 +5,16 @@
 
 import { AnalyticsResult } from './analytics-engine';
 
+const csvCell = (value: string | number): string => {
+  const original = String(value);
+  const safeValue = typeof value === 'string' && /^[\s\u0000-\u001f]*[=+\-@]/.test(original)
+    ? `'${original}`
+    : original;
+  return /[",\r\n]/.test(safeValue)
+    ? `"${safeValue.replace(/"/g, '""')}"`
+    : safeValue;
+};
+
 export interface FilterMetadata {
   startDate: string;
   endDate: string;
@@ -57,11 +67,11 @@ export class ReportGenerator {
     // Filter metadata section
     if (filters) {
       lines.push('FILTERS APPLIED');
-      lines.push(`Start Date,${filters.startDate}`);
-      lines.push(`End Date,${filters.endDate}`);
-      if (filters.endpoint) lines.push(`Endpoint Filter,${filters.endpoint}`);
-      if (filters.method) lines.push(`Method Filter,${filters.method}`);
-      if (filters.statusCode) lines.push(`Status Code Filter,${filters.statusCode}`);
+      lines.push(`Start Date,${csvCell(filters.startDate)}`);
+      lines.push(`End Date,${csvCell(filters.endDate)}`);
+      if (filters.endpoint) lines.push(`Endpoint Filter,${csvCell(filters.endpoint)}`);
+      if (filters.method) lines.push(`Method Filter,${csvCell(filters.method)}`);
+      if (filters.statusCode) lines.push(`Status Code Filter,${csvCell(filters.statusCode)}`);
       lines.push(`Min Response Time (ms),${filters.minResponseTime}`);
       lines.push(`Max Response Time (ms),${filters.maxResponseTime}`);
       lines.push('');
@@ -69,7 +79,7 @@ export class ReportGenerator {
 
     // Summary section
     lines.push('SUMMARY');
-    lines.push(`Date Range,"${analytics.dateRange.start.toISOString()} to ${analytics.dateRange.end.toISOString()}"`);
+    lines.push(`Date Range,${csvCell(`${analytics.dateRange.start.toISOString()} to ${analytics.dateRange.end.toISOString()}`)}`);
     lines.push(`Total Requests,${analytics.totalRequests}`);
     lines.push(`Total Errors,${analytics.totalErrors}`);
     lines.push(`Error Rate (%),"${analytics.errorRate.toFixed(2)}"`);
@@ -83,7 +93,7 @@ export class ReportGenerator {
     lines.push('Rank,Method,Endpoint,Count,Avg Response Time (ms),P95 Response Time (ms),P99 Response Time (ms),Error Count,Error Rate (%)');
     analytics.topEndpoints.forEach((endpoint, idx) => {
       lines.push(
-        `${idx + 1},"${endpoint.method}","${endpoint.endpoint}",${endpoint.count},` +
+        `${idx + 1},${csvCell(endpoint.method)},${csvCell(endpoint.endpoint)},${endpoint.count},` +
         `${endpoint.avgResponseTime.toFixed(2)},${endpoint.p95ResponseTime.toFixed(2)},${endpoint.p99ResponseTime.toFixed(2)},` +
         `${endpoint.errorCount},"${endpoint.errorRate.toFixed(2)}"`
       );
@@ -96,8 +106,8 @@ export class ReportGenerator {
     analytics.topErrors.forEach((error, idx) => {
       const endpoints = error.endpoints.join('; ');
       lines.push(
-        `${idx + 1},"${error.error.replace(/"/g, '""')}",${error.count},"${error.percentage.toFixed(2)}"` +
-        `,"${error.firstOccurrence.toISOString()}","${error.lastOccurrence.toISOString()}","${endpoints}"`
+        `${idx + 1},${csvCell(error.error)},${error.count},${csvCell(error.percentage.toFixed(2))}` +
+        `,${csvCell(error.firstOccurrence.toISOString())},${csvCell(error.lastOccurrence.toISOString())},${csvCell(endpoints)}`
       );
     });
     lines.push('');
@@ -108,7 +118,7 @@ export class ReportGenerator {
     analytics.statusCodeBreakdown.forEach(status => {
       const endpoints = status.endpoints.join('; ');
       lines.push(
-        `${status.code},${status.count},"${status.percentage.toFixed(2)}",${status.avgResponseTime.toFixed(2)},"${endpoints}"`
+        `${status.code},${status.count},"${status.percentage.toFixed(2)}",${status.avgResponseTime.toFixed(2)},${csvCell(endpoints)}`
       );
     });
     lines.push('');
@@ -128,7 +138,7 @@ export class ReportGenerator {
     lines.push('Rank,User ID,Request Count,Unique Endpoints,Error Count,Last Activity');
     analytics.topUsers.forEach((user, idx) => {
       lines.push(
-        `${idx + 1},"${user.userId || 'Anonymous'}",${user.requestCount},${user.uniqueEndpoints},${user.errorCount},"${user.lastActivity.toISOString()}"`
+        `${idx + 1},${csvCell(user.userId || 'Anonymous')},${user.requestCount},${user.uniqueEndpoints},${user.errorCount},${csvCell(user.lastActivity.toISOString())}`
       );
     });
     lines.push('');
@@ -139,7 +149,7 @@ export class ReportGenerator {
     analytics.topIPs.forEach((ip, idx) => {
       const statusCodes = Object.entries(ip.statusCodes).map(([code, count]) => `${code}(${count})`).join('; ');
       lines.push(
-        `${idx + 1},"${ip.ip || 'Unknown'}",${ip.requestCount},${ip.uniqueEndpoints},${ip.errorCount},"${statusCodes}"`
+        `${idx + 1},${csvCell(ip.ip || 'Unknown')},${ip.requestCount},${ip.uniqueEndpoints},${ip.errorCount},${csvCell(statusCodes)}`
       );
     });
 

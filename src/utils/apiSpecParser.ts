@@ -16,6 +16,8 @@ export interface ParsedEndpoint {
   tag?: string;
   tags?: string[];
   deprecated?: boolean;
+  migrationPath?: string;
+  removalDate?: string;
   parameters?: OpenAPIParameter[];
   requestBody?: OpenAPIRequestBody;
   responses?: Record<string, OpenAPIResponse>;
@@ -111,6 +113,8 @@ export function parseEndpoints(spec: OpenAPISpec): ParsedEndpoint[] {
         tag: primaryTag,
         tags,
         deprecated: operation.deprecated || false,
+        migrationPath: operation['x-migration-path'] || operation['x-replacement'],
+        removalDate: operation['x-sunset-date'] || operation['x-removal-date'],
         parameters: operation.parameters || undefined,
         requestBody: operation.requestBody || undefined,
         responses: operation.responses || undefined,

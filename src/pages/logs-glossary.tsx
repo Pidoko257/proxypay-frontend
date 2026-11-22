@@ -1,6 +1,7 @@
 import React from 'react';
 import Layout from '@theme/Layout';
 import { METRIC_DEFINITIONS } from '../components/LogsDashboard';
+import Breadcrumb from '../components/Breadcrumb';
 
 /**
  * Reference page: plain-language definitions for every metric shown on the
@@ -12,6 +13,7 @@ export default function LogsGlossaryPage(): React.JSX.Element {
       title="Logs Metrics Glossary"
       description="Definitions for the metrics shown on the ProxyPay server logs analytics dashboard"
     >
+      <Breadcrumb />
       <main
         style={{
           maxWidth: 820,

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import ProgressiveChart from './ProgressiveChart';
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -200,7 +201,7 @@ function MiniBar({ pct, color }: { pct: number; color: string }) {
 
 // ── Trend Chart ────────────────────────────────────────────────────
 
-function TrendChart({ data }: { data: TrendPoint[] }) {
+function TrendChartSvg({ data }: { data: TrendPoint[] }) {
   if (!data.length) return null;
   const W = 1000, H = 200;
   const pad = { top: 20, right: 20, bottom: 28, left: 44 };
@@ -239,6 +240,22 @@ function TrendChart({ data }: { data: TrendPoint[] }) {
       <circle cx={pad.left + 90} cy={pad.top - 8} r={4} fill="#f59e0b" />
       <text x={pad.left + 98} y={pad.top - 4} fontSize={10} fill="#f59e0b" fontWeight={600}>Code Smells (scaled)</text>
     </svg>
+  );
+}
+
+function TrendChart({ data }: { data: TrendPoint[] }) {
+  if (!data.length) return null;
+  const previewData = data.filter(
+    (_, index) => index === 0 || index === data.length - 1 || index % 4 === 0,
+  );
+
+  return (
+    <ProgressiveChart
+      cacheKey={`quality-trend:${JSON.stringify(data)}`}
+      preview={<TrendChartSvg data={previewData} />}
+    >
+      <TrendChartSvg data={data} />
+    </ProgressiveChart>
   );
 }
 

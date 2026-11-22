@@ -45,7 +45,6 @@ export const TransactionRowPreview: FC<TransactionRowPreviewProps> = ({
     >
       <div className="preview-header">
         <span className="preview-label">Transaction preview</span>
-        <span className="preview-id">{transaction.id}</span>
       </div>
       <dl className="preview-details">
         <div>

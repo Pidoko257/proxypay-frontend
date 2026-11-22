@@ -1,23 +1,40 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { format } from 'date-fns'
-import { X } from 'lucide-react'
+import { ExternalLink, Printer, X, ChevronDown, ChevronRight } from 'lucide-react'
 import { Transaction } from '../services/api'
-import { StatusTimeline } from './StatusTimeline'
+import { printTransactionReceipt } from '../services/print'
 import '../styles/TransactionDrawer.css'
 
 interface TransactionDrawerProps {
   transaction: Transaction | null
   isOpen: boolean
+  loading: boolean
+  error: string | null
   onClose: () => void
-  loading?: boolean
+  onCancel?: () => void
+  fullPage?: boolean
+  onOpenFullPage?: () => void
 }
 
 export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
   transaction,
   isOpen,
+  loading,
+  error,
   onClose,
-  loading = false,
+  onCancel,
+  fullPage = false,
+  onOpenFullPage,
 }) => {
+  const [headersExpanded, setHeadersExpanded] = useState(true)
+  const [bodyExpanded, setBodyExpanded] = useState(true)
+
+  const handlePrint = () => {
+    if (window.confirm('Open the print dialog for this transaction?')) {
+      window.print()
+    }
+  }
+
   // Handle Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -30,26 +47,80 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
 
+  // Prevent body scroll when drawer is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isOpen])
+
   if (!transaction) return null
+
+  const handlePrintReceipt = () => {
+    try {
+      printTransactionReceipt(transaction)
+    } catch (error) {
+      console.error('Receipt generation failed:', error)
+      alert(error instanceof Error ? error.message : 'Failed to generate receipt')
+    }
+  }
+
+  // Group status metadata separately from headers/body for scanning.
+  const statusMetadata: Array<{ label: string; value: React.ReactNode }> = [
+    {
+      label: 'Status',
+      value: (
+        <span className={`status-badge status-${transaction.status}`}>
+          {transaction.status}
+        </span>
+      ),
+    },
+    { label: 'Provider', value: transaction.provider.toUpperCase() },
+    { label: 'Reference', value: transaction.reference },
+    {
+      label: 'Created',
+      value: format(new Date(transaction.timestamp), 'PPpp'),
+    },
+    ...(transaction.settledAt
+      ? [
+          {
+            label: 'Settled',
+            value: format(new Date(transaction.settledAt), 'PPpp'),
+          },
+        ]
+      : []),
+  ]
+
+  // Sort header names consistently (case-insensitive alphabetical).
+  const sortedHeaders = Object.entries(transaction.headers ?? {}).sort(([a], [b]) =>
+    a.toLowerCase().localeCompare(b.toLowerCase())
+  )
 
   return (
     <>
-      {/* Overlay */}
-      {isOpen && (
-        <div className="drawer-overlay" onClick={onClose} aria-hidden="true" />
-      )}
+      {/* Overlay — rendered before drawer in DOM; use .visible class instead of
+          the broken `~ sibling` combinator which would require overlay after drawer */}
+      <div
+        className={`drawer-overlay${isOpen ? ' visible' : ''}`}
+        onClick={onClose}
+        aria-hidden="true"
+      />
 
       {/* Drawer */}
       <div
         className={`transaction-drawer ${isOpen ? 'open' : ''}`}
         role="dialog"
-        aria-modal={isOpen}
-        aria-labelledby="transaction-drawer-heading"
-        aria-busy={loading}
+        aria-modal="true"
+        aria-label="Transaction Details"
       >
-        {/* Header */}
-        <div className="drawer-header">
-          <h2 id="transaction-drawer-heading">Transaction Details</h2>
+        {/* Fixed Header — always visible */}
+        <header className="drawer-header">
+          <h2>Transaction Details</h2>
           <button
             className="close-button"
             onClick={onClose}
@@ -57,10 +128,42 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
           >
             <X size={24} />
           </button>
-        </div>
+        </header>
 
-        {/* Content */}
+        {/* Scrollable Content */}
         <div className="drawer-content">
+          {loading ? (
+            <>
+              <TransactionDetailSkeleton />
+              {onCancel && (
+                <button
+                  type="button"
+                  className="close-footer-button"
+                  onClick={onCancel}
+                >
+                  Cancel
+                </button>
+              )}
+            </>
+          ) : error ? (
+            <div className="drawer-error" role="alert">
+              {error}
+            </div>
+          ) : (
+            <>
+          {/* Status Metadata — grouped separately for quick scanning */}
+          <section className="detail-section status-metadata-section">
+            <h3>Status</h3>
+            <div className="status-metadata-grid">
+              {statusMetadata.map((item) => (
+                <div key={item.label} className="status-metadata-item">
+                  <label>{item.label}</label>
+                  <div className="status-metadata-value">{item.value}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+
           {/* Basic Info */}
           <section className="detail-section">
             <h3>Basic Information</h3>
@@ -88,7 +191,7 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
 
           {/* Blockchain Info */}
           <section className="detail-section">
-            <h3>Blockchain & Mobile Money</h3>
+            <h3>Blockchain &amp; Mobile Money</h3>
             <div className="detail-grid">
               <div className="detail-item">
                 <label>Stellar Transaction Hash</label>
@@ -105,7 +208,7 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
 
           {/* Amount & Fees */}
           <section className="detail-section">
-            <h3>Amount & Fees</h3>
+            <h3>Amount &amp; Fees</h3>
             <div className="detail-grid">
               <div className="detail-item">
                 <label>Amount</label>
@@ -156,43 +259,77 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
             </div>
           </section>
 
-          <StatusTimeline
-            transaction={transaction}
-            currentStatus={transaction.status}
-          />
-
-          {/* Failure Reason */}
-          {transaction.failureReason && (
-            <section className="detail-section error-section">
-              <h3>Failure Reason</h3>
-              <p className="error-text">{transaction.failureReason}</p>
+          {/* Headers */}
+          {sortedHeaders.length > 0 && (
+            <section className="detail-section">
+              <button
+                className="section-toggle"
+                onClick={() => setHeadersExpanded((v) => !v)}
+                aria-expanded={headersExpanded}
+              >
+                {headersExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                <h3>Headers</h3>
+              </button>
+              {headersExpanded && (
+                <div className="headers-list">
+                  {sortedHeaders.map(([key, value]) => (
+                    <div key={key} className="header-row">
+                      <span className="header-key">{key}</span>
+                      <code className="monospace header-value">{String(value)}</code>
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
           )}
 
-          {/* Audit Trail */}
-          <section className="detail-section">
-            <h3>Audit Trail</h3>
-            <div className="audit-timeline">
-              {transaction.auditTrail.length === 0 ? (
-                <p className="no-data">No audit events recorded</p>
-              ) : (
-                transaction.auditTrail.map((event, idx) => (
-                  <div key={idx} className="audit-event">
-                    <div className="event-time">
-                      {format(new Date(event.timestamp), 'PPpp')}
-                    </div>
-                    <div className="event-content">
-                      <div className="event-title">{event.event}</div>
-                      <div className="event-details">{event.details}</div>
-                      <div className="event-actor">By: {event.actor}</div>
-                    </div>
-                  </div>
-                ))
+          {/* Body */}
+          {transaction.body && (
+            <section className="detail-section">
+              <button
+                className="section-toggle"
+                onClick={() => setBodyExpanded((v) => !v)}
+                aria-expanded={bodyExpanded}
+              >
+                {bodyExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                <h3>Body</h3>
+              </button>
+              {bodyExpanded && (
+                <pre className="monospace body-content">
+                  {typeof transaction.body === 'string'
+                    ? transaction.body
+                    : JSON.stringify(transaction.body, null, 2)}
+                </pre>
               )}
-            </div>
-          </section>
+            </section>
+          )}
+            </>
+          )}
         </div>
+
+        {/* Fixed Footer — actions */}
+        <footer className="drawer-footer">
+          <button className="btn-secondary" onClick={handlePrintReceipt}>
+            <Printer size={16} /> Print Receipt
+          </button>
+          {!fullPage && onOpenFullPage && (
+            <button className="btn-primary" onClick={onOpenFullPage}>
+              <ExternalLink size={16} /> Open Full Page
+            </button>
+          )}
+        </footer>
       </div>
     </>
   )
 }
+
+const TransactionDetailSkeleton: React.FC = () => (
+  <div className="drawer-skeleton" aria-busy="true">
+    <div className="skeleton-line skeleton-title" />
+    <div className="skeleton-line" />
+    <div className="skeleton-line" />
+    <div className="skeleton-line skeleton-short" />
+  </div>
+)
+
+export default TransactionDrawer

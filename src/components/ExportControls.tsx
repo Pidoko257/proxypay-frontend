@@ -13,6 +13,7 @@
 import React, { useState } from 'react';
 import { AnalyticsResult } from '../analytics/analytics-engine';
 import { ReportGenerator, ExportOptions, BatchExportItem } from '../analytics/report-generator';
+import { sanitizeInput } from '../utils/sanitize';
 
 export interface FilterState {
   startDate: string;
@@ -36,11 +37,13 @@ interface ExportControlsProps {
 // ---------------------------------------------------------------------------
 
 /**
- * Escape a single CSV cell value: wrap in double-quotes if the value contains
- * a comma, double-quote, or newline; escape inner double-quotes by doubling.
+ * Escape CSV syntax and neutralize text that spreadsheet programs may evaluate.
  */
 function csvCell(value: string | number | null | undefined): string {
-  const str = value == null ? '' : String(value);
+  const original = value == null ? '' : String(value);
+  const str = typeof value === 'string' && /^[\s\u0000-\u001f]*[=+\-@]/.test(original)
+    ? `'${original}`
+    : original;
   if (/[",\n\r]/.test(str)) {
     return `"${str.replace(/"/g, '""')}"`;
   }
@@ -145,9 +148,11 @@ export const ExportControls: React.FC<ExportControlsProps> = ({
   };
 
   const updateDateRange = (index: number, key: 'startDate' | 'endDate', value: string) => {
+    // Sanitize date inputs before storing (#448)
+    const safeValue = sanitizeInput(value);
     setDateRanges((ranges) =>
       ranges.map((range, rangeIndex) =>
-        rangeIndex === index ? { ...range, [key]: value } : range
+        rangeIndex === index ? { ...range, [key]: safeValue } : range
       )
     );
   };

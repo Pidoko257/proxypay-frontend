@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { FC, FormEvent, KeyboardEvent } from 'react'
 import { AlertCircle, CalendarPlus, Loader, X } from 'lucide-react'
 import {
@@ -11,6 +11,8 @@ import {
 import {
   createDefaultSchedule,
   getAvailableTimezones,
+  isValidTimezone,
+  formatNextRun,
 } from '../services/exportSchedule'
 import { useExportScheduleStore } from '../stores/exportScheduleStore'
 import { ScheduledExportsList } from './ScheduledExportsList'
@@ -36,6 +38,73 @@ interface ScheduleFormValues {
   includeAuditTrail: boolean
   notifyOnCompletion: boolean
   active: boolean
+}
+
+interface ScheduleDraft {
+  values: ScheduleFormValues
+  editingId: string | null
+  savedAt: number
+}
+
+const SCHEDULE_DRAFT_KEY = 'proxypay.export-schedule.draft'
+
+function readScheduleDraft(): ScheduleDraft | null {
+  try {
+    const rawDraft = window.localStorage.getItem(SCHEDULE_DRAFT_KEY)
+    if (!rawDraft) return null
+    const draft = JSON.parse(rawDraft) as Partial<ScheduleDraft>
+    if (
+      !draft.values ||
+      typeof draft.values.name !== 'string' ||
+      !['daily', 'weekly', 'monthly'].includes(draft.values.frequency) ||
+      typeof draft.values.time !== 'string' ||
+      typeof draft.values.timezone !== 'string' ||
+      !['email', 'webhook'].includes(draft.values.deliveryType) ||
+      typeof draft.values.email !== 'string' ||
+      typeof draft.values.webhookUrl !== 'string'
+    ) {
+      return null
+    }
+    return {
+      values: draft.values as ScheduleFormValues,
+      editingId: typeof draft.editingId === 'string' ? draft.editingId : null,
+      savedAt: typeof draft.savedAt === 'number' ? draft.savedAt : Date.now(),
+    }
+  } catch {
+    return null
+  }
+}
+
+function useScheduleDraftAutoSave(
+  values: ScheduleFormValues,
+  editingId: string | null,
+  enabled: boolean
+) {
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved')
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null)
+
+  const saveDraftNow = useCallback(() => {
+    try {
+      const savedAt = Date.now()
+      window.localStorage.setItem(
+        SCHEDULE_DRAFT_KEY,
+        JSON.stringify({ values, editingId, savedAt })
+      )
+      setLastSavedAt(savedAt)
+      setSaveStatus('saved')
+    } catch {
+      setSaveStatus('error')
+    }
+  }, [editingId, values])
+
+  useEffect(() => {
+    if (!enabled) return
+    setSaveStatus('saving')
+    const timeout = window.setTimeout(saveDraftNow, 500)
+    return () => window.clearTimeout(timeout)
+  }, [enabled, saveDraftNow])
+
+  return { saveStatus, lastSavedAt, saveDraftNow, setLastSavedAt }
 }
 
 const initialValues = (
@@ -99,20 +168,46 @@ export const ExportScheduleDialog: FC<ExportScheduleDialogProps> = ({
   )
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
+  const [formErrorField, setFormErrorField] = useState<keyof ScheduleFormValues | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const nameInputRef = useRef<HTMLInputElement>(null)
   const timezones = useMemo(() => getAvailableTimezones(), [])
+  const { saveStatus, lastSavedAt, saveDraftNow, setLastSavedAt } =
+    useScheduleDraftAutoSave(values, editingId, isOpen && hasUnsavedChanges)
+  const saveDraftRef = useRef(saveDraftNow)
+
+  useEffect(() => {
+    saveDraftRef.current = saveDraftNow
+  }, [saveDraftNow])
 
   useEffect(() => {
     if (isOpen) {
       void fetchSchedules()
-      setValues(initialValues(filters, includeAuditTrail))
-      setEditingId(null)
+      const draft = readScheduleDraft()
+      setValues(draft?.values ?? initialValues(filters, includeAuditTrail))
+      setEditingId(draft?.editingId ?? null)
+      setHasUnsavedChanges(Boolean(draft))
+      setLastSavedAt(draft?.savedAt ?? null)
       setFormError(null)
+      setFormErrorField(null)
       setDeleteId(null)
       clearError()
+    } else {
+      setHasUnsavedChanges(false)
     }
-  }, [clearError, fetchSchedules, filters, includeAuditTrail, isOpen])
+  }, [clearError, fetchSchedules, filters, includeAuditTrail, isOpen, setLastSavedAt])
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) return
+    const warnBeforeLeave = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+      saveDraftRef.current()
+    }
+    window.addEventListener('beforeunload', warnBeforeLeave)
+    return () => window.removeEventListener('beforeunload', warnBeforeLeave)
+  }, [hasUnsavedChanges])
 
   useEffect(() => {
     if (!isOpen) return
@@ -142,28 +237,61 @@ export const ExportScheduleDialog: FC<ExportScheduleDialogProps> = ({
     value: ScheduleFormValues[K]
   ) => {
     setValues((current) => ({ ...current, [key]: value }))
+    setHasUnsavedChanges(true)
+    if (formErrorField === key) {
+      setFormError(null)
+      setFormErrorField(null)
+    }
   }
 
   const resetForm = () => {
     setValues(initialValues(filters, includeAuditTrail))
     setEditingId(null)
     setFormError(null)
+    setFormErrorField(null)
+    setHasUnsavedChanges(false)
+    setLastSavedAt(null)
+    try {
+      window.localStorage.removeItem(SCHEDULE_DRAFT_KEY)
+    } catch {
+      setSaveStatus('error')
+    }
+  }
+
+  const handleClose = () => {
+    if (
+      hasUnsavedChanges &&
+      !window.confirm('Your changes are saved as a draft but have not been submitted. Leave anyway?')
+    ) {
+      return
+    }
+    if (hasUnsavedChanges) saveDraftNow()
+    onClose()
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setFormError(null)
+    setFormErrorField(null)
     if (!values.name.trim()) {
       setFormError('Schedule name is required')
+      setFormErrorField('name')
       return
     }
     if (!/^\d{2}:\d{2}$/.test(values.time)) {
       setFormError('Choose a valid export time')
+      setFormErrorField('time')
       return
     }
     const [hour, minute] = values.time.split(':').map(Number)
     if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
       setFormError('Choose a valid export time')
+      setFormErrorField('time')
+      return
+    }
+    if (!isValidTimezone(values.timezone)) {
+      setFormError('Choose a valid timezone')
+      setFormErrorField('timezone')
       return
     }
     if (
@@ -171,6 +299,7 @@ export const ExportScheduleDialog: FC<ExportScheduleDialogProps> = ({
       (!Number.isInteger(values.dayOfWeek) || values.dayOfWeek < 0 || values.dayOfWeek > 6)
     ) {
       setFormError('Choose a valid day of the week')
+      setFormErrorField('dayOfWeek')
       return
     }
     if (
@@ -178,10 +307,12 @@ export const ExportScheduleDialog: FC<ExportScheduleDialogProps> = ({
       (!Number.isInteger(values.dayOfMonth) || values.dayOfMonth < 1 || values.dayOfMonth > 31)
     ) {
       setFormError('Choose a day of the month from 1 to 31')
+      setFormErrorField('dayOfMonth')
       return
     }
     if (values.deliveryType === 'email' && !values.email.trim()) {
       setFormError('Enter an email address')
+      setFormErrorField('email')
       return
     }
     if (values.deliveryType === 'webhook') {
@@ -190,6 +321,7 @@ export const ExportScheduleDialog: FC<ExportScheduleDialogProps> = ({
         if (webhookUrl.protocol !== 'https:') throw new Error('Unsupported protocol')
       } catch {
         setFormError('Enter a valid HTTPS webhook URL')
+        setFormErrorField('webhookUrl')
         return
       }
     }
@@ -221,7 +353,9 @@ export const ExportScheduleDialog: FC<ExportScheduleDialogProps> = ({
   const handleEdit = (schedule: ExportSchedule) => {
     setValues(formFromSchedule(schedule))
     setEditingId(schedule.id)
+    setHasUnsavedChanges(true)
     setFormError(null)
+    setFormErrorField(null)
     clearError()
   }
 
@@ -269,6 +403,7 @@ export const ExportScheduleDialog: FC<ExportScheduleDialogProps> = ({
         onKeyDown={handleDialogKeyDown}
       >
         <div className="schedule-dialog-header">
+                    <button type="button" onClick={handleClose} aria-label="Close scheduled exports">
           <div>
             <h2 id="schedule-dialog-heading">
               <CalendarPlus size={20} /> Scheduled exports
@@ -302,7 +437,21 @@ export const ExportScheduleDialog: FC<ExportScheduleDialogProps> = ({
         <div className="schedule-dialog-content">
           <form className="schedule-form" onSubmit={handleSubmit}>
             <h3>{editingId ? 'Edit schedule' : 'Create a schedule'}</h3>
-            {formError && <p className="schedule-form-error" role="alert">{formError}</p>}
+            {formError && <p id="schedule-form-error" className="schedule-form-error" role="alert">{formError}</p>}
+            <div className="schedule-draft-status" role="status">
+              <span>
+                {saveStatus === 'saving'
+                  ? 'Saving...'
+                  : saveStatus === 'error'
+                    ? 'Draft could not be saved'
+                    : lastSavedAt
+                      ? `Draft saved at ${new Date(lastSavedAt).toLocaleString()}`
+                      : 'Draft not saved'}
+              </span>
+              <button type="button" onClick={saveDraftNow} disabled={!hasUnsavedChanges}>
+                Save draft now
+              </button>
+            </div>
 
             <label className="schedule-field">
               <span>Name</span>
@@ -311,6 +460,8 @@ export const ExportScheduleDialog: FC<ExportScheduleDialogProps> = ({
                 type="text"
                 value={values.name}
                 onChange={(event) => updateValue('name', event.target.value)}
+                aria-invalid={formErrorField === 'name'}
+                aria-describedby={formErrorField === 'name' ? 'schedule-form-error' : undefined}
                 required
               />
             </label>
@@ -335,6 +486,8 @@ export const ExportScheduleDialog: FC<ExportScheduleDialogProps> = ({
                   type="time"
                   value={values.time}
                   onChange={(event) => updateValue('time', event.target.value)}
+                  aria-invalid={formErrorField === 'time'}
+                  aria-describedby={formErrorField === 'time' ? 'schedule-form-error' : undefined}
                   required
                 />
               </label>
@@ -347,6 +500,8 @@ export const ExportScheduleDialog: FC<ExportScheduleDialogProps> = ({
                   <select
                     value={values.dayOfWeek}
                     onChange={(event) => updateValue('dayOfWeek', Number(event.target.value))}
+                    aria-invalid={formErrorField === 'dayOfWeek'}
+                    aria-describedby={formErrorField === 'dayOfWeek' ? 'schedule-form-error' : undefined}
                   >
                     <option value={0}>Sunday</option>
                     <option value={1}>Monday</option>
@@ -367,21 +522,39 @@ export const ExportScheduleDialog: FC<ExportScheduleDialogProps> = ({
                     max={31}
                     value={values.dayOfMonth}
                     onChange={(event) => updateValue('dayOfMonth', Number(event.target.value))}
+                    aria-invalid={formErrorField === 'dayOfMonth'}
+                    aria-describedby={formErrorField === 'dayOfMonth' ? 'schedule-form-error' : undefined}
                   />
                 </label>
               )}
               <label className="schedule-field">
-                <span>Timezone</span>
+                <span>Timezone for recurrence</span>
                 <select
                   value={values.timezone}
                   onChange={(event) => updateValue('timezone', event.target.value)}
+                  aria-invalid={formErrorField === 'timezone'}
+                  aria-describedby={formErrorField === 'timezone' ? 'schedule-form-error' : undefined}
                 >
+                  {!timezones.includes(values.timezone) && (
+                    <option value={values.timezone}>{values.timezone} (invalid)</option>
+                  )}
                   {timezones.map((timezone) => (
                     <option key={timezone} value={timezone}>{timezone}</option>
                   ))}
                 </select>
               </label>
             </div>
+            <p className="schedule-next-run" aria-live="polite">
+              {isValidTimezone(values.timezone)
+                ? `Next run in ${values.timezone}: ${formatNextRun({
+                    frequency: values.frequency,
+                    time: values.time,
+                    timezone: values.timezone,
+                    dayOfWeek: values.dayOfWeek,
+                    dayOfMonth: values.dayOfMonth,
+                  })}`
+                : 'Choose a valid timezone to preview the next run.'}
+            </p>
 
             <label className="schedule-field">
               <span>Delivery method</span>
@@ -404,6 +577,8 @@ export const ExportScheduleDialog: FC<ExportScheduleDialogProps> = ({
                   value={values.email}
                   onChange={(event) => updateValue('email', event.target.value)}
                   placeholder="finance@example.com"
+                  aria-invalid={formErrorField === 'email'}
+                  aria-describedby={formErrorField === 'email' ? 'schedule-form-error' : undefined}
                   required
                 />
               </label>
@@ -415,6 +590,8 @@ export const ExportScheduleDialog: FC<ExportScheduleDialogProps> = ({
                   value={values.webhookUrl}
                   onChange={(event) => updateValue('webhookUrl', event.target.value)}
                   placeholder="https://example.com/hooks/proxypay"
+                  aria-invalid={formErrorField === 'webhookUrl'}
+                  aria-describedby={formErrorField === 'webhookUrl' ? 'schedule-form-error' : undefined}
                   required
                 />
               </label>
@@ -450,6 +627,14 @@ export const ExportScheduleDialog: FC<ExportScheduleDialogProps> = ({
             <div className="schedule-form-actions">
               {editingId && (
                 <button type="button" className="schedule-cancel" onClick={resetForm}>
+                          onKeyDown={(event) => {
+                            if (event.key === 'Escape') {
+                              event.preventDefault()
+                              handleClose()
+                              return
+                            }
+                            handleDialogKeyDown(event)
+                          }}
                   Cancel edit
                 </button>
               )}

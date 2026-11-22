@@ -87,6 +87,53 @@ export function sanitizeAnnotationText(text: string): string {
 }
 
 /**
+ * Sanitizes plain-text user input for storage in state / localStorage.
+ * Suitable for filter fields, theme names, and other free-form text inputs
+ * that are never rendered as raw HTML.
+ *
+ * Strips dangerous tags first, then trims whitespace.
+ * Does NOT HTML-escape (that would corrupt normal display in React).
+ *
+ * @param text - Raw user input
+ * @returns Sanitized text safe for storage
+ *
+ * @example
+ * sanitizeInput('<script>alert(1)</script>hello')
+ * // Returns: 'hello'
+ */
+export function sanitizeInput(text: string): string {
+  if (!text || typeof text !== 'string') {
+    return '';
+  }
+  return stripDangerousTags(text).trim();
+}
+
+/**
+ * Validates a CSS hex color value.
+ * Allows #rgb, #rrggbb, and #rrggbbaa forms only.
+ *
+ * @param color - The value to test
+ * @returns true if the value is a valid hex color
+ */
+export function isValidHexColor(color: string): boolean {
+  return /^#([0-9A-Fa-f]{3,4}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$/.test(color);
+}
+
+/**
+ * Sanitizes a CSS hex color value. Returns the color unchanged if valid,
+ * otherwise returns an empty string.
+ *
+ * @param color - The color value to sanitize
+ * @returns A safe hex color string, or '' if the input is invalid
+ */
+export function sanitizeColor(color: string): string {
+  if (!color || typeof color !== 'string') {
+    return '';
+  }
+  return isValidHexColor(color.trim()) ? color.trim() : '';
+}
+
+/**
  * Validates that text is safe (contains no XSS vectors).
  * Useful for security assertions in tests.
  *

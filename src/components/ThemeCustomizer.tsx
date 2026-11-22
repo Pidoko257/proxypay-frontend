@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { validateContrast, suggestColors } from '../utils/contrastValidator';
+import { sanitizeInput, sanitizeColor } from '../utils/sanitize';
 
 type ThemePalette = {
   primary: string;
@@ -271,6 +272,17 @@ function validateThemeContrast(theme: ThemeDefinition, mode: ThemeMode): Contras
   return warnings;
 }
 
+function isBuiltInTheme(theme: ThemeDefinition): boolean {
+  return [...presetThemes, ...communityThemes].some((builtIn) => builtIn.id === theme.id);
+}
+
+function hasThemeContrastIssues(theme: ThemeDefinition): boolean {
+  return (
+    validateThemeContrast(theme, 'light').length > 0 ||
+    validateThemeContrast(theme, 'dark').length > 0
+  );
+}
+
 interface ContrastWarning {
   field: string;
   colors: string;
@@ -286,6 +298,9 @@ export default function ThemeCustomizer(): React.JSX.Element {
   const [themeMode, setThemeMode] = useState<ThemeMode>('light');
   const [schemeLabel, setSchemeLabel] = useState('Light preview');
   const [contrastWarnings, setContrastWarnings] = useState<ContrastWarning[]>([]);
+  const previewHasContrastIssues =
+    !isBuiltInTheme(previewTheme) && hasThemeContrastIssues(previewTheme);
+  const customThemeHasContrastIssues = hasThemeContrastIssues(customTheme);
 
   useEffect(() => {
     const storedPreference = readStoredTheme<ThemeDefinition>(STORAGE_KEYS.preference);
@@ -305,6 +320,19 @@ export default function ThemeCustomizer(): React.JSX.Element {
     setThemeMode(preferredMode);
     setSchemeLabel(preferredMode === 'dark' ? 'Dark preview' : 'Light preview');
     applyThemeToDocument(storedPreference || presetThemes[0], preferredMode);
+  }, []);
+
+  // #441 — Automatic dark-mode detection: listen for OS-level color scheme changes
+  // and update the theme mode accordingly without requiring a manual toggle.
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: MediaQueryListEvent) => {
+      const nextMode: ThemeMode = e.matches ? 'dark' : 'light';
+      setThemeMode(nextMode);
+      setSchemeLabel(nextMode === 'dark' ? 'Dark preview' : 'Light preview');
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
   }, []);
 
   useEffect(() => {
@@ -353,6 +381,10 @@ export default function ThemeCustomizer(): React.JSX.Element {
   };
 
   const handleSaveCustomTheme = () => {
+    if (customThemeHasContrastIssues) {
+      return;
+    }
+
     const nextTheme = {
       ...customTheme,
       id: `${customTheme.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
@@ -367,6 +399,10 @@ export default function ThemeCustomizer(): React.JSX.Element {
   };
 
   const handleApplyTheme = () => {
+    if (previewHasContrastIssues) {
+      return;
+    }
+
     setAppliedTheme(previewTheme);
     saveStoredTheme(STORAGE_KEYS.preference, previewTheme);
     applyThemeToDocument(previewTheme, themeMode);
@@ -377,46 +413,52 @@ export default function ThemeCustomizer(): React.JSX.Element {
   };
 
   const updateCustomField = (field: keyof ThemeDefinition, value: string | number) => {
+    // Sanitize string fields to prevent XSS in stored theme data (#448)
+    const safeValue = typeof value === 'string' ? sanitizeInput(value) : value;
     setCustomTheme((current) => ({
       ...current,
-      [field]: value,
+      [field]: safeValue,
     } as ThemeDefinition));
     setPreviewTheme((current) => ({
       ...current,
-      [field]: value,
+      [field]: safeValue,
     } as ThemeDefinition));
   };
 
   const updatePaletteField = (field: keyof ThemePalette, value: string) => {
+    // Only accept valid hex colors from the color picker (#448)
+    const safeColor = sanitizeColor(value) || value;
     setCustomTheme((current) => ({
       ...current,
       palette: {
         ...current.palette,
-        [field]: value,
+        [field]: safeColor,
       },
     }));
     setPreviewTheme((current) => ({
       ...current,
       palette: {
         ...current.palette,
-        [field]: value,
+        [field]: safeColor,
       },
     }));
   };
 
   const updateDarkPaletteField = (field: keyof ThemePalette, value: string) => {
+    // Only accept valid hex colors from the color picker (#448)
+    const safeColor = sanitizeColor(value) || value;
     setCustomTheme((current) => ({
       ...current,
       darkPalette: {
         ...(current.darkPalette || current.palette),
-        [field]: value,
+        [field]: safeColor,
       },
     }));
     setPreviewTheme((current) => ({
       ...current,
       darkPalette: {
         ...(current.darkPalette || current.palette),
-        [field]: value,
+        [field]: safeColor,
       },
     }));
   };
@@ -445,7 +487,17 @@ export default function ThemeCustomizer(): React.JSX.Element {
           </p>
         </div>
         <div className="theme-customizer__actions">
-          <button className="button button--primary" type="button" onClick={handleApplyTheme}>
+          <button
+            className="button button--primary"
+            type="button"
+            onClick={handleApplyTheme}
+            disabled={previewHasContrastIssues}
+            title={
+              previewHasContrastIssues
+                ? 'Resolve WCAG AA contrast issues before applying this custom theme.'
+                : undefined
+            }
+          >
             Apply theme
           </button>
           <button className="button button--secondary" type="button" onClick={toggleThemeMode}>
@@ -608,7 +660,17 @@ export default function ThemeCustomizer(): React.JSX.Element {
             </label>
           </div>
           <div className="theme-customizer__actions theme-customizer__actions--inline">
-            <button className="button button--primary" type="button" onClick={handleSaveCustomTheme}>
+            <button
+              className="button button--primary"
+              type="button"
+              onClick={handleSaveCustomTheme}
+              disabled={customThemeHasContrastIssues}
+              title={
+                customThemeHasContrastIssues
+                  ? 'Resolve WCAG AA contrast issues in both light and dark mode before saving.'
+                  : undefined
+              }
+            >
               Save custom theme
             </button>
             <button className="button button--secondary" type="button" onClick={handleExportTheme}>

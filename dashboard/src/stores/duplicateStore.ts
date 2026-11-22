@@ -74,6 +74,7 @@ const combineGroups = (
 }
 
 let latestGroupsRequest = 0
+let groupsAbortController: AbortController | null = null
 
 export const useDuplicateStore = create<DuplicateStore>((set, get) => ({
   groups: [],
@@ -84,18 +85,34 @@ export const useDuplicateStore = create<DuplicateStore>((set, get) => ({
   mergedTransaction: null,
 
   fetchGroups: async (filters) => {
+    groupsAbortController?.abort()
+    const controller = new AbortController()
+    groupsAbortController = controller
+
     const requestId = ++latestGroupsRequest
     set({ loading: true, error: null })
     try {
-      const groups = await proxyPayAPI.getDuplicateTransactions(filters)
-      if (requestId !== latestGroupsRequest) return
+      const groups = await (
+        proxyPayAPI.getDuplicateTransactions as (
+          f?: TransactionFilters,
+          opts?: { signal?: AbortSignal }
+        ) => Promise<DuplicateTransactionGroup[]>
+      )(filters, { signal: controller.signal })
+      if (requestId !== latestGroupsRequest || controller.signal.aborted) return
       set((state) => ({
         groups: combineGroups(state.serverGroups, groups),
         serverGroups: groups,
         loading: false,
       }))
     } catch (error) {
-      if (requestId !== latestGroupsRequest) return
+      if (
+        requestId !== latestGroupsRequest ||
+        controller.signal.aborted ||
+        (error instanceof Error &&
+          (error.name === 'AbortError' || error.name === 'CanceledError'))
+      ) {
+        return
+      }
       set({
         error:
           error instanceof Error

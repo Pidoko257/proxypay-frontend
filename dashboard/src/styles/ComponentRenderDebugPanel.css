@@ -1,0 +1,142 @@
+.render-debug-trigger {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 1000;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: #0f766e;
+  color: white;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 22%);
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+
+.render-debug-panel {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 4.75rem;
+  z-index: 999;
+  display: flex;
+  width: min(420px, calc(100vw - 2.5rem));
+  max-height: min(70vh, 650px);
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: white;
+  box-shadow: 0 12px 36px rgb(15 23 42 / 20%);
+  color: #0f172a;
+  font-size: 0.8rem;
+}
+
+.render-debug-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: #0f766e;
+  color: white;
+}
+
+.render-debug-header > div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.render-debug-header span {
+  font-size: 0.7rem;
+  opacity: 0.85;
+}
+
+.render-debug-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.render-debug-actions button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.render-debug-actions button:last-child {
+  font-size: 1.25rem;
+}
+
+.render-debug-body {
+  overflow-y: auto;
+}
+
+.render-debug-body ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.render-debug-body li {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.render-debug-warning {
+  border-left: 3px solid #dc2626;
+  background: #fff7f7;
+}
+
+.render-debug-component {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.render-debug-component span {
+  color: #b91c1c;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.render-debug-body dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.3rem 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.render-debug-body dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.25rem;
+}
+
+.render-debug-body dt {
+  color: #64748b;
+}
+
+.render-debug-body dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.render-debug-body li p,
+.render-debug-empty {
+  margin: 0;
+  color: #475569;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.render-debug-empty {
+  padding: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .render-debug-trigger {
+    scroll-behavior: auto;
+  }
+}
