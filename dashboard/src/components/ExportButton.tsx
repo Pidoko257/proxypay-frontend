@@ -6,6 +6,7 @@ import { CSVExporter } from '../services/csv'
 import { printTransactionReport } from '../services/print'
 import '../styles/ExportButton.css'
 import { canAccess } from '../auth/access'
+import { ExportScheduleDialog } from './ExportScheduleDialog'
 
 export const ExportButton: React.FC = () => {
   const { transactions, filters } = useTransactionStore()
@@ -20,6 +21,7 @@ export const ExportButton: React.FC = () => {
   const [showOptions, setShowOptions] = useState(false)
   const [scheduledFor, setScheduledFor] = useState('')
   const [scheduling, setScheduling] = useState(false)
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false)
 
   if (!canAccess('transaction-export')) {
     return null
@@ -242,8 +244,31 @@ export const ExportButton: React.FC = () => {
           >
             Cancel
           </button>
+
+          {canAccess('transaction-export') && (
+            <button
+              className="action-button secondary"
+              onClick={() => {
+                setShowOptions(false)
+                setScheduleDialogOpen(true)
+              }}
+            >
+              <CalendarClock size={16} />
+              Manage scheduled exports
+            </button>
+          )}
         </div>
       )}
     </div>
+
+    {canAccess('transaction-export') && (
+      <ExportScheduleDialog
+        isOpen={scheduleDialogOpen}
+        onClose={() => setScheduleDialogOpen(false)}
+        filters={filters}
+        includeAuditTrail={includeAudit}
+      />
+    )}
+    </>
   )
 }

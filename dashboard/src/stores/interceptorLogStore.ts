@@ -148,7 +148,7 @@ export const useInterceptorLogStore = create<InterceptorLogStore>((set, get) => 
         e.id === id
           ? {
               ...e,
-              status: (statusCode >= 200 && statusCode < 400
+              status: (statusCode >= 200 && statusCode < 300
                 ? 'success'
                 : 'error') as LogEntryStatus,
               statusCode,

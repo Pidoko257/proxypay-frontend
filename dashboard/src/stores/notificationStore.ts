@@ -48,7 +48,6 @@ interface NotificationStore {
   // Request versioning and serialization state
   requestVersions: Map<string, number> // Track latest version per event type
   pendingRequests: Map<string, PendingRequest> // In-flight request tracking
-  updateQueues: Map<string, PendingUpdateState> // Serialize updates per event type
 
   // Actions
   fetchSettings: () => Promise<void>
@@ -71,15 +70,23 @@ interface NotificationStore {
 
 const MAX_HISTORY_SIZE = 20
 
-export const useNotificationStore = create<NotificationStore>((set, get) => {
-  /**
-   * Process the update queue for a specific event type.
-   * Ensures updates are serialized: only one update in flight at a time.
-   * This prevents race conditions where multiple concurrent requests compete for the same resource.
-   */
-  const processUpdateQueue = async (eventType: string) => {
-    const state = get()
-    const updateQueue = state.updateQueues.get(eventType)
+/**
+ * Module-level map used to serialize updates per event type.
+ * Kept outside Zustand state because it only drives internal serialisation
+ * logic and must not trigger re-renders.
+ */
+const updateQueues = new Map<string, PendingUpdateState>()
+
+export const useNotificationStore = create<NotificationStore>((set, get) => ({
+  settings: [],
+  loading: false,
+  error: null,
+  optimisticUpdates: new Map(),
+  notifications: [],
+  notificationsLoading: false,
+  bulkReadInProgress: new Set(),
+  pastChanges: [],
+  futureChanges: [],
 
     if (!updateQueue || updateQueue.queue.length === 0) {
       return
@@ -211,7 +218,6 @@ export const useNotificationStore = create<NotificationStore>((set, get) => {
     futureChanges: [],
     requestVersions: new Map(),
     pendingRequests: new Map(),
-    updateQueues: new Map(),
 
     _getNextVersion: (eventType: string) => {
       const state = get()
@@ -260,10 +266,10 @@ export const useNotificationStore = create<NotificationStore>((set, get) => {
       const state = get()
 
       // Get or create update queue for this event type
-      let updateQueue = state.updateQueues.get(eventType)
+      let updateQueue = updateQueues.get(eventType)
       if (!updateQueue) {
         updateQueue = { inProgress: false, queue: [] }
-        state.updateQueues.set(eventType, updateQueue)
+        updateQueues.set(eventType, updateQueue)
       }
 
       const wasProcessing = updateQueue.inProgress

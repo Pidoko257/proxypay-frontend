@@ -450,13 +450,13 @@ export default function AlertThresholds(): JSX.Element {
             <>
               <div className="at-log-scroll">
                 <div className="at-log-container">
-                  <table className="at-log-table">
+                  <table className="at-log-table" aria-label="Violations Log">
                     <thead>
                       <tr>
-                        <th>Time</th>
-                        <th>Metric</th>
-                        <th>Value</th>
-                        <th>Severity</th>
+                        <th scope="col">Time</th>
+                        <th scope="col">Metric</th>
+                        <th scope="col">Value</th>
+                        <th scope="col">Severity</th>
                       </tr>
                     </thead>
                     <tbody>

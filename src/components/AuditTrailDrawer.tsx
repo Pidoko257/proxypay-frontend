@@ -51,7 +51,7 @@ type FilterValue = AuditEventType | typeof ALL_FILTER;
 
 function formatTimestamp(iso: string): string {
   try {
-    return new Intl.DateTimeFormat(undefined, {
+    return new Intl.DateTimeFormat('en-GB', {
       year: 'numeric',
       month: 'short',
       day: '2-digit',
@@ -149,12 +149,12 @@ function AuditEventItem({ event }: AuditEventItemProps): React.JSX.Element {
           {event.changes && event.changes.length > 0 && (
             <div className="audit-changes">
               <span className="audit-changes-title">State Changes</span>
-              <table className="audit-changes-table">
+              <table className="audit-changes-table" aria-label="State Changes">
                 <thead>
                   <tr>
-                    <th>Field</th>
-                    <th>Before</th>
-                    <th>After</th>
+                    <th scope="col">Field</th>
+                    <th scope="col">Before</th>
+                    <th scope="col">After</th>
                   </tr>
                 </thead>
                 <tbody>
