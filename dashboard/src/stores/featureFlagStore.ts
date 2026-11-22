@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { decodeJwtPayload } from '../utils/jwt'
 
 export type FlagScope = 'user' | 'session'
 

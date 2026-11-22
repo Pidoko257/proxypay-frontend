@@ -13,6 +13,7 @@ export function getCurrentRole(): DashboardRole {
 
   try {
     const user = JSON.parse(rawUser) as { role?: string }
+    if (typeof user !== 'object' || user === null) return 'viewer'
     return user.role === 'admin' || user.role === 'analyst' || user.role === 'viewer'
       ? user.role
       : 'viewer'
