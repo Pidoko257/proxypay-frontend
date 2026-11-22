@@ -1,6 +1,7 @@
 import React from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
+import BrowserOnly from '@docusaurus/BrowserOnly';
 import ThemeCustomizer from '@site/src/components/ThemeCustomizer';
 
 export default function Home(): React.JSX.Element {
@@ -17,10 +18,20 @@ export default function Home(): React.JSX.Element {
             <Link className="button button--primary button--lg" to="/api">
               Open API Reference
             </Link>
+            {' '}
+            <Link className="button button--secondary button--lg" to="/api-tools">
+              API Workbench
+            </Link>
+            {' '}
+            <Link className="button button--secondary button--lg" to="/changelog">
+              Changelog
+            </Link>
           </p>
         </section>
 
-        <ThemeCustomizer />
+        <BrowserOnly fallback={<div style={{ padding: '2rem' }}>Loading theme customizer…</div>}>
+          {() => <ThemeCustomizer />}
+        </BrowserOnly>
       </main>
     </Layout>
   );

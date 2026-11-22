@@ -1,6 +1,5 @@
 /**
  * API Sidebar Navigation Styles
- * Handles layout, colors, and truncation with tooltips
  */
 
 .container {
@@ -8,88 +7,144 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background: var(--ifm-background-surface-primary);
 }
 
-/* Header */
+/* #319 — Navigation error toast */
+.navErrorToast {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  padding: 0.45rem 0.75rem;
+  background: #fff3cd;
+  color: #664d03;
+  border: 1px solid #ffda6a;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  animation: fadeInToast 0.2s ease;
+}
+
+@keyframes fadeInToast {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.quickSearchOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 12vh;
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.quickSearch {
+  width: min(32rem, calc(100vw - 2rem));
+  padding: 0.75rem;
+  background: var(--ifm-background-surface-primary);
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 6px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.2);
+}
+
+.quickSearch input {
+  width: 100%;
+  padding: 0.7rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.quickSearchResult {
+  display: block;
+  width: 100%;
+  padding: 0.65rem;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.quickSearchResult[aria-selected='true'], .quickSearchResult:hover {
+  background: var(--ifm-background-surface-secondary);
+}
+
+.quickSearchEmpty {
+  display: block;
+  padding: 0.75rem;
+  color: var(--ifm-color-emphasis-600);
+}
+
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1rem;
+  padding: 1rem;
   border-bottom: 1px solid var(--ifm-color-emphasis-200);
+  background: var(--ifm-background-surface-secondary);
   flex-shrink: 0;
-  gap: 0.5rem;
 }
 
 .title {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--ifm-font-color-base);
 }
 
 .count {
-  font-size: 0.75rem;
-  padding: 0.125rem 0.5rem;
-  background: var(--ifm-color-emphasis-100);
-  color: var(--ifm-color-emphasis-700);
-  border-radius: 12px;
-  min-width: 28px;
-  text-align: center;
+  font-size: 0.85rem;
+  color: var(--ifm-color-emphasis-600);
+  background: var(--ifm-background-surface-primary);
+  padding: 0.25rem 0.5rem;
+  border-radius: 3px;
 }
 
-/* Scrollable tag groups container */
 .tagGroups {
   flex: 1;
   overflow-y: auto;
-  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
-/* Tag group */
 .tagGroup {
-  border-bottom: 1px solid var(--ifm-color-emphasis-100);
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
 }
 
-/* Tag header button */
 .tagHeader {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   width: 100%;
-  padding: 0.6rem 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--ifm-background-surface-secondary);
   border: none;
-  background: transparent;
   cursor: pointer;
   text-align: left;
-  transition: background-color 0.15s ease;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  color: var(--ifm-color-emphasis-700);
+  color: var(--ifm-font-color-base);
+  transition: all 0.2s ease;
+  /* Fix #357: keep tag group headers visible while the endpoint list scrolls. */
+  position: sticky;
+  top: 0;
+  z-index: 3;
 }
 
 .tagHeader:hover {
-  background-color: var(--ifm-color-emphasis-50);
+  background: var(--ifm-background-surface-tertiary);
 }
 
-.tagHeader:active {
-  background-color: var(--ifm-color-emphasis-100);
-}
-
-/* Tag toggle chevron */
 .tagToggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  font-size: 0.6rem;
+  display: inline-block;
+  width: 1rem;
+  text-align: center;
+  font-size: 0.8rem;
   transition: transform 0.2s ease;
-  color: var(--ifm-color-emphasis-600);
-  flex-shrink: 0;
 }
 
-/* Tag name */
 .tagName {
   flex: 1;
   min-width: 0;
@@ -98,105 +153,156 @@
   white-space: nowrap;
 }
 
-/* Tag count badge */
 .tagCount {
-  font-size: 0.7rem;
-  padding: 0.15rem 0.4rem;
-  background: var(--ifm-color-emphasis-100);
-  color: var(--ifm-color-emphasis-600);
-  border-radius: 10px;
-  min-width: 22px;
-  text-align: center;
-  flex-shrink: 0;
+  font-size: 0.8rem;
+  background: var(--ifm-color-emphasis-300);
+  color: var(--ifm-font-color-base);
+  padding: 0.2rem 0.4rem;
+  border-radius: 2px;
+  font-weight: 500;
 }
 
-/* Endpoints list */
+.deprecatedBadge {
+  flex-shrink: 0;
+  padding: 0.12rem 0.35rem;
+  border-radius: 2px;
+  background: #fff0eb;
+  color: #a33a22;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+/* Per-tag filter controls */
+.tagFilterBar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--ifm-background-surface-primary);
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+  /* Fix #357: the per-tag search box stays pinned below its (sticky) tag
+     header so users never have to scroll back up to search again. */
+  position: sticky;
+  top: 2.75rem;
+  z-index: 2;
+}
+
+.tagSearch {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 3px;
+  font-size: 0.85rem;
+  background: var(--ifm-background-color);
+  color: var(--ifm-font-color-base);
+  transition: all 0.2s ease;
+}
+
+.tagSearch:focus {
+  outline: none;
+  border-color: var(--ifm-color-primary);
+  box-shadow: 0 0 0 2px rgba(46, 133, 85, 0.1);
+}
+
+.methodFilters {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.methodFilter {
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 3px;
+  background: var(--ifm-background-color);
+  color: var(--ifm-font-color-base);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.methodFilter:hover {
+  border-color: var(--ifm-color-primary);
+  background: var(--ifm-background-surface-secondary);
+}
+
+.methodFilter.active {
+  background: var(--ifm-color-primary);
+  color: white;
+  border-color: var(--ifm-color-primary);
+}
+
+.methodFilter.active:hover {
+  background: var(--ifm-color-primary-dark);
+  border-color: var(--ifm-color-primary-dark);
+}
+
 .endpointsList {
   display: flex;
   flex-direction: column;
-  padding: 0;
-  margin: 0;
-  list-style: none;
+  gap: 0;
   background: var(--ifm-background-color);
 }
 
-/* Endpoint item button */
 .endpointItem {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   width: 100%;
-  padding: 0.5rem 0.75rem 0.5rem 1.75rem;
+  padding: 0.6rem 1rem;
+  padding-left: 1.75rem;
   border: none;
   background: transparent;
   cursor: pointer;
   text-align: left;
-  transition: background-color 0.15s ease;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: var(--ifm-font-color-base);
-  min-height: 32px;
-  position: relative;
+  transition: all 0.15s ease;
+  border-left: 2px solid transparent;
 }
 
 .endpointItem:hover {
-  background-color: var(--ifm-color-emphasis-50);
-}
-
-.endpointItem:focus {
-  outline: none;
-  background-color: var(--ifm-color-emphasis-100);
-  box-shadow: inset 0 0 0 1px var(--ifm-color-primary);
+  background: var(--ifm-background-surface-secondary);
 }
 
 .endpointItem.selected {
-  background-color: var(--ifm-color-emphasis-100);
-  border-left: 2px solid var(--ifm-color-primary);
-  padding-left: calc(1.75rem - 2px);
-  font-weight: 500;
-}
-
-/* Method badge */
-.methodBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 40px;
-  padding: 0.2rem 0.35rem;
-  font-size: 0.65rem;
+  background: var(--ifm-color-primary-light);
+  border-left-color: var(--ifm-color-primary);
+  color: var(--ifm-color-primary);
   font-weight: 600;
-  border-radius: 3px;
-  text-transform: uppercase;
-  flex-shrink: 0;
-  white-space: nowrap;
 }
 
-/* Method badge colors */
+.methodBadge {
+  display: inline-block;
+  padding: 0.2rem 0.4rem;
+  border-radius: 2px;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
 .methodBadge.info {
-  background-color: #d1ecf1;
-  color: #0c5460;
+  background: #339af0;
 }
 
 .methodBadge.success {
-  background-color: #d4edda;
-  color: #155724;
+  background: #51cf66;
 }
 
 .methodBadge.warning {
-  background-color: #fff3cd;
-  color: #856404;
+  background: #ffa94d;
 }
 
 .methodBadge.danger {
-  background-color: #f8d7da;
-  color: #721c24;
+  background: #ff6b6b;
 }
 
 .methodBadge.secondary {
-  background-color: #e2e3e5;
-  color: #383d41;
+  background: #adb5bd;
 }
 
-/* Endpoint path (truncated with tooltip) */
 .endpointPath {
   flex: 1;
   min-width: 0;
@@ -204,63 +310,25 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: monospace;
-  font-size: 0.75rem;
+  font-size: 0.8em;
 }
 
-/* Tooltip container */
-.endpointItem {
-  position: relative;
+.noResults {
+  padding: 0.75rem 1rem;
+  padding-left: 1.75rem;
+  color: var(--ifm-color-emphasis-600);
+  font-size: 0.85rem;
+  font-style: italic;
+  text-align: center;
 }
 
-/* Tooltip styling */
-.endpointItem[title] {
-  cursor: help;
-}
-
-.endpointItem[title]::after {
-  content: attr(title);
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--ifm-color-emphasis-900, #1c1e21);
-  color: white;
-  padding: 0.5rem 0.75rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: normal;
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 1000;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  margin-bottom: 0.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  max-width: 300px;
-  white-space: normal;
-  word-wrap: break-word;
-}
-
-.endpointItem[title]:hover::after {
-  opacity: 1;
-  visibility: visible;
-}
-
-/* Empty state */
 .empty {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1rem;
-  text-align: center;
+  height: 100%;
   color: var(--ifm-color-emphasis-500);
-  font-size: 0.85rem;
-}
-
-.empty p {
-  margin: 0;
+  font-size: 0.9rem;
 }
 
 /* Scrollbar styling */
@@ -281,253 +349,50 @@
   background: var(--ifm-color-emphasis-400);
 }
 
-/* Dark mode adjustments */
-@media (prefers-color-scheme: dark) {
-  .methodBadge.info {
-    background-color: #0e5a6f;
-    color: #e0f4f8;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .methodFilters {
+    gap: 0.3rem;
   }
 
-  .methodBadge.success {
-    background-color: #0f4f20;
-    color: #d4f1d4;
+  .methodFilter {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
   }
 
-  .methodBadge.warning {
-    background-color: #664d03;
-    color: #fff3cd;
-  }
-
-  .methodBadge.danger {
-    background-color: #6f2c2c;
-    color: #f8d7da;
-  }
-
-  .methodBadge.secondary {
-    background-color: #3a3f44;
-    color: #e2e3e5;
+  .endpointPath {
+    font-size: 0.75em;
   }
 }
 
-/* High contrast mode */
-@media (prefers-contrast: more) {
-  .tagHeader,
-  .endpointItem {
-    border: 1px solid transparent;
-  }
-
-  .tagHeader:hover {
-    border-color: var(--ifm-color-emphasis-600);
-  }
-
-  .endpointItem.selected {
-    border-left-width: 3px;
-    border-color: var(--ifm-color-primary);
-    box-shadow: inset 0 0 0 1px var(--ifm-color-primary);
-  }
-
-  .methodBadge {
-    border: 1px solid currentColor;
-  }
-}
-
-/* Bookmark button */
-.bookmarkButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: 1.1rem;
-  line-height: 1;
-  transition: transform 0.2s ease, opacity 0.2s ease;
-  flex-shrink: 0;
-  color: var(--ifm-color-emphasis-600);
-}
-
-.bookmarkButton:hover {
-  transform: scale(1.15);
-  color: var(--ifm-color-primary);
-}
-
-.bookmarkButton:active {
-  transform: scale(0.95);
-}
-
-.bookmarkButton.bookmarked {
-  color: var(--ifm-color-primary);
-  font-weight: 600;
-}
-
-.bookmarkButton[aria-pressed="true"] {
-  color: var(--ifm-color-primary);
-}
-
-/* Bookmarks section in header */
-.bookmarksSection {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--ifm-color-emphasis-200);
-  background: var(--ifm-background-surface-secondary);
-}
-
-.bookmarksHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-}
-
-.bookmarksTitle {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--ifm-color-emphasis-700);
-  margin: 0;
-}
-
-.clearBookmarksBtn {
-  font-size: 0.7rem;
-  padding: 0.15rem 0.4rem;
-  background: transparent;
-  border: 1px solid var(--ifm-color-emphasis-300);
-  color: var(--ifm-color-emphasis-600);
-  border-radius: 3px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.clearBookmarksBtn:hover {
-  background: var(--ifm-color-danger-light);
-  border-color: var(--ifm-color-danger);
-  color: var(--ifm-color-danger);
-}
-
-.bookmarksList {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  max-height: 150px;
-  overflow-y: auto;
-}
-
-.bookmarkItem {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.5rem;
-  background: var(--ifm-background-color);
-  border: 1px solid var(--ifm-color-emphasis-100);
-  border-radius: 3px;
-  cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
-  font-size: 0.75rem;
-  min-height: 28px;
-}
-
-.bookmarkItem:hover {
-  background-color: var(--ifm-color-emphasis-50);
-  border-color: var(--ifm-color-primary);
-}
-
-.bookmarkItemMethod {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 35px;
-  padding: 0.15rem 0.3rem;
-  font-size: 0.6rem;
-  font-weight: 600;
-  border-radius: 2px;
-  text-transform: uppercase;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.bookmarkItemMethod.info {
-  background-color: #d1ecf1;
-  color: #0c5460;
-}
-
-.bookmarkItemMethod.success {
-  background-color: #d4edda;
-  color: #155724;
-}
-
-.bookmarkItemMethod.warning {
-  background-color: #fff3cd;
-  color: #856404;
-}
-
-.bookmarkItemMethod.danger {
-  background-color: #f8d7da;
-  color: #721c24;
-}
-
-.bookmarkItemMethod.secondary {
-  background-color: #e2e3e5;
-  color: #383d41;
-}
-
-.bookmarkItemPath {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: monospace;
-  font-size: 0.7rem;
-  color: var(--ifm-font-color-base);
-}
-
-.bookmarkItemRemove {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: 0.9rem;
-  flex-shrink: 0;
-  color: var(--ifm-color-emphasis-500);
-  transition: color 0.15s ease;
-}
-
-.bookmarkItemRemove:hover {
-  color: var(--ifm-color-danger);
-}
-
-.bookmarksEmpty {
-  font-size: 0.75rem;
-  color: var(--ifm-color-emphasis-500);
-  padding: 0.5rem;
-  text-align: center;
-}
-
-/* Reduced motion for bookmarks */
-@media (prefers-reduced-motion: reduce) {
-  .bookmarkButton,
-  .bookmarkItem,
-  .clearBookmarksBtn,
-  .bookmarkItemRemove {
-    transition: none;
-  }
-}
-
-/* Reduced motion */
+/* Accessibility */
 @media (prefers-reduced-motion: reduce) {
   .tagHeader,
   .endpointItem,
-  .endpointItem[title]::after {
+  .methodFilter,
+  .tagSearch {
     transition: none;
   }
+}
 
-  .tagToggle {
-    transition: none;
+@media (prefers-contrast: more) {
+  .tagHeader,
+  .endpointItem {
+    border-width: 2px;
+  }
+
+  .methodFilter {
+    border-width: 2px;
+  }
+
+  .methodFilters {
+    gap: 0.5rem;
+  }
+}
+
+/* Dark mode optimizations */
+@media (prefers-color-scheme: dark) {
+  .tagSearch:focus {
+    box-shadow: 0 0 0 2px rgba(46, 133, 85, 0.2);
   }
 }

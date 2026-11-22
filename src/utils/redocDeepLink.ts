@@ -58,7 +58,7 @@ export function parseDeepLink(hash: string): DeepLink | null {
   const target = pathSegments[1] || queryParams.get('id');
   if (!target) return null;
 
-  const subTarget = pathSegments[2] || queryParams.get('subId');
+  const subTarget = pathSegments[2] || queryParams.get('subId') || undefined;
 
   return { type, target, subTarget, query };
 }
@@ -255,7 +255,7 @@ export function generateRedocSelectorId(method: string, path: string): string {
  * Create a hash observer that executes callbacks on deep-link changes
  */
 export class DeepLinkObserver {
-  private unsubscribe: (() => void) | null = null;
+  private unsubscribeListener: (() => void) | null = null;
   private lastDeepLink: DeepLink | null = null;
   private callbacks: Map<string, (deepLink: DeepLink | null) => void> = new Map();
 
@@ -263,7 +263,7 @@ export class DeepLinkObserver {
    * Start observing hash changes
    */
   start(): void {
-    this.unsubscribe = onHashChange((deepLink) => {
+    this.unsubscribeListener = onHashChange((deepLink) => {
       this.lastDeepLink = deepLink;
       this.callbacks.forEach((callback) => {
         callback(deepLink);
@@ -275,9 +275,9 @@ export class DeepLinkObserver {
    * Stop observing hash changes
    */
   stop(): void {
-    if (this.unsubscribe) {
-      this.unsubscribe();
-      this.unsubscribe = null;
+    if (this.unsubscribeListener) {
+      this.unsubscribeListener();
+      this.unsubscribeListener = null;
     }
   }
 

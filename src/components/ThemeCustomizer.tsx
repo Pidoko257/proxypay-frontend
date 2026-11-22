@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { validateContrast, suggestColors } from '../utils/contrastValidator';
+import { sanitizeInput, sanitizeColor } from '../utils/sanitize';
 
 type ThemePalette = {
   primary: string;
@@ -139,6 +141,21 @@ const presetThemes: ThemeDefinition[] = [
   },
 ];
 
+const communityThemes: ThemeDefinition[] = [
+  {
+    id: 'oceanic', name: 'Oceanic', description: 'Cool blue surfaces with a crisp teal accent.',
+    palette: { primary: '#0369a1', secondary: '#0f766e', surface: '#f0f9ff', surfaceAlt: '#ffffff', text: '#0c4a6e', muted: '#475569', border: '#bae6fd' },
+    darkPalette: { primary: '#38bdf8', secondary: '#2dd4bf', surface: '#082f49', surfaceAlt: '#0c4a6e', text: '#f0f9ff', muted: '#bae6fd', border: '#155e75' },
+    fontFamily: 'Source Sans 3, system-ui, sans-serif', headingFontFamily: 'Source Sans 3, system-ui, sans-serif', spacing: 12,
+  },
+  {
+    id: 'sunset', name: 'Sunset', description: 'Warm coral and gold accents for a lively workspace.',
+    palette: { primary: '#c2410c', secondary: '#be123c', surface: '#fff7ed', surfaceAlt: '#ffffff', text: '#431407', muted: '#7c2d12', border: '#fed7aa' },
+    darkPalette: { primary: '#fb923c', secondary: '#fb7185', surface: '#431407', surfaceAlt: '#7c2d12', text: '#fff7ed', muted: '#fed7aa', border: '#9a3412' },
+    fontFamily: 'Manrope, system-ui, sans-serif', headingFontFamily: 'Manrope, system-ui, sans-serif', spacing: 14,
+  },
+];
+
 const defaultCustomTheme: ThemeDefinition = {
   id: 'custom',
   name: 'Custom Theme',
@@ -215,6 +232,64 @@ function saveStoredTheme<T>(key: string, value: T): void {
   window.localStorage.setItem(key, JSON.stringify(value));
 }
 
+function validateThemeContrast(theme: ThemeDefinition, mode: ThemeMode): ContrastWarning[] {
+  const palette = getThemePalette(theme, mode);
+  const warnings: ContrastWarning[] = [];
+
+  // Check text on surface contrast
+  const textSurfaceContrast = validateContrast(palette.text, palette.surface);
+  if (!textSurfaceContrast.isCompliant) {
+    warnings.push({
+      field: 'text-surface',
+      colors: `Text (${palette.text}) on Surface (${palette.surface})`,
+      ratio: textSurfaceContrast.ratio,
+      isCompliant: false,
+    });
+  }
+
+  // Check muted text on surface contrast
+  const mutedSurfaceContrast = validateContrast(palette.muted, palette.surface);
+  if (!mutedSurfaceContrast.isCompliant) {
+    warnings.push({
+      field: 'muted-surface',
+      colors: `Muted (${palette.muted}) on Surface (${palette.surface})`,
+      ratio: mutedSurfaceContrast.ratio,
+      isCompliant: false,
+    });
+  }
+
+  // Check primary text contrast
+  const primaryTextContrast = validateContrast(palette.primary, palette.surface);
+  if (!primaryTextContrast.isCompliant) {
+    warnings.push({
+      field: 'primary-surface',
+      colors: `Primary (${palette.primary}) on Surface (${palette.surface})`,
+      ratio: primaryTextContrast.ratio,
+      isCompliant: false,
+    });
+  }
+
+  return warnings;
+}
+
+function isBuiltInTheme(theme: ThemeDefinition): boolean {
+  return [...presetThemes, ...communityThemes].some((builtIn) => builtIn.id === theme.id);
+}
+
+function hasThemeContrastIssues(theme: ThemeDefinition): boolean {
+  return (
+    validateThemeContrast(theme, 'light').length > 0 ||
+    validateThemeContrast(theme, 'dark').length > 0
+  );
+}
+
+interface ContrastWarning {
+  field: string;
+  colors: string;
+  ratio: number;
+  isCompliant: boolean;
+}
+
 export default function ThemeCustomizer(): React.JSX.Element {
   const [previewTheme, setPreviewTheme] = useState<ThemeDefinition>(presetThemes[0]);
   const [appliedTheme, setAppliedTheme] = useState<ThemeDefinition>(presetThemes[0]);
@@ -222,6 +297,10 @@ export default function ThemeCustomizer(): React.JSX.Element {
   const [customTheme, setCustomTheme] = useState<ThemeDefinition>(defaultCustomTheme);
   const [themeMode, setThemeMode] = useState<ThemeMode>('light');
   const [schemeLabel, setSchemeLabel] = useState('Light preview');
+  const [contrastWarnings, setContrastWarnings] = useState<ContrastWarning[]>([]);
+  const previewHasContrastIssues =
+    !isBuiltInTheme(previewTheme) && hasThemeContrastIssues(previewTheme);
+  const customThemeHasContrastIssues = hasThemeContrastIssues(customTheme);
 
   useEffect(() => {
     const storedPreference = readStoredTheme<ThemeDefinition>(STORAGE_KEYS.preference);
@@ -243,8 +322,24 @@ export default function ThemeCustomizer(): React.JSX.Element {
     applyThemeToDocument(storedPreference || presetThemes[0], preferredMode);
   }, []);
 
+  // #441 — Automatic dark-mode detection: listen for OS-level color scheme changes
+  // and update the theme mode accordingly without requiring a manual toggle.
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: MediaQueryListEvent) => {
+      const nextMode: ThemeMode = e.matches ? 'dark' : 'light';
+      setThemeMode(nextMode);
+      setSchemeLabel(nextMode === 'dark' ? 'Dark preview' : 'Light preview');
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
   useEffect(() => {
     applyThemeToDocument(previewTheme, themeMode);
+    // Validate contrast when theme or mode changes
+    const warnings = validateThemeContrast(previewTheme, themeMode);
+    setContrastWarnings(warnings);
   }, [previewTheme, themeMode]);
 
   const themeVariables = useMemo(() => {
@@ -272,12 +367,24 @@ export default function ThemeCustomizer(): React.JSX.Element {
     setCustomTheme(theme);
   };
 
+  const handleInstallCommunityTheme = (theme: ThemeDefinition) => {
+    const installed = { ...theme, savedAt: new Date().toISOString() } satisfies SavedTheme;
+    const updated = [installed, ...customThemes.filter((item) => item.id !== theme.id)];
+    setCustomThemes(updated);
+    saveStoredTheme(STORAGE_KEYS.customThemes, updated);
+    handlePresetSelect(theme);
+  };
+
   const handleLoadCustomTheme = (theme: SavedTheme) => {
     setPreviewTheme(theme);
     setCustomTheme(theme);
   };
 
   const handleSaveCustomTheme = () => {
+    if (customThemeHasContrastIssues) {
+      return;
+    }
+
     const nextTheme = {
       ...customTheme,
       id: `${customTheme.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
@@ -292,6 +399,10 @@ export default function ThemeCustomizer(): React.JSX.Element {
   };
 
   const handleApplyTheme = () => {
+    if (previewHasContrastIssues) {
+      return;
+    }
+
     setAppliedTheme(previewTheme);
     saveStoredTheme(STORAGE_KEYS.preference, previewTheme);
     applyThemeToDocument(previewTheme, themeMode);
@@ -302,46 +413,52 @@ export default function ThemeCustomizer(): React.JSX.Element {
   };
 
   const updateCustomField = (field: keyof ThemeDefinition, value: string | number) => {
+    // Sanitize string fields to prevent XSS in stored theme data (#448)
+    const safeValue = typeof value === 'string' ? sanitizeInput(value) : value;
     setCustomTheme((current) => ({
       ...current,
-      [field]: value,
+      [field]: safeValue,
     } as ThemeDefinition));
     setPreviewTheme((current) => ({
       ...current,
-      [field]: value,
+      [field]: safeValue,
     } as ThemeDefinition));
   };
 
   const updatePaletteField = (field: keyof ThemePalette, value: string) => {
+    // Only accept valid hex colors from the color picker (#448)
+    const safeColor = sanitizeColor(value) || value;
     setCustomTheme((current) => ({
       ...current,
       palette: {
         ...current.palette,
-        [field]: value,
+        [field]: safeColor,
       },
     }));
     setPreviewTheme((current) => ({
       ...current,
       palette: {
         ...current.palette,
-        [field]: value,
+        [field]: safeColor,
       },
     }));
   };
 
   const updateDarkPaletteField = (field: keyof ThemePalette, value: string) => {
+    // Only accept valid hex colors from the color picker (#448)
+    const safeColor = sanitizeColor(value) || value;
     setCustomTheme((current) => ({
       ...current,
       darkPalette: {
         ...(current.darkPalette || current.palette),
-        [field]: value,
+        [field]: safeColor,
       },
     }));
     setPreviewTheme((current) => ({
       ...current,
       darkPalette: {
         ...(current.darkPalette || current.palette),
-        [field]: value,
+        [field]: safeColor,
       },
     }));
   };
@@ -350,6 +467,12 @@ export default function ThemeCustomizer(): React.JSX.Element {
     const nextMode = themeMode === 'light' ? 'dark' : 'light';
     setThemeMode(nextMode);
     setSchemeLabel(nextMode === 'dark' ? 'Dark preview' : 'Light preview');
+  };
+
+  const getSuggestedTextColor = (): string | null => {
+    const palette = getThemePalette(customTheme, themeMode);
+    const suggestions = suggestColors(palette.text, palette.surface);
+    return suggestions.find((s) => s.isValid)?.color || null;
   };
 
   return (
@@ -364,7 +487,17 @@ export default function ThemeCustomizer(): React.JSX.Element {
           </p>
         </div>
         <div className="theme-customizer__actions">
-          <button className="button button--primary" type="button" onClick={handleApplyTheme}>
+          <button
+            className="button button--primary"
+            type="button"
+            onClick={handleApplyTheme}
+            disabled={previewHasContrastIssues}
+            title={
+              previewHasContrastIssues
+                ? 'Resolve WCAG AA contrast issues before applying this custom theme.'
+                : undefined
+            }
+          >
             Apply theme
           </button>
           <button className="button button--secondary" type="button" onClick={toggleThemeMode}>
@@ -417,6 +550,20 @@ export default function ThemeCustomizer(): React.JSX.Element {
       </div>
 
       <div className="theme-customizer__grid theme-customizer__grid--wide">
+        <div className="theme-customizer__panel">
+          <h3>Community theme library</h3>
+          <div className="theme-customizer__list">
+            {communityThemes.map((theme) => (
+              <div key={theme.id} className="theme-tile">
+                <strong>{theme.name}</strong>
+                <small>{theme.description}</small>
+                <button className="button button--secondary button--sm" type="button" onClick={() => handleInstallCommunityTheme(theme)}>
+                  Install theme
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
         <div className="theme-customizer__panel">
           <h3>Create a custom theme</h3>
           <label>
@@ -513,13 +660,66 @@ export default function ThemeCustomizer(): React.JSX.Element {
             </label>
           </div>
           <div className="theme-customizer__actions theme-customizer__actions--inline">
-            <button className="button button--primary" type="button" onClick={handleSaveCustomTheme}>
+            <button
+              className="button button--primary"
+              type="button"
+              onClick={handleSaveCustomTheme}
+              disabled={customThemeHasContrastIssues}
+              title={
+                customThemeHasContrastIssues
+                  ? 'Resolve WCAG AA contrast issues in both light and dark mode before saving.'
+                  : undefined
+              }
+            >
               Save custom theme
             </button>
             <button className="button button--secondary" type="button" onClick={handleExportTheme}>
               Export JSON
             </button>
           </div>
+
+          {contrastWarnings.length > 0 && (
+            <div className="theme-customizer__warnings">
+              <h4>⚠️ Contrast Issues Detected</h4>
+              <p>
+                The current color combination may not meet WCAG AA accessibility standards. Users with
+                vision deficiencies may struggle to read the text.
+              </p>
+              <ul>
+                {contrastWarnings.map((warning) => {
+                  const suggestedColor = suggestColors(
+                    getThemePalette(customTheme, themeMode)[warning.field.split('-')[0] as keyof ThemePalette],
+                    getThemePalette(customTheme, themeMode)[warning.field.split('-')[1] as keyof ThemePalette]
+                  ).find((s) => s.isValid);
+                  return (
+                    <li key={warning.field}>
+                      <strong>{warning.colors}</strong> — Ratio: {warning.ratio.toFixed(2)}:1 (need 4.5:1)
+                      {suggestedColor && (
+                        <div style={{ marginTop: '8px', fontSize: '0.9em' }}>
+                          <span style={{ display: 'inline-block', marginRight: '8px' }}>Suggestion: </span>
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              width: '24px',
+                              height: '24px',
+                              backgroundColor: suggestedColor.color,
+                              border: '1px solid #ccc',
+                              borderRadius: '4px',
+                              verticalAlign: 'middle',
+                            }}
+                            title={suggestedColor.color}
+                          />
+                          <span style={{ marginLeft: '8px' }}>
+                            {suggestedColor.color} (Ratio: {suggestedColor.ratio.toFixed(2)}:1)
+                          </span>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
         </div>
 
         <div className="theme-customizer__panel">

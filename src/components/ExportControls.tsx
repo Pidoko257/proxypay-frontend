@@ -1,200 +1,243 @@
 /**
  * Export Controls Component
- * Buttons and UI for exporting analytics reports with validation
+ * Buttons and UI for exporting analytics reports with filter preservation.
+ *
+ * Fix #352:
+ *  - handleExport is fully wired: builds a real CSV from filteredLogs (or
+ *    analytics data) and triggers a browser download via a Blob URL.
+ *  - The filename includes the active date range from FilterState.
+ *  - The CSV and JSON export buttons are disabled (with aria-label) when
+ *    there is no data to export (totalRequests === 0).
  */
 
 import React, { useState } from 'react';
 import { AnalyticsResult } from '../analytics/analytics-engine';
-import { ReportGenerator } from '../analytics/report-generator';
+import { ReportGenerator, ExportOptions, BatchExportItem } from '../analytics/report-generator';
+import { sanitizeInput } from '../utils/sanitize';
+
+export interface FilterState {
+  startDate: string;
+  endDate: string;
+  endpoint: string;
+  method: string;
+  statusCode: string;
+  minResponseTime: number;
+  maxResponseTime: number;
+}
 
 interface ExportControlsProps {
   analytics: AnalyticsResult;
-  onError?: (error: string) => void;
-  onSuccess?: (filename: string) => void;
+  filters?: FilterState;
+  onExportStart?: () => void;
+  onExportComplete?: () => void;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Escape CSV syntax and neutralize text that spreadsheet programs may evaluate.
+ */
+function csvCell(value: string | number | null | undefined): string {
+  const original = value == null ? '' : String(value);
+  const str = typeof value === 'string' && /^[\s\u0000-\u001f]*[=+\-@]/.test(original)
+    ? `'${original}`
+    : original;
+  if (/[",\n\r]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
 }
 
 /**
- * Validates that the analytics data has required structure and non-empty data
+ * Build a CSV string from an AnalyticsResult.
+ * Exports the topEndpoints table as the primary dataset.
  */
-function validateAnalyticsData(data: AnalyticsResult): { valid: boolean; errors: string[] } {
-  const errors: string[] = [];
+function buildCsv(analytics: AnalyticsResult): string {
+  const header = ['Endpoint', 'Method', 'Requests', 'Avg Response Time (ms)', 'Error Rate (%)'];
+  const rows = analytics.topEndpoints.map(ep => [
+    ep.endpoint,
+    ep.method,
+    ep.count,
+    Math.round(ep.avgResponseTime),
+    ep.errorRate.toFixed(2),
+  ]);
 
-  if (!data) {
-    errors.push('Analytics data is missing');
-    return { valid: false, errors };
-  }
-
-  // Check required fields
-  if (typeof data.totalRequests !== 'number' || data.totalRequests < 0) {
-    errors.push('Invalid totalRequests field');
-  }
-
-  if (typeof data.totalErrors !== 'number' || data.totalErrors < 0) {
-    errors.push('Invalid totalErrors field');
-  }
-
-  if (typeof data.errorRate !== 'number' || data.errorRate < 0 || data.errorRate > 100) {
-    errors.push('Invalid errorRate field (must be 0-100)');
-  }
-
-  if (!data.dateRange || !data.dateRange.start || !data.dateRange.end) {
-    errors.push('Invalid or missing dateRange');
-  } else if (!(data.dateRange.start instanceof Date) || !(data.dateRange.end instanceof Date)) {
-    errors.push('dateRange.start and dateRange.end must be Date objects');
-  }
-
-  if (!Array.isArray(data.topEndpoints)) {
-    errors.push('topEndpoints must be an array');
-  }
-
-  if (!Array.isArray(data.topErrors)) {
-    errors.push('topErrors must be an array');
-  }
-
-  if (!Array.isArray(data.usageByHour)) {
-    errors.push('usageByHour must be an array');
-  }
-
-  if (!Array.isArray(data.statusCodeBreakdown)) {
-    errors.push('statusCodeBreakdown must be an array');
-  }
-
-  if (!Array.isArray(data.topUsers)) {
-    errors.push('topUsers must be an array');
-  }
-
-  if (!Array.isArray(data.topIPs)) {
-    errors.push('topIPs must be an array');
-  }
-
-  if (typeof data.avgResponseTime !== 'number' || data.avgResponseTime < 0) {
-    errors.push('Invalid avgResponseTime field');
-  }
-
-  if (typeof data.p95ResponseTime !== 'number' || data.p95ResponseTime < 0) {
-    errors.push('Invalid p95ResponseTime field');
-  }
-
-  if (typeof data.p99ResponseTime !== 'number' || data.p99ResponseTime < 0) {
-    errors.push('Invalid p99ResponseTime field');
-  }
-
-  // Warn if data is empty but don't fail
-  if (data.totalRequests === 0) {
-    errors.push('Warning: No request data available (totalRequests is 0)');
-  }
-
-  return { valid: errors.length === 0, errors };
+  return [header, ...rows]
+    .map(row => row.map(csvCell).join(','))
+    .join('\n');
 }
 
-export const ExportControls: React.FC<ExportControlsProps> = ({ analytics, onError, onSuccess }) => {
-  const [isExporting, setIsExporting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+/**
+ * Build a filename that includes the active date range.
+ * e.g. `logs_2026-01-01_2026-01-31.csv`
+ * Falls back to `logs_all.<ext>` when no filters are provided.
+ */
+function buildFilename(filters: FilterState | undefined, ext: string): string {
+  if (filters?.startDate && filters?.endDate) {
+    return `logs_${filters.startDate}_${filters.endDate}.${ext}`;
+  }
+  return `logs_all.${ext}`;
+}
 
-  const getExtension = (format: string): string => {
-    switch (format) {
-      case 'json': return 'json';
-      case 'csv': return 'csv';
-      case 'html': return 'html';
-      case 'markdown': return 'md';
-      default: return 'txt';
-    }
-  };
+/**
+ * Trigger a browser file download from an in-memory string.
+ */
+function triggerDownload(content: string, filename: string, mimeType: string): void {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+}
 
-  const handleExport = async (format: 'json' | 'csv' | 'html' | 'markdown') => {
-    setError(null);
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export const ExportControls: React.FC<ExportControlsProps> = ({
+  analytics,
+  filters,
+  onExportStart,
+  onExportComplete,
+}) => {
+  const [dateRanges, setDateRanges] = useState<Array<{ startDate: string; endDate: string }>>(
+    filters ? [{ startDate: filters.startDate, endDate: filters.endDate }] : []
+  );
+  const [batchError, setBatchError] = useState<string | null>(null);
+
+  /** True when there is nothing to export. */
+  const isEmpty = analytics.totalRequests === 0;
+
+  /**
+   * #352: Fully wired export handler.
+   *  - CSV: builds in-memory CSV from analytics.topEndpoints, then downloads.
+   *  - JSON: delegates to ReportGenerator (existing behaviour) but uses the
+   *    filter-aware filename.
+   */
+  const handleExport = (format: 'json' | 'csv') => {
+    if (isEmpty) return;
+    onExportStart?.();
 
     try {
-      setIsExporting(true);
-
-      // Validate data before export
-      const validation = validateAnalyticsData(analytics);
-      if (!validation.valid) {
-        const errorMessages = validation.errors
-          .filter(e => !e.startsWith('Warning:'))
-          .join('; ');
-        const warnings = validation.errors.filter(e => e.startsWith('Warning:'));
-
-        if (errorMessages) {
-          const errorMsg = `Cannot export: ${errorMessages}`;
-          setError(errorMsg);
-          if (onError) {
-            onError(errorMsg);
-          }
-          return;
-        }
-
-        // Log warnings but continue if only warnings
-        if (warnings.length > 0) {
-          console.warn('Export warnings:', warnings);
-        }
+      if (format === 'csv') {
+        const csv = buildCsv(analytics);
+        const filename = buildFilename(filters, 'csv');
+        triggerDownload(csv, filename, 'text/csv;charset=utf-8;');
+      } else {
+        const filename = buildFilename(filters, 'json');
+        const options: ExportOptions = {
+          format,
+          filename,
+          filters,
+        };
+        ReportGenerator.exportReport(analytics, options);
       }
-
-      const timestamp = new Date().toISOString().slice(0, 10);
-      const filename = `logs-analytics-${timestamp}.${getExtension(format)}`;
-
-      ReportGenerator.exportReport(analytics, {
-        format,
-        filename,
-      });
-
-      if (onSuccess) {
-        onSuccess(filename);
-      }
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Unknown error during export';
-      setError(errorMsg);
-      if (onError) {
-        onError(errorMsg);
-      }
-      console.error('Export failed:', err);
     } finally {
-      setIsExporting(false);
+      onExportComplete?.();
     }
   };
+
+  const addDateRange = () => {
+    setDateRanges((ranges) => [...ranges, { startDate: '', endDate: '' }]);
+  };
+
+  const updateDateRange = (index: number, key: 'startDate' | 'endDate', value: string) => {
+    // Sanitize date inputs before storing (#448)
+    const safeValue = sanitizeInput(value);
+    setDateRanges((ranges) =>
+      ranges.map((range, rangeIndex) =>
+        rangeIndex === index ? { ...range, [key]: safeValue } : range
+      )
+    );
+  };
+
+  const handleBatchExport = async () => {
+    setBatchError(null);
+    const validRanges = dateRanges.filter((range) => range.startDate && range.endDate);
+    try {
+      onExportStart?.();
+      const items: BatchExportItem[] = validRanges.map((range) => ({
+        analytics,
+        filters: { ...filters, ...range } as FilterState,
+        filename: `logs_${range.startDate}_${range.endDate}.json`,
+      }));
+      await ReportGenerator.exportBatch(items);
+    } catch (error) {
+      setBatchError(error instanceof Error ? error.message : 'Batch export failed');
+    } finally {
+      onExportComplete?.();
+    }
+  };
+
+  const disabledTitle = isEmpty ? 'No data to export' : undefined;
 
   return (
     <div className="export-controls">
-      <span className="export-label">Export Report:</span>
-      {error && <div className="export-error" role="alert" aria-live="polite">{error}</div>}
+      <span className="export-label">📥 Export Report:</span>
+
+      {/* JSON export — disabled when no data */}
       <button
         className="export-btn json-btn"
         onClick={() => handleExport('json')}
-        title="Download as JSON"
-        disabled={isExporting}
-        aria-busy={isExporting}
+        disabled={isEmpty}
+        title={disabledTitle ?? 'Download as JSON with all data and metadata'}
+        aria-label={isEmpty ? 'Export JSON — no data available' : 'Export as JSON'}
+        data-testid="export-json-btn"
       >
-        {isExporting ? '⏳' : '📋'} JSON
+        📋 JSON
       </button>
+
+      {/* CSV export — disabled when no data */}
       <button
         className="export-btn csv-btn"
         onClick={() => handleExport('csv')}
-        title="Download as CSV"
-        disabled={isExporting}
-        aria-busy={isExporting}
+        disabled={isEmpty}
+        title={disabledTitle ?? 'Download as CSV (spreadsheet format)'}
+        aria-label={isEmpty ? 'Export CSV — no data available' : 'Export as CSV'}
+        data-testid="export-csv-btn"
       >
-        {isExporting ? '⏳' : '📊'} CSV
+        📊 CSV
       </button>
-      <button
-        className="export-btn html-btn"
-        onClick={() => handleExport('html')}
-        title="Download as HTML"
-        disabled={isExporting}
-        aria-busy={isExporting}
-      >
-        {isExporting ? '⏳' : '🌐'} HTML
-      </button>
-      <button
-        className="export-btn md-btn"
-        onClick={() => handleExport('markdown')}
-        title="Download as Markdown"
-        disabled={isExporting}
-        aria-busy={isExporting}
-      >
-        {isExporting ? '⏳' : '📝'} Markdown
-      </button>
+
+      <div className="batch-export-controls">
+        <strong>Batch date ranges</strong>
+        {dateRanges.map((range, index) => (
+          <div key={index} className="batch-export-range">
+            <input
+              aria-label={`Batch range ${index + 1} start`}
+              type="date"
+              value={range.startDate}
+              onChange={(event) => updateDateRange(index, 'startDate', event.target.value)}
+            />
+            <input
+              aria-label={`Batch range ${index + 1} end`}
+              type="date"
+              value={range.endDate}
+              onChange={(event) => updateDateRange(index, 'endDate', event.target.value)}
+            />
+          </div>
+        ))}
+        <button type="button" onClick={addDateRange}>
+          + Add range
+        </button>
+        <button
+          type="button"
+          onClick={handleBatchExport}
+          disabled={dateRanges.length === 0}
+        >
+          📦 Export ZIP
+        </button>
+        {batchError && <span role="alert">{batchError}</span>}
+      </div>
     </div>
   );
 };
 
+export { buildCsv, buildFilename, triggerDownload };
 export default ExportControls;

@@ -2,6 +2,7 @@ import React, {useEffect, useState} from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
 import * as yaml from 'js-yaml';
+import Breadcrumb from '../components/Breadcrumb';
 
 type OpenApiInfo = {title?: string; version?: string; description?: string};
 
@@ -23,42 +24,42 @@ const TEMPLATES: Record<string, any> = {
       'Create a payment',
       'Query payment status',
     ],
-    docs: 'https://example.com/sdk/python',
+    docs: '/api',
   },
   JavaScript: {
     pkg: 'npm install @proxypay/sdk',
     quickstart: `import Proxypay from '@proxypay/sdk';\n\nconst client = new Proxypay({ apiKey: process.env.PROXYPAY_API_KEY });\nconst resp = await client.payments.list();`,
     auth: 'Use `PROXYPAY_API_KEY` env var or pass `apiKey` to constructor.',
     examples: ['Create a payment', 'Listen for payment webhook'],
-    docs: 'https://example.com/sdk/javascript',
+    docs: '/api',
   },
   Go: {
     pkg: 'go get github.com/proxypay/sdk',
     quickstart: `import \"github.com/proxypay/sdk\"\n\nclient := sdk.NewClient(\"YOUR_API_KEY\")\nresp, _ := client.Payments.List()`,
     auth: 'Pass API key to `sdk.NewClient` or set env var `PROXYPAY_API_KEY`.',
     examples: ['Create a payment', 'Poll payment status'],
-    docs: 'https://example.com/sdk/go',
+    docs: '/api',
   },
   Java: {
     pkg: 'mvn install com.proxypay:proxypay-sdk:1.0.0',
     quickstart: `ProxypayClient client = new ProxypayClient(\"YOUR_API_KEY\");\nvar resp = client.getPayments();`,
     auth: 'Provide API key to `ProxypayClient` constructor or via environment.',
     examples: ['Create a payment', 'Get payment by id'],
-    docs: 'https://example.com/sdk/java',
+    docs: '/api',
   },
   Ruby: {
     pkg: 'gem install proxypay',
     quickstart: `require \"proxypay\"\nclient = ProxyPay::Client.new(api_key: ENV['PROXYPAY_API_KEY'])\nresp = client.payments.list`,
     auth: 'Use `PROXYPAY_API_KEY` env var or pass `api_key` to client.',
     examples: ['Create a payment', 'Refund a payment'],
-    docs: 'https://example.com/sdk/ruby',
+    docs: '/api',
   },
   PHP: {
     pkg: 'composer require proxypay/proxypay',
     quickstart: `<?php\nrequire 'vendor/autoload.php';\n$client = new Proxypay\\Client(getenv('PROXYPAY_API_KEY'));\n$resp = $client->payments()->list();`,
     auth: 'Set `PROXYPAY_API_KEY` or pass key to client constructor.',
     examples: ['Create a payment', 'Webhook receiver example'],
-    docs: 'https://example.com/sdk/php',
+    docs: '/api',
   },
 };
 
@@ -80,6 +81,7 @@ export default function SdkGuides(): React.JSX.Element {
 
   return (
     <Layout title="SDK Guides" description="Auto-generated SDK installation and quickstarts">
+      <Breadcrumb />
       <main style={{ padding: '2rem 1.5rem', maxWidth: 900, margin: '0 auto' }} className="sdk-guides">
         <h1>SDK Guides</h1>
         <p>
@@ -122,7 +124,7 @@ export default function SdkGuides(): React.JSX.Element {
                 </ul>
 
                 <p>
-                  Full SDK documentation: <a href={t.docs} target="_blank" rel="noreferrer">{t.docs}</a>
+                  API reference: <Link to={t.docs}>View the API reference</Link>
                 </p>
               </div>
             </section>

@@ -52,20 +52,108 @@
   border-radius: 3px;
 }
 
+.deprecatedFilter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ifm-color-emphasis-700);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.deprecationNotice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  align-items: baseline;
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid #e7a693;
+  background: #fff0eb;
+  color: #792d1c;
+  font-size: 0.85rem;
+}
+
+.deprecationNotice code {
+  color: inherit;
+}
+
+.comparisonToggle {
+  padding: 0.5rem 1rem;
+  background: var(--ifm-color-primary);
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.comparisonToggle:hover {
+  background: var(--ifm-color-primary-dark);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.comparisonToggle.active {
+  background: var(--ifm-color-danger);
+}
+
+.comparisonToggle.active:hover {
+  background: #e63946;
+}
+
+.comparisonModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.comparisonModal > div {
+  width: 100%;
+  height: 100%;
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 4px;
+}
+
 /* Layout */
 .layout {
   display: flex;
   flex: 1;
-  overflow: hidden;
+  overflow: visible;
   gap: 0;
 }
 
 /* Sidebar */
 .sidebar {
+  position: sticky;
+  top: var(--ifm-navbar-height, 0px);
+  align-self: flex-start;
   flex-shrink: 0;
   width: 320px;
   border-right: 1px solid var(--ifm-color-emphasis-200);
   overflow: hidden;
+  height: calc(100vh - var(--ifm-navbar-height, 0px));
+  max-height: calc(100vh - var(--ifm-navbar-height, 0px));
   display: flex;
   flex-direction: column;
   background: var(--ifm-background-surface-primary);
@@ -74,7 +162,7 @@
 /* Main content */
 .main {
   flex: 1;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   min-width: 0; /* Allow flex child to respect max-content constraints */
@@ -87,10 +175,12 @@
   }
 
   .sidebar {
+    position: static;
     width: 100%;
     border-right: none;
     border-bottom: 1px solid var(--ifm-color-emphasis-200);
     max-height: 40vh;
+    height: auto;
     overflow-y: auto;
   }
 
@@ -124,6 +214,7 @@
 
   .sidebar {
     max-height: 35vh;
+    height: auto;
   }
 
   .main {

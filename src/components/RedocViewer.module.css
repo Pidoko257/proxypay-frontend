@@ -1,17 +1,25 @@
 /**
- * Redoc Viewer Styles
- * Handles responsive layout and mobile optimization
+ * RedocViewer Component Styles
  */
 
 .container {
   display: flex;
   flex-direction: column;
-  width: 100%;
   height: 100%;
-  min-height: 100vh;
-  background: var(--ifm-background-color);
-  color: var(--ifm-font-color-base);
+  width: 100%;
+}
+
+.redocContainer {
+  position: relative;
+  flex: 1;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.redoc {
+  flex: 1;
+  overflow: auto;
 }
 
 .loading {
@@ -21,17 +29,16 @@
   justify-content: center;
   height: 100%;
   gap: 1rem;
-  color: var(--ifm-color-emphasis-600);
+  color: var(--ifm-font-color-base);
 }
 
 .spinner {
-  display: inline-block;
   width: 40px;
   height: 40px;
-  border: 3px solid var(--ifm-color-emphasis-200);
+  border: 4px solid var(--ifm-color-emphasis-200);
   border-top-color: var(--ifm-color-primary);
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: spin 0.6s linear infinite;
 }
 
 @keyframes spin {
@@ -43,294 +50,216 @@
 .error {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
   gap: 1rem;
   padding: 2rem;
-  text-align: center;
-  color: var(--ifm-color-danger);
+  color: var(--ifm-font-color-base);
 }
 
 .error h3 {
-  margin: 0;
-  font-size: 1.3rem;
   color: var(--ifm-color-danger);
+  margin: 0;
 }
 
 .error p {
   margin: 0;
-  font-size: 0.95rem;
-  color: var(--ifm-color-emphasis-600);
+  color: var(--ifm-color-emphasis-700);
 }
 
 .errorHint {
-  background: var(--ifm-color-emphasis-50);
-  padding: 1rem;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  font-family: monospace;
+  padding: 0.75rem;
+  background: var(--ifm-background-surface-secondary);
+  border-left: 3px solid var(--ifm-color-danger);
+  font-size: 0.9rem;
 }
 
 .errorHint code {
-  background: var(--ifm-color-emphasis-200);
   padding: 0.2rem 0.4rem;
-  border-radius: 2px;
+  background: var(--ifm-background-color);
+  border-radius: 3px;
+  font-family: monospace;
+  color: var(--ifm-color-emphasis-900);
 }
 
-.redocContainer {
-  flex: 1;
-  overflow: hidden;
+/* Copy Button Styles */
+.copyButtonContainer {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 100;
   display: flex;
-  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.redoc {
-  flex: 1;
-  overflow: auto;
-  height: 100%;
-  width: 100%;
-}
-
-/**
- * Mobile responsiveness for Redoc
- * Redoc renders its content dynamically, so we use CSS to adjust the layout
- */
-
-/* Redoc main layout wrapper (automatically generated) */
-.redoc :global(.redoc-container) {
-  display: flex !important;
-  flex-direction: row;
-  height: 100%;
-}
-
-.redoc :global(.redoc) {
-  flex: 1;
+.copyButton {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--ifm-color-primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* Right panel (examples/responses) */
-.redoc :global([role="doc-chapter"]),
-.redoc :global(.api-content),
-.redoc :global(.right-panel),
-.redoc :global(.api-info) {
-  overflow: auto;
+.copyButton:hover {
+  background: var(--ifm-color-primary-dark);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
 }
 
-/**
- * Mobile: Stack panels vertically
- */
-@media (max-width: 1024px) {
-  .redoc :global(.redoc-container) {
-    flex-direction: column !important;
-  }
-
-  .redoc :global(.menu) {
-    max-height: 35vh !important;
-    border-right: none !important;
-    border-bottom: 1px solid var(--ifm-color-emphasis-200) !important;
-    overflow-y: auto !important;
-  }
-
-  .redoc :global([role="main"]),
-  .redoc :global(.api-content) {
-    flex: 1 !important;
-    overflow-y: auto !important;
-  }
-
-  /* Response panel should stack below on mobile */
-  .redoc :global(.right-panel) {
-    order: 2;
-  }
+.copyButton:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
+.copyIcon {
+  font-size: 1.1em;
+}
+
+.copyText {
+  white-space: nowrap;
+}
+
+/* Responsive adjustments */
 @media (max-width: 768px) {
-  .redocContainer {
-    min-height: auto;
+  .copyButtonContainer {
+    top: 0.75rem;
+    right: 0.75rem;
   }
 
-  .redoc :global(.redoc-container) {
-    flex-direction: column !important;
+  .copyButton {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85rem;
   }
 
-  .redoc :global(.menu) {
-    max-height: 40vh !important;
-    border-right: none !important;
-    border-bottom: 1px solid var(--ifm-color-emphasis-200) !important;
-    overflow-y: auto !important;
-  }
-
-  .redoc :global(.menu-content) {
-    max-height: 100% !important;
-    overflow-y: auto !important;
-  }
-
-  .redoc :global([role="main"]),
-  .redoc :global(.api-content) {
-    flex: 1 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow-y: auto !important;
-  }
-
-  /* Hide examples on very small screens or show in modal */
-  .redoc :global(.right-panel) {
-    width: 100% !important;
-    max-width: 100% !important;
-    border-left: none !important;
-    border-top: 1px solid var(--ifm-color-emphasis-200) !important;
-    order: 2;
-  }
-
-  /* Make operations easier to tap */
-  .redoc :global(.operation) {
-    padding: 1rem !important;
-  }
-
-  .redoc :global(.operation-summary) {
-    padding: 0.75rem !important;
-  }
-
-  /* Improve readability of method badges */
-  .redoc :global(.http-method) {
-    min-width: 50px !important;
-  }
-
-  /* Make endpoint path readable on small screens */
-  .redoc :global([data-path]) {
-    font-size: 0.85rem !important;
-    word-break: break-word !important;
-  }
-
-  /* Reduce margins and padding on small screens */
-  .redoc :global(.content) {
-    padding: 0.75rem !important;
-  }
-
-  .redoc :global(.section) {
-    margin: 0.75rem 0 !important;
-  }
-
-  /* Stack schema and examples vertically */
-  .redoc :global(.two-columns) {
-    flex-direction: column !important;
-  }
-
-  .redoc :global(.schema),
-  .redoc :global(.examples) {
-    width: 100% !important;
+  .copyText {
+    display: none;
   }
 }
 
-@media (max-width: 480px) {
-  .redoc :global(.menu) {
-    max-height: 45vh !important;
-  }
+/* Toast notification styles */
+.toastContainer {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 9999;
+  pointer-events: none;
+}
 
-  .redoc :global([role="main"]) {
-    min-height: 55vh !important;
-  }
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  pointer-events: auto;
+  animation: slideIn 0.3s ease-out;
+}
 
-  .redoc :global(.operation) {
-    padding: 0.75rem !important;
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
   }
-
-  .redoc :global(.right-panel) {
-    padding: 0.75rem !important;
-  }
-
-  /* Make code examples scrollable instead of wrapped */
-  .redoc :global(pre) {
-    overflow-x: auto !important;
-    font-size: 0.75rem !important;
-  }
-
-  /* Adjust heading sizes */
-  .redoc :global(h1) {
-    font-size: 1.3rem !important;
-  }
-
-  .redoc :global(h2) {
-    font-size: 1.1rem !important;
-  }
-
-  .redoc :global(h3) {
-    font-size: 1rem !important;
+  to {
+    transform: translateX(0);
+    opacity: 1;
   }
 }
 
-/**
- * Tablet landscape (1025px - 1366px)
- * Keep side-by-side but with adjusted sizing
- */
-@media (min-width: 1025px) and (max-width: 1366px) {
-  .redoc :global(.right-panel) {
-    flex: 0 0 40% !important;
-  }
-
-  .redoc :global([role="main"]) {
-    flex: 1 !important;
-  }
+.toast.toast-success {
+  border-left: 4px solid #51cf66;
 }
 
-/**
- * Dark mode adjustments
- */
-@media (prefers-color-scheme: dark) {
-  .errorHint {
-    background: var(--ifm-color-emphasis-100);
-  }
-
-  .errorHint code {
-    background: var(--ifm-color-emphasis-300);
-  }
+.toast.toast-success .toastIcon {
+  color: #51cf66;
 }
 
-/**
- * Accessibility: Reduced motion
- */
+.toast.toast-error {
+  border-left: 4px solid #ff6b6b;
+}
+
+.toast.toast-error .toastIcon {
+  color: #ff6b6b;
+}
+
+.toast.toast-info {
+  border-left: 4px solid #339af0;
+}
+
+.toast.toast-info .toastIcon {
+  color: #339af0;
+}
+
+.toast.toast-warning {
+  border-left: 4px solid #ffa94d;
+}
+
+.toast.toast-warning .toastIcon {
+  color: #ffa94d;
+}
+
+.toastContent {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.toastIcon {
+  font-size: 1.2em;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.toastMessage {
+  font-size: 0.9rem;
+  color: #2c3e50;
+  flex: 1;
+}
+
+.toastClose {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #7f8c8d;
+  font-size: 1.5rem;
+  padding: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.toastClose:hover {
+  color: #2c3e50;
+}
+
+/* Accessibility */
 @media (prefers-reduced-motion: reduce) {
   .spinner {
     animation: none;
+    border-top-color: var(--ifm-color-primary);
   }
 
-  .redoc :global(*) {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
-/**
- * High contrast mode
- */
-@media (prefers-contrast: more) {
-  .error,
-  .loading {
-    border: 2px solid var(--ifm-color-emphasis-700);
-    padding: 1rem;
-    border-radius: 4px;
+  .toast {
+    animation: none;
   }
 
-  .errorHint {
-    border: 2px solid var(--ifm-color-emphasis-700);
-  }
-}
-
-/**
- * Print styles
- */
-@media print {
-  .redocContainer {
-    min-height: auto;
-  }
-
-  .redoc :global(.right-panel) {
-    display: none !important;
-  }
-
-  .redoc :global([role="main"]) {
-    max-width: 100% !important;
+  .copyButton {
+    transition: none;
   }
 }

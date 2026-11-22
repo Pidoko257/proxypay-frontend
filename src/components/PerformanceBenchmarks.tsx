@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import ProgressiveChart from './ProgressiveChart';
 
 // ── Types ──────────────────────────────────────────────────────────
 interface EndpointBenchmark {
@@ -21,6 +22,28 @@ interface HistoricalPoint {
   p95: number;
   p99: number;
   throughput: number;
+}
+
+export interface ProjectedMetrics {
+  throughput: number;
+  p50: number;
+  p95: number;
+  p99: number;
+}
+
+export function projectMetrics(
+  benchmark: Pick<EndpointBenchmark, 'throughput' | 'p50' | 'p95' | 'p99'>,
+  throughputMultiplier: number,
+  concurrencyMultiplier: number,
+): ProjectedMetrics {
+  const loadMultiplier = Math.max(0.1, throughputMultiplier * concurrencyMultiplier);
+  const latencyMultiplier = 1 + Math.max(0, loadMultiplier - 1) * 0.35;
+  return {
+    throughput: Math.round(benchmark.throughput * loadMultiplier),
+    p50: Math.round(benchmark.p50 * latencyMultiplier),
+    p95: Math.round(benchmark.p95 * latencyMultiplier),
+    p99: Math.round(benchmark.p99 * latencyMultiplier),
+  };
 }
 
 // ── Mock Data ──────────────────────────────────────────────────────
@@ -175,7 +198,7 @@ function generateHistory(base: EndpointBenchmark): HistoricalPoint[] {
 }
 
 // ── Styles ─────────────────────────────────────────────────────────
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, any> = {
   container: {
     maxWidth: 1100,
     margin: '0 auto',
@@ -356,7 +379,7 @@ const styles: Record<string, React.CSSProperties> = {
 };
 
 // ── Chart Sub-Component ────────────────────────────────────────────
-function LatencyChart({ history }: { history: HistoricalPoint[] }) {
+function LatencyChartSvg({ history }: { history: HistoricalPoint[] }) {
   if (!history.length) return null;
   const w = 1000;
   const h = 200;
@@ -396,7 +419,7 @@ function LatencyChart({ history }: { history: HistoricalPoint[] }) {
     ]);
 
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} style={{ width: '100%', height: 'auto' }}>
+    <svg aria-hidden="true" focusable="false" viewBox={`0 0 ${w} ${h}`} style={{ width: '100%', height: 'auto' }}>
       {Array.from({ length: yTicks + 1 }).map((_, i) => {
         const val = Math.round((maxVal / yTicks) * i);
         const y = scaleY(val);
@@ -443,12 +466,30 @@ function LatencyChart({ history }: { history: HistoricalPoint[] }) {
   );
 }
 
+function LatencyChart({ history }: { history: HistoricalPoint[] }) {
+  if (!history.length) return null;
+  const previewHistory = history.filter(
+    (_, index) => index === 0 || index === history.length - 1 || index % 4 === 0,
+  );
+
+  return (
+    <ProgressiveChart
+      cacheKey={`latency:${JSON.stringify(history)}`}
+      preview={<LatencyChartSvg history={previewHistory} />}
+    >
+      <LatencyChartSvg history={history} />
+    </ProgressiveChart>
+  );
+}
+
 // ── Main Component ─────────────────────────────────────────────────
 export default function PerformanceBenchmarks(): React.JSX.Element {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [slaFilter, setSlaFilter] = useState('all');
   const [selectedEndpoint, setSelectedEndpoint] = useState<EndpointBenchmark | null>(null);
+  const [throughputChange, setThroughputChange] = useState(50);
+  const [concurrencyChange, setConcurrencyChange] = useState(0);
 
   const categories = useMemo(
     () => [...new Set(BENCHMARK_DATA.map((b) => b.category))],
@@ -465,9 +506,22 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
     });
   }, [search, categoryFilter, slaFilter]);
 
+  React.useEffect(() => {
+    if (selectedEndpoint && !filtered.some((benchmark) => benchmark.endpoint === selectedEndpoint.endpoint)) {
+      setSelectedEndpoint(null);
+    }
+  }, [filtered, selectedEndpoint]);
+
   const history = useMemo(
     () => (selectedEndpoint ? generateHistory(selectedEndpoint) : []),
     [selectedEndpoint]
+  );
+
+  const projected = useMemo(
+    () => selectedEndpoint
+      ? projectMetrics(selectedEndpoint, 1 + throughputChange / 100, 1 + concurrencyChange / 100)
+      : null,
+    [selectedEndpoint, throughputChange, concurrencyChange],
   );
 
   const summaries = useMemo(() => {
@@ -525,6 +579,7 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
         />
         <select
           style={styles.filterSelect}
+          aria-label="Filter endpoints by category"
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
         >
@@ -535,6 +590,7 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
         </select>
         <select
           style={styles.filterSelect}
+          aria-label="Filter endpoints by SLA status"
           value={slaFilter}
           onChange={(e) => setSlaFilter(e.target.value)}
         >
@@ -544,6 +600,13 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
           <option value="breach">🔴 Breach</option>
         </select>
       </div>
+
+      <p role="status" aria-live="polite">
+        Showing {filtered.length} of {BENCHMARK_DATA.length} endpoints in the current filters.
+        {filtered.length > 0 && ` Average p50 latency is ${Math.round(
+          filtered.reduce((sum, benchmark) => sum + benchmark.p50, 0) / filtered.length
+        )} ms.`}
+      </p>
 
       {/* Table */}
       {filtered.length === 0 ? (
@@ -643,10 +706,68 @@ export default function PerformanceBenchmarks(): React.JSX.Element {
           <div style={styles.chartContainer}>
             <LatencyChart history={history} />
           </div>
+          {history.length > 0 && (
+            <>
+              <p aria-live="polite">
+                Latest latency values for {selectedEndpoint.endpoint} on {history[history.length - 1].date}:{' '}
+                p50 {history[history.length - 1].p50} ms, p95 {history[history.length - 1].p95} ms,
+                {' '}p99 {history[history.length - 1].p99} ms.
+              </p>
+              <details>
+                <summary>View 30-day latency data</summary>
+                <table>
+                  <caption>Daily latency percentiles for {selectedEndpoint.endpoint}</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Date</th>
+                      <th scope="col">p50 (ms)</th>
+                      <th scope="col">p95 (ms)</th>
+                      <th scope="col">p99 (ms)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {history.map((point) => (
+                      <tr key={point.date}>
+                        <th scope="row">{point.date}</th>
+                        <td>{point.p50}</td>
+                        <td>{point.p95}</td>
+                        <td>{point.p99}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </details>
+            </>
+          )}
           <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.75rem', fontSize: '0.82rem' }}>
             <span><span style={{ color: '#22c55e', fontWeight: 700 }}>— p50</span> median</span>
             <span><span style={{ color: '#f59e0b', fontWeight: 700 }}>- - p95</span> 95th</span>
             <span><span style={{ color: '#ef4444', fontWeight: 700 }}>- - p99</span> 99th</span>
+          </div>
+          <div style={{ marginTop: '1.5rem', borderTop: '1px solid #e8ecf0', paddingTop: '1.25rem' }}>
+            <div style={styles.trendHeader}>What-if simulator</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '1rem', alignItems: 'center' }}>
+              <label>
+                Throughput change: <strong>{throughputChange}%</strong>{' '}
+                <input type="range" min="-50" max="200" step="10" value={throughputChange}
+                  aria-label="Throughput change"
+                  onChange={(e) => setThroughputChange(Number(e.target.value))} />
+              </label>
+              <label>
+                Concurrency change: <strong>{concurrencyChange}%</strong>{' '}
+                <input type="range" min="-50" max="200" step="10" value={concurrencyChange}
+                  aria-label="Concurrency change"
+                  onChange={(e) => setConcurrencyChange(Number(e.target.value))} />
+              </label>
+            </div>
+            {projected && (
+              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '1.5rem', marginTop: '1rem', color: '#334155' }}>
+                <span><strong>{projected.throughput.toLocaleString()}</strong> req/s projected throughput</span>
+                <span><strong>{projected.p50}ms</strong> projected p50</span>
+                <span><strong>{projected.p95}ms</strong> projected p95</span>
+                <span><strong>{projected.p99}ms</strong> projected p99</span>
+              </div>
+            )}
           </div>
         </div>
       )}

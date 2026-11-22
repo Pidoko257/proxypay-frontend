@@ -4,11 +4,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import Layout from '@theme/Layout';
 import { AdvancedLogsDashboard } from '../components/AdvancedLogsDashboard';
-import { ExportControls } from '../components/ExportControls';
 import { SampleLogGenerator } from '../analytics/sample-logs';
 import { LogAnalyticsEngine } from '../analytics/analytics-engine';
 import { ParsedLogEntry } from '../analytics/log-parser';
+import Breadcrumb from '../components/Breadcrumb';
 
 export default function LogsPage() {
   const [logs, setLogs] = useState<ParsedLogEntry[]>([]);
@@ -29,19 +30,21 @@ export default function LogsPage() {
 
   if (loading) {
     return (
-      <div style={{ padding: '40px', textAlign: 'center' }}>
-        <h2>Loading Analytics...</h2>
-      </div>
+      <Layout title="Server Logs Analytics" description="ProxyPay server logs analytics dashboard">
+        <Breadcrumb />
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <h2>Loading Analytics...</h2>
+        </div>
+      </Layout>
     );
   }
 
   return (
-    <div>
-      <div style={{ padding: '20px', background: 'white', marginBottom: '20px', borderRadius: '8px' }}>
-        {analytics && <ExportControls analytics={analytics} />}
+    <Layout title="Server Logs Analytics" description="ProxyPay server logs analytics dashboard">
+      <Breadcrumb />
+      <div>
+        {analytics && <AdvancedLogsDashboard logs={logs} initialAnalytics={analytics} />}
       </div>
-
-      {analytics && <AdvancedLogsDashboard logs={logs} initialAnalytics={analytics} />}
-    </div>
+    </Layout>
   );
 }

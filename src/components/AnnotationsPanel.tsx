@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { sanitizeAnnotationText } from '../utils/sanitize';
 
 interface Annotation {
   id: string;
@@ -15,10 +16,21 @@ interface Annotation {
   archived: boolean;
 }
 
+export interface MentionNotification {
+  id: string;
+  username: string;
+  annotationId: string;
+  author: string;
+  text: string;
+  createdAt: number;
+  read: boolean;
+}
+
 const ANNOTATIONS_KEY = 'proxypay-annotations';
 const USERNAME_KEY = 'proxypay-username';
 const VOTES_KEY = 'proxypay-annotation-votes';
 const PINNED_KEY = 'proxypay-pinned-annotations';
+const NOTIFICATIONS_KEY = 'proxypay-mention-notifications';
 
 const ANNOTATION_TYPES = [
   { value: 'tip', label: '💡 Tip', color: '#2e8555' },
@@ -67,6 +79,16 @@ function saveVotes(votes: Record<string, 'up' | 'down' | null>): void {
   localStorage.setItem(VOTES_KEY, JSON.stringify(votes));
 }
 
+export function extractMentionedUsers(text: string): string[] {
+  return [...new Set([...text.matchAll(/(?:^|\s)@([a-zA-Z0-9][a-zA-Z0-9._-]{1,31})/g)].map((match) => match[1]))];
+}
+
+function renderAnnotationText(text: string): React.ReactNode[] {
+  return text.split(/(@[a-zA-Z0-9][a-zA-Z0-9._-]{1,31})/g).map((part, index) =>
+    part.startsWith('@') ? <strong key={index} className="annotation-mention">{part}</strong> : part
+  );
+}
+
 export default function AnnotationsPanel(): React.JSX.Element {
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [username, setUsername] = useState('');
@@ -74,6 +96,7 @@ export default function AnnotationsPanel(): React.JSX.Element {
   const [votes, setVotes] = useState<Record<string, 'up' | 'down' | null>>({});
   const [toast, setToast] = useState('');
   const [activeView, setActiveView] = useState<'browse' | 'add' | 'admin'>('browse');
+  const [mentionSuggestions, setMentionSuggestions] = useState<string[]>([]);
 
   // Add form state
   const [endpointPath, setEndpointPath] = useState('/api/v1/');
@@ -91,6 +114,7 @@ export default function AnnotationsPanel(): React.JSX.Element {
     setAnnotations(loadAnnotations());
     setUsername(loadUsername());
     setVotes(loadVotes());
+    setMentionSuggestions([...new Set(loadAnnotations().map((annotation) => annotation.author))].filter(Boolean));
   }, []);
 
   const showToast = useCallback((msg: string) => {
@@ -101,9 +125,15 @@ export default function AnnotationsPanel(): React.JSX.Element {
   const handleLogin = useCallback(() => {
     const name = usernameInput.trim();
     if (!name) return;
-    setUsername(name);
-    saveUsername(name);
-    showToast(`Logged in as ${name}`);
+    // SECURITY: Sanitize username to prevent stored XSS
+    const sanitizedName = sanitizeAnnotationText(name);
+    if (!sanitizedName) {
+      showToast('Please enter a valid username');
+      return;
+    }
+    setUsername(sanitizedName);
+    saveUsername(sanitizedName);
+    showToast(`Logged in as ${sanitizedName}`);
   }, [usernameInput, showToast]);
 
   const handleLogout = useCallback(() => {
@@ -122,11 +152,18 @@ export default function AnnotationsPanel(): React.JSX.Element {
       return;
     }
 
+    // SECURITY: Sanitize user input to prevent XSS attacks
+    const sanitizedText = sanitizeAnnotationText(annotationText);
+    if (!sanitizedText) {
+      showToast('Please enter valid annotation text');
+      return;
+    }
+
     const newAnnotation: Annotation = {
       id: generateId(),
       endpointPath,
       endpointMethod,
-      text: annotationText.trim(),
+      text: sanitizedText, // Store sanitized text
       type: annotationType,
       author: username,
       timestamp: Date.now(),
@@ -140,6 +177,18 @@ export default function AnnotationsPanel(): React.JSX.Element {
     const updated = [newAnnotation, ...annotations];
     setAnnotations(updated);
     saveAnnotations(updated);
+    const notifications = extractMentionedUsers(annotationText).map((mentionedUser): MentionNotification => ({
+      id: generateId(),
+      username: mentionedUser,
+      annotationId: newAnnotation.id,
+      author: username,
+      text: newAnnotation.text,
+      createdAt: Date.now(),
+      read: false,
+    }));
+    const existingNotifications = JSON.parse(localStorage.getItem(NOTIFICATIONS_KEY) || '[]') as MentionNotification[];
+    localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify([...notifications, ...existingNotifications]));
+    setMentionSuggestions((users) => [...new Set([...users, username])]);
     setAnnotationText('');
     showToast('Annotation added!');
     setActiveView('browse');
@@ -396,7 +445,7 @@ export default function AnnotationsPanel(): React.JSX.Element {
                     {a.flagged && <span className="annotation-flag-badge">🚩 Flagged</span>}
                     {a.archived && <span className="annotation-archive-badge">📦 Archived</span>}
                   </div>
-                  <p className="annotation-text">{a.text}</p>
+                  <p className="annotation-text">{renderAnnotationText(a.text)}</p>
                   <div className="annotation-footer">
                     <div className="annotation-meta">
                       <span className="annotation-author">👤 {a.author}</span>
@@ -503,11 +552,21 @@ export default function AnnotationsPanel(): React.JSX.Element {
                 <label>Your Annotation</label>
                 <textarea
                   value={annotationText}
-                  onChange={(e) => setAnnotationText(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setAnnotationText(value);
+                    const currentMention = value.match(/@([a-zA-Z0-9._-]*)$/)?.[1].toLowerCase();
+                    setMentionSuggestions((users) => currentMention === undefined
+                      ? users
+                      : users.filter((user) => user.toLowerCase().startsWith(currentMention)));
+                  }}
                   rows={4}
                   placeholder="Share a tip, gotcha, note, or example about this endpoint..."
                   className="mock-textarea"
                 />
+                <datalist id="annotation-mention-suggestions">
+                  {mentionSuggestions.map((user) => <option key={user} value={`@${user}`} />)}
+                </datalist>
               </div>
               <button className="mock-btn mock-btn-primary" onClick={handleAddAnnotation}>
                 💬 Add Annotation

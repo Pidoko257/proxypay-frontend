@@ -1,4 +1,22 @@
-# Logs
+# ── Dependencies ──────────────────────────────────────────────────────────────
+node_modules/
+
+# ── Build outputs ─────────────────────────────────────────────────────────────
+dist/
+dist-ssr/
+out/
+*.local
+
+# ── Test artifacts ────────────────────────────────────────────────────────────
+**/__snapshots__/
+*.snap
+coverage/
+.nyc_output/
+test-results/
+junit.xml
+*.junit.xml
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
 logs
 *.log
 npm-debug.log*
@@ -7,23 +25,23 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
+# ── Editor directories and files ──────────────────────────────────────────────
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
 
-# Environment
+# ── Environment / secrets ──────────────────────────────────────────────────────
 .env
 .env.local
 .env.*.local
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+*.tsbuildinfo
+.cache/
