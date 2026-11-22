@@ -56,6 +56,7 @@ function applyRouteMetadata(pathname: string) {
 
 applyRouteMetadata(window.location.pathname)
 window.addEventListener('popstate', () => applyRouteMetadata(window.location.pathname))
+window.addEventListener('routechange', () => applyRouteMetadata(window.location.pathname))
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
