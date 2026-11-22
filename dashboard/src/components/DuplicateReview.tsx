@@ -47,6 +47,11 @@ export const DuplicateReview: FC<DuplicateReviewProps> = ({
   const [pendingGroup, setPendingGroup] = useState<DuplicateTransactionGroup | null>(null)
   const closeDialogButtonRef = useRef<HTMLButtonElement>(null)
   const [merging, setMerging] = useState(false)
+  const mergingRef = useRef(merging)
+
+  useEffect(() => {
+    mergingRef.current = merging
+  }, [merging])
 
   useEffect(() => {
     setLocalTransactions(transactions)
@@ -59,11 +64,11 @@ export const DuplicateReview: FC<DuplicateReviewProps> = ({
   useEffect(() => {
     if (!pendingGroup) return
     const closeOnEscape = (event: globalThis.KeyboardEvent) => {
-      if (event.key === 'Escape' && !merging) setPendingGroup(null)
+      if (event.key === 'Escape' && !mergingRef.current) setPendingGroup(null)
     }
     window.addEventListener('keydown', closeOnEscape)
     return () => window.removeEventListener('keydown', closeOnEscape)
-  }, [merging, pendingGroup])
+  }, [pendingGroup])
 
   useEffect(() => {
     if (!pendingGroup) return
@@ -219,7 +224,7 @@ export const DuplicateReview: FC<DuplicateReviewProps> = ({
                       <span>{dateLabel(transaction.timestamp)}</span>
                     </span>
                     {transaction.id === canonicalId && (
-                      <span className="canonical-label">Keep as canonical</span>
+                      <span className="duplicate-canonical-badge">Canonical</span>
                     )}
                   </label>
                 ))}
@@ -227,18 +232,18 @@ export const DuplicateReview: FC<DuplicateReviewProps> = ({
               <div className="duplicate-group-actions">
                 <button
                   type="button"
-                  className="duplicate-secondary-button"
-                  onClick={() => void handleMark(group)}
+                  className="duplicate-mark-button"
+                  onClick={() => handleMark(group)}
                   disabled={isMarked}
                 >
-                  <Check size={15} /> Mark as duplicates
+                  <Check size={16} /> Mark as duplicate
                 </button>
                 <button
                   type="button"
                   className="duplicate-merge-button"
                   onClick={() => setPendingGroup(group)}
                 >
-                  <GitMerge size={15} /> Review & merge
+                  <GitMerge size={16} /> Merge
                 </button>
               </div>
             </article>
@@ -247,37 +252,26 @@ export const DuplicateReview: FC<DuplicateReviewProps> = ({
       </div>
 
       {pendingGroup && (
-        <div className="duplicate-dialog-backdrop" role="presentation">
+        <div
+          className="duplicate-dialog-backdrop"
+          role="presentation"
+          onKeyDown={handleDialogKeyDown}
+        >
           <div
             className="duplicate-dialog"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="merge-dialog-heading"
-            onKeyDown={handleDialogKeyDown}
+            aria-labelledby="duplicate-dialog-heading"
           >
-            <div className="duplicate-dialog-header">
-              <h3 id="merge-dialog-heading">Confirm transaction merge</h3>
-              <button
-                ref={closeDialogButtonRef}
-                type="button"
-                onClick={() => setPendingGroup(null)}
-                disabled={merging}
-                aria-label="Close merge confirmation"
-              >
-                <X size={18} />
-              </button>
-            </div>
+            <h3 id="duplicate-dialog-heading">Confirm merge</h3>
             <p>
-              This will keep transaction{' '}
-              <strong>{canonicalByGroup[pendingGroup.id] || pendingGroup.canonicalId}</strong>{' '}
-              and merge {pendingGroup.transactionIds.length - 1} duplicate transaction
-              {pendingGroup.transactionIds.length - 1 === 1 ? '' : 's'}. The merge will be
-              recorded in the audit trail.
+              Merging will combine {pendingGroup.transactions.length} transactions into a
+              single canonical transaction. This cannot be undone.
             </p>
             <div className="duplicate-dialog-actions">
               <button
+                ref={closeDialogButtonRef}
                 type="button"
-                className="duplicate-secondary-button"
                 onClick={() => setPendingGroup(null)}
                 disabled={merging}
               >
@@ -286,11 +280,11 @@ export const DuplicateReview: FC<DuplicateReviewProps> = ({
               <button
                 type="button"
                 className="duplicate-merge-button"
-                onClick={() => void handleMerge()}
+                onClick={handleMerge}
                 disabled={merging}
               >
-                {merging ? <Loader size={15} className="spinner" /> : <GitMerge size={15} />}
-                {merging ? 'Merging...' : 'Confirm merge'}
+                {merging ? <Loader size={16} className="spinner" /> : <GitMerge size={16} />}
+                {merging ? 'Merging…' : 'Confirm merge'}
               </button>
             </div>
           </div>
@@ -299,5 +293,3 @@ export const DuplicateReview: FC<DuplicateReviewProps> = ({
     </section>
   )
 }
-
-export default DuplicateReview

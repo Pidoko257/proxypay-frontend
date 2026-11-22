@@ -10,11 +10,16 @@ interface SessionState {
   secondsRemaining: number
 }
 
+function decodeBase64Payload(payload: string): string {
+  const padded = payload.padEnd(Math.ceil(payload.length / 4) * 4, '=')
+  return atob(padded)
+}
+
 function getTokenExpiration(token: string | null): number | null {
   if (!token) return null
 
   try {
-    const payload = JSON.parse(atob(token.split('.')[1])) as { exp?: number }
+    const payload = JSON.parse(decodeBase64Payload(token.split('.')[1])) as { exp?: number }
     return typeof payload.exp === 'number' ? payload.exp * 1000 : null
   } catch {
     return null
@@ -84,10 +89,6 @@ export function useSessionExpiration(onExpired: () => void) {
 
     return () => window.clearInterval(interval)
   }, [session.expiresAt, signOut])
-
-  useEffect(() => {
-    return () => clearAuthorizationSecrets()
-  }, [])
 
   return { ...session, extendSession, signOut }
 }

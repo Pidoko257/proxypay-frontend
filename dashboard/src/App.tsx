@@ -11,15 +11,17 @@ import { SessionExpirationDialog } from './components/SessionExpirationDialog'
 import { ToastNotifications } from './components/ToastNotifications'
 import { ComponentRenderDebugPanel } from './components/ComponentRenderDebugPanel'
 import { RenderProfiler } from './components/RenderProfiler'
+import { PerformanceDashboard } from './components/PerformanceDashboard'
 import { canAccess } from './auth/access'
 import { useSessionExpiration } from './hooks/useSessionExpiration'
+import { useFeatureFlagStore } from './stores/featureFlagStore'
 import type { Transaction } from './services/api'
 import type { TransactionMergeResult } from './services/duplicateDetection'
 import './App.css'
 
-type Page = 'transactions' | 'reconciliation' | 'settings'
+type Page = 'transactions' | 'reconciliation' | 'settings' | 'performance'
 
-const VALID_PAGES: Page[] = ['transactions', 'reconciliation', 'settings']
+const VALID_PAGES: Page[] = ['transactions', 'reconciliation', 'settings', 'performance']
 
 function readPageFromUrl(): Page {
   if (typeof window === 'undefined') return 'transactions'
@@ -38,6 +40,9 @@ function writePageToUrl(page: Page) {
   const query = params.toString()
   const nextUrl = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`
   window.history.replaceState(null, '', nextUrl)
+  // Issue #945: replaceState does not fire `popstate`, so notify listeners
+  // (e.g. route metadata updates in main.tsx) via a custom event.
+  window.dispatchEvent(new CustomEvent('routechange', { detail: { page } }))
 }
 
 export default function App() {
@@ -55,6 +60,7 @@ export default function App() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [fullPageTransaction, setFullPageTransaction] = useState(false)
   const canManageNotifications = canAccess('notification-settings')
+  const performanceEnabled = useFeatureFlagStore((state) => state.isEnabled('performance-alerts'))
   const handleSessionExpired = useCallback(() => {
     setDrawerOpen(false)
     setSelectedTransaction(null)
@@ -88,8 +94,13 @@ export default function App() {
   const searchInputRef = useRef<HTMLInputElement>(null)
 
   const availableRoutes = useMemo(
-    () => PORTAL_ROUTES.filter((route) => route.page !== 'settings' || canManageNotifications),
-    [canManageNotifications],
+    () =>
+      PORTAL_ROUTES.filter((route) => {
+        if (route.page === 'settings') return canManageNotifications
+        if (route.page === 'performance') return performanceEnabled
+        return true
+      }),
+    [canManageNotifications, performanceEnabled],
   )
 
   const searchResults = useMemo(() => {
@@ -232,6 +243,142 @@ export default function App() {
           <NotificationCenter />
           <nav className="nav-tabs">
             <button
-              className={`nav-tab ${currentPage 
+              className={`nav-tab ${currentPage === 'transactions' ? 'active' : ''}`}
+              onClick={() => setCurrentPage('transactions')}
+            >
+              Transactions
+            </button>
+            {canManageNotifications && (
+              <button
+                className={`nav-tab ${currentPage === 'settings' ? 'active' : ''}`}
+                onClick={() => setCurrentPage('settings')}
+              >
+                Notification Settings
+              </button>
+            )}
+            {performanceEnabled && (
+              <button
+                className={`nav-tab ${currentPage === 'performance' ? 'active' : ''}`}
+                onClick={() => setCurrentPage('performance')}
+              >
+                Performance
+              </button>
+            )}
+          </nav>
+        </div>
+      </header>
 
-/* … truncated 4969 chars — edit only what you need near the top … */
+      {/* Portal-wide page search dialog — Issue #695 */}
+      {searchOpen && (
+        <div className="search-overlay" onClick={closeSearch}>
+          <div
+            className="search-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Search pages"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <input
+              ref={searchInputRef}
+              className="search-input"
+              type="text"
+              placeholder="Search guides, dashboards, and settings…"
+              value={searchQuery}
+              onChange={(event) => {
+                setSearchQuery(event.target.value)
+                setActiveIndex(0)
+              }}
+              onKeyDown={handleSearchKeyDown}
+              aria-label="Search pages"
+            />
+            <div className="search-results" role="listbox" aria-label="Search results">
+              {groupedResults.length === 0 ? (
+                <p className="search-empty">No pages match “{searchQuery}”.</p>
+              ) : (
+                groupedResults.map(([category, routes]) => (
+                  <div key={category} className="search-group">
+                    <div className="search-group-title">{category}</div>
+                    {routes.map((route) => {
+                      const index = searchResults.indexOf(route)
+                      return (
+                        <button
+                          key={route.id}
+                          type="button"
+                          role="option"
+                          aria-selected={index === activeIndex}
+                          className={`search-result ${index === activeIndex ? 'active' : ''}`}
+                          onMouseEnter={() => setActiveIndex(index)}
+                          onClick={() => navigateToRoute(route)}
+                        >
+                          {route.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <main className="app-main">
+        <RenderProfiler id="Dashboard main">
+          {currentPage === 'transactions' ? (
+            <div className="transactions-page">
+              <div className="page-header">
+                <h2>Transaction History</h2>
+                <RenderProfiler id="ExportButton">
+                  <ExportButton />
+                </RenderProfiler>
+              </div>
+              <RenderProfiler id="TransactionsTable">
+                <TransactionsTable onRowClick={handleRowClick} loadOnMount={false} />
+              </RenderProfiler>
+              <RenderProfiler id="DuplicateReview">
+                <DuplicateReview transactions={transactions} onMerged={handleMerged} />
+              </RenderProfiler>
+            </div>
+          ) : currentPage === 'reconciliation' ? (
+            <div className="reconciliation-page">
+              <RenderProfiler id="ReconciliationTab">
+                <ReconciliationTab />
+              </RenderProfiler>
+            </div>
+          ) : currentPage === 'performance' && performanceEnabled ? (
+            <div className="performance-page">
+              <RenderProfiler id="PerformanceDashboard">
+                <PerformanceDashboard />
+              </RenderProfiler>
+            </div>
+          ) : currentPage === 'settings' && canManageNotifications ? (
+            <div className="settings-page">
+              <NotificationSettings />
+            </div>
+          ) : null}
+        </Profiler>
+      </main>
+
+      {/* Transaction Detail Drawer */}
+      <TransactionDrawer
+        transaction={selectedTransaction}
+        isOpen={drawerOpen}
+        loading={detailLoading}
+        error={detailError}
+        onClose={handleDrawerClose}
+        onCancel={handleCancelRequest}
+        fullPage={fullPageTransaction}
+        onOpenFullPage={() => setFullPageTransaction(true)}
+      />
+      {showWarning && (
+        <SessionExpirationDialog
+          secondsRemaining={secondsRemaining}
+          onExtend={() => void extendSession()}
+          onSignOut={signOut}
+        />
+      )}
+      {import.meta.env.DEV && <ComponentRenderDebugPanel />}
+    </div>
+  )
+}

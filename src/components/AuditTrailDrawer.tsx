@@ -51,7 +51,7 @@ type FilterValue = AuditEventType | typeof ALL_FILTER;
 
 function formatTimestamp(iso: string): string {
   try {
-    return new Intl.DateTimeFormat(undefined, {
+    return new Intl.DateTimeFormat('en-GB', {
       year: 'numeric',
       month: 'short',
       day: '2-digit',

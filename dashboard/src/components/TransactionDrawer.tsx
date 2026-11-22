@@ -246,114 +246,61 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
             </div>
           </section>
 
-          <StatusTimeline
-            transaction={transaction}
-            currentStatus={transaction.status}
-          />
-
-          {/* Response Headers — collapsible, sorted */}
-          <section className="detail-section collapsible-section">
-            <button
-              type="button"
-              className="section-toggle"
-              onClick={() => setHeadersExpanded((v) => !v)}
-              aria-expanded={headersExpanded}
-            >
-              {headersExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-              <h3>Response Headers</h3>
-              <span className="section-count">{sortedHeaders.length}</span>
-            </button>
-            {headersExpanded && (
-              <div className="headers-list">
-                {sortedHeaders.length === 0 ? (
-                  <p className="no-data">No headers recorded</p>
-                ) : (
-                  sortedHeaders.map(([name, value]) => (
-                    <div key={name} className="header-row">
-                      <span className="header-name">{name}</span>
-                      <span className="header-value">{String(value)}</span>
+          {/* Headers */}
+          {sortedHeaders.length > 0 && (
+            <section className="detail-section">
+              <button
+                className="section-toggle"
+                onClick={() => setHeadersExpanded((v) => !v)}
+                aria-expanded={headersExpanded}
+              >
+                {headersExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                <h3>Headers</h3>
+              </button>
+              {headersExpanded && (
+                <div className="headers-list">
+                  {sortedHeaders.map(([key, value]) => (
+                    <div key={key} className="header-row">
+                      <span className="header-key">{key}</span>
+                      <code className="monospace header-value">{String(value)}</code>
                     </div>
-                  ))
-                )}
-              </div>
-            )}
-          </section>
-
-          {/* Response Body — collapsible independently */}
-          <section className="detail-section collapsible-section">
-            <button
-              type="button"
-              className="section-toggle"
-              onClick={() => setBodyExpanded((v) => !v)}
-              aria-expanded={bodyExpanded}
-            >
-              {bodyExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-              <h3>Response Body</h3>
-            </button>
-            {bodyExpanded && (
-              <pre className="response-body">
-                {transaction.body
-                  ? typeof transaction.body === 'string'
-                    ? transaction.body
-                    : JSON.stringify(transaction.body, null, 2)
-                  : 'No body recorded'}
-              </pre>
-            )}
-          </section>
-
-          {/* Failure Reason */}
-          {transaction.failureReason && (
-            <section className="detail-section error-section">
-              <h3>Failure Reason</h3>
-              <p className="error-text">{transaction.failureReason}</p>
+                  ))}
+                </div>
+              )}
             </section>
           )}
 
-          {/* Audit Trail */}
-          <section className="detail-section">
-            <h3>Audit Trail</h3>
-            <div className="audit-timeline">
-              {transaction.auditTrail.length === 0 ? (
-                <p className="no-data">No audit events recorded</p>
-              ) : (
-                transaction.auditTrail.map((event, idx) => (
-                  <div key={idx} className="audit-event">
-                    <div className="event-time">
-                      {format(new Date(event.timestamp), 'PPpp')}
-                    </div>
-                    <div className="event-content">
-                      <div className="event-title">{event.event}</div>
-                      <div className="event-details">{event.details}</div>
-                      <div className="event-actor">By: {event.actor}</div>
-                    </div>
-                  </div>
-                ))
+          {/* Body */}
+          {transaction.body && (
+            <section className="detail-section">
+              <button
+                className="section-toggle"
+                onClick={() => setBodyExpanded((v) => !v)}
+                aria-expanded={bodyExpanded}
+              >
+                {bodyExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                <h3>Body</h3>
+              </button>
+              {bodyExpanded && (
+                <pre className="monospace body-content">
+                  {typeof transaction.body === 'string'
+                    ? transaction.body
+                    : JSON.stringify(transaction.body, null, 2)}
+                </pre>
               )}
-            </div>
-          </section>
+            </section>
+          )}
             </>
           )}
         </div>
 
-        {/* Fixed Footer — action buttons always accessible */}
+        {/* Fixed Footer — actions */}
         <footer className="drawer-footer">
-          <button
-            className="close-footer-button"
-            onClick={onClose}
-          >
-            Close
-          </button>
-          <button
-            className="print-button"
-            onClick={handlePrintReceipt}
-          >
+          <button className="btn-secondary" onClick={handlePrintReceipt}>
             <Printer size={16} /> Print Receipt
           </button>
           {!fullPage && onOpenFullPage && (
-            <button
-              className="full-page-button"
-              onClick={onOpenFullPage}
-            >
+            <button className="btn-primary" onClick={onOpenFullPage}>
               <ExternalLink size={16} /> Open Full Page
             </button>
           )}
@@ -364,23 +311,12 @@ export const TransactionDrawer: React.FC<TransactionDrawerProps> = ({
 }
 
 const TransactionDetailSkeleton: React.FC = () => (
-  <div className="drawer-skeleton" aria-hidden="true">
+  <div className="drawer-skeleton" aria-busy="true">
+    <div className="skeleton-line skeleton-title" />
     <div className="skeleton-line" />
     <div className="skeleton-line" />
-    <div className="skeleton-line short" />
+    <div className="skeleton-line skeleton-short" />
   </div>
 )
 
-interface StatusTimelineProps {
-  transaction: Transaction
-  currentStatus: string
-}
-
-const StatusTimeline: React.FC<StatusTimelineProps> = ({ currentStatus }) => (
-  <section className="detail-section">
-    <h3>Status Timeline</h3>
-    <div className="status-timeline">
-      <span className={`status-badge status-${currentStatus}`}>{currentStatus}</span>
-    </div>
-  </section>
-)
+export default TransactionDrawer
