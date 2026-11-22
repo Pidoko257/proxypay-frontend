@@ -35,6 +35,10 @@ class ErrorBoundary extends React.Component<{ children: ReactNode }, BoundarySta
 
   render(): ReactNode {
     if (!this.state.error) return this.props.children;
+    // NOTE: `process.env.NODE_ENV` is intentional here. This file is used only in
+    // Docusaurus, which uses Webpack and replaces `process.env.NODE_ENV` at build time.
+    // Do NOT copy this check into Vite contexts (e.g. the dashboard) without substituting
+    // `import.meta.env.MODE`, since `process.env` is not defined there.
     const isDevelopment = process.env.NODE_ENV !== 'production';
 
     return (
