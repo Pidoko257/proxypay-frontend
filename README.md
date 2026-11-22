@@ -1,8 +1,16 @@
 # ProxyPay API Docs Portal
 
-Docusaurus-based documentation site for the ProxyPay — Mobile Money ↔ Stellar Bridge API.
+Docusaurus-based documentation site for the ProxyPay — Mobile Money → Stellar Bridge API.
 
-## Getting started
+## First-time setup
+
+Before running any commands, install the required Playwright browser engines (required for visual regression and accessibility tests):
+
+```bash
+npx playwright install chromium firefox webkit
+```
+
+Then install dependencies and start the development server:
 
 ```bash
 npm install
@@ -53,8 +61,7 @@ connect the Percy GitHub integration to record, compare, and approve visual
 changes. Without the secret, that workflow step is explicitly skipped.
 
 Run the checks locally with `npm run test:accessibility` and
-`npm run test:visual`. Both commands require the site build; Playwright installs
-its browser engines with `npx playwright install chromium firefox webkit`.
+`npm run test:visual`. Both commands require the site build (see [First-time setup](#first-time-setup)).
 Accessibility JSON and security/dependency audit reports are written under
 `.quality-reports/` when the corresponding checks run.
 
