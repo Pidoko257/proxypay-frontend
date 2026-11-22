@@ -63,6 +63,9 @@ jobs:
       - name: Run accessibility audits
         run: npm run test:accessibility
 
+      - name: Run dashboard accessibility audit
+        run: npm run test:dashboard-accessibility
+
       - name: Run visual regression checks
         env:
           PERCY_TOKEN: ${{ secrets.PERCY_TOKEN }}
