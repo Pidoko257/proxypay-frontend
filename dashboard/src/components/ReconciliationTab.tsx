@@ -86,17 +86,17 @@ const ResultsTable: React.FC<{ results: ReconciliationResult[] }> = ({ results }
 
   return (
     <div className="recon-table-wrapper">
-      <table className="recon-table">
+      <table className="recon-table" aria-label="Reconciliation results">
         <thead>
           <tr>
-            <th>Reference</th>
-            <th>External Amount</th>
-            <th>Dashboard Amount</th>
-            <th>External Status</th>
-            <th>Dashboard Status</th>
-            <th>Date</th>
-            <th>Result</th>
-            <th>Discrepancies</th>
+            <th scope="col">Reference</th>
+            <th scope="col">External Amount</th>
+            <th scope="col">Dashboard Amount</th>
+            <th scope="col">External Status</th>
+            <th scope="col">Dashboard Status</th>
+            <th scope="col">Date</th>
+            <th scope="col">Result</th>
+            <th scope="col">Discrepancies</th>
           </tr>
         </thead>
         <tbody>
