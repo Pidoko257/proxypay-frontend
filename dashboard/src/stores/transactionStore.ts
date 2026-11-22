@@ -67,7 +67,7 @@ export const hasRemoteFilters = (filters: TransactionFilters): boolean =>
     return value !== undefined && value !== null && value !== ''
   })
 
-export const useTransactionStore = create<TransactionStore>((set) => ({
+export const useTransactionStore = create<TransactionStore>((set, get) => ({
   transactions: [],
   selectedTransaction: null,
   loading: false,
