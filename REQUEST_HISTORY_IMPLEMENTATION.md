@@ -1,5 +1,9 @@
 # Request History Implementation Summary
 
+> **Scope — read this first.** This document describes the Docusaurus-side code under the root `src/` directory — `src/hooks/useRequestHistory.ts`, consumed by `src/components/MockPanel.tsx` — which persists mock-request configurations to `localStorage` for the Mock Response Generator.
+>
+> It does **not** apply to the separate `dashboard/` app. That app has no mock-request-history equivalent; its own history concept is transaction history, served by `dashboard/src/stores/transactionStore.ts` for a different purpose. If you landed here looking for request history in the dashboard, that store is the closest related code.
+
 ## Overview
 Implemented request history functionality for the Mock Response Generator, allowing users to save, view, and reload previous mock request configurations without recreating them.
 
