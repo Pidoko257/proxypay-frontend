@@ -56,7 +56,7 @@ function simulateVerification(payload: string, signature: string): VerificationS
 
 function formatTimestamp(ts: string): string {
   try {
-    return new Intl.DateTimeFormat(undefined, {
+    return new Intl.DateTimeFormat('en-GB', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

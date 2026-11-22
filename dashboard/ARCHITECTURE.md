@@ -58,8 +58,10 @@ dashboard/
 │   │   └── csv.ts              # CSV generation utilities
 │   │
 │   ├── stores/                 # Zustand state management
-│   │   ├── transactionStore.ts # Transaction state & actions
-│   │   └── notificationStore.ts # Notification settings state
+│   │   ├── transactionStore.ts     # Transaction state & actions
+│   │   ├── notificationStore.ts    # Notification settings state
+│   │   ├── interceptorLogStore.ts  # Ring buffer of Axios request logs
+│   │   └── retryStore.ts           # Per-request retry attempt tracking
 │   │
 │   ├── styles/                 # Component-scoped CSS
 │   │   ├── TransactionsTable.css
@@ -277,6 +279,83 @@ updateSetting: async (eventType, emailEnabled, webhookEnabled) => {
 - Rollback ensures data consistency
 - Better perceived performance
 
+## Interceptor Pipeline
+
+The `ProxyPayAPI` class registers three Axios interceptors on the shared `AxiosInstance`. They execute in registration order on the way out (request interceptors) and in reverse order on the way back in (response interceptors).
+
+```
+Outgoing request
+  ↓
+[1] Deduplication interceptor
+      – Computes a cache key from method + URL + serialised params/body
+      – If an identical in-flight request exists, returns its pending
+        Promise instead of issuing a second network call
+      – Cancelled when the first response resolves or rejects
+  ↓
+[2] Request-logging interceptor
+      – Writes one entry to interceptorLogStore: { id, method, url,
+        params, timestamp, status: 'pending' }
+      – Attaches the entry id to config.meta so the response side can
+        look it up
+  ↓
+Axios sends HTTP request
+  ↓
+[2] Response-logging interceptor (paired with #2 above)
+      – Looks up the entry by config.meta.logId
+      – Updates it: { status: 'success'|'error', statusCode, duration }
+  ↓
+[3] Retry interceptor (response error path only)
+      – Reads retry state from retryStore for this request
+      – On network error or 5xx, waits 2^attempt × 500 ms (capped at 30 s),
+        increments the attempt counter in retryStore, then re-issues the
+        request via axios(config)
+      – Default ceiling: 3 attempts; 4xx errors are not retried
+      – On final failure, removes the entry from retryStore and re-throws
+  ↓
+Caller receives resolved value or rejection
+```
+
+### interceptorLogStore (`src/stores/interceptorLogStore.ts`)
+
+Holds a bounded ring buffer of the last 200 request log entries. Each entry shape:
+
+```typescript
+interface RequestLogEntry {
+  id: string            // uuid assigned by the request interceptor
+  method: string        // 'GET' | 'POST' | ...
+  url: string           // full URL after baseURL expansion
+  params?: unknown      // query params, if any
+  body?: unknown        // request body, if any
+  timestamp: number     // Date.now() at dispatch
+  status: 'pending' | 'success' | 'error'
+  statusCode?: number   // HTTP status, set on response
+  duration?: number     // ms, set on response
+  error?: string        // message, set on error response
+}
+```
+
+The store is intentionally write-only from the interceptor's perspective. UI tooling (a debug panel, for example) reads from it via `useInterceptorLogStore()`. Nothing in normal application flow depends on this store; removing it does not affect request behaviour.
+
+### Request deduplication
+
+The deduplication layer targets `GET` requests only. The cache key is `method:url:JSON.stringify(params)`. Duplicate `POST`/`PUT`/`DELETE` calls are never collapsed because they carry side effects.
+
+The in-flight map is a plain `Map<string, Promise>` held in module scope (not in a Zustand store). It has no maximum size; entries are deleted as soon as the underlying request settles.
+
+### retryStore (`src/stores/retryStore.ts`)
+
+Tracks the retry state for each active retry sequence, keyed by the same cache key the deduplication layer uses.
+
+```typescript
+interface RetryEntry {
+  key: string           // cache key
+  attempt: number       // 0-indexed, increments before each retry
+  lastDelay: number     // ms waited before the most recent attempt
+}
+```
+
+The store lets a UI surface show "retrying… attempt 2 of 3" without the interceptor needing to know about the display layer. It also provides `clearAll()`, which is called on explicit user sign-out so stale retry state does not carry over between sessions.
+
 ## State Management Patterns
 
 ### Zustand Store Structure
@@ -333,10 +412,7 @@ try {
 - Errors don't block UI (graceful degradation)
 
 ### Retry Mechanism
-Could be added via:
-- Retry button in error banner
-- Automatic retry after timeout
-- Service worker for offline support
+Handled by the retry interceptor in the Axios pipeline. See [Interceptor Pipeline](#interceptor-pipeline) for the full back-off schedule and retryStore contract.
 
 ## Performance Optimizations
 

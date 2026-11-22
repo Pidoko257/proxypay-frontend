@@ -125,9 +125,6 @@ export const getStatusTransitions = (
   ]
 }
 
-export const inferStatusTransitions = getStatusTransitions
-export const buildStatusTimeline = getStatusTransitions
-
 const statusClass = (status: TransactionStatus): string =>
   `status-${status.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
 
@@ -182,8 +179,7 @@ export const StatusTimeline: FC<StatusTimelineProps> = ({
     const lastStatus = normalized[normalized.length - 1]?.toStatus
     if (currentStatus && lastStatus !== currentStatus) {
       normalized.push({
-        timestamp:
-          transaction?.settledAt || transaction?.timestamp || new Date().toISOString(),
+        timestamp: new Date().toISOString(),
         fromStatus: lastStatus || null,
         toStatus: currentStatus,
         actor: 'System',
@@ -253,17 +249,18 @@ export const StatusTimeline: FC<StatusTimelineProps> = ({
                         ? `${transition.fromStatus} → ${transition.toStatus}`
                         : transition.toStatus}
                     </span>
-                    <time dateTime={transition.timestamp}>
+                    <span className="status-timeline-timestamp">
                       {formatTimestamp(transition.timestamp)}
-                    </time>
+                    </span>
                   </div>
-                  <div className="status-timeline-actor">
-                    Changed by {transition.actor || 'System'}
-                  </div>
-                  {(transition.reason || transition.details) && (
-                    <div className="status-timeline-reason">
-                      {transition.reason || transition.details}
-                    </div>
+                  {transition.actor && (
+                    <p className="status-timeline-actor">
+                      <span className="status-timeline-actor-label">Actor:</span>{' '}
+                      {transition.actor}
+                    </p>
+                  )}
+                  {transition.reason && (
+                    <p className="status-timeline-reason">{transition.reason}</p>
                   )}
                 </div>
               </li>
@@ -274,5 +271,3 @@ export const StatusTimeline: FC<StatusTimelineProps> = ({
     </section>
   )
 }
-
-export default StatusTimeline
