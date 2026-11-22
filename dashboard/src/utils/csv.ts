@@ -1,76 +1,111 @@
 /**
- * CSV export utilities.
- *
- * Provides a small, dependency-free CSV serializer with proper escaping and
- * a guard against CSV injection (formula injection) attacks.
+ * CSV export utilities
  */
 
-export interface CSVColumn<T> {
-  /** Header label written to the first row. */
+export interface CSVColumn<T = Record<string, unknown>> {
+  key: keyof T | string;
   header: string;
-  /** Extracts the cell value for a given row. */
-  value: (row: T) => unknown;
+  formatter?: (value: unknown, row: T) => string;
 }
 
-export const CSVExporter = {
+export interface CSVExportOptions {
+  filename?: string;
+  includeHeaders?: boolean;
+  delimiter?: string;
+}
+
+export class CSVExporter {
+  private static readonly DEFAULT_DELIMITER = ',';
+  private static readonly DEFAULT_FILENAME = 'export.csv';
+
   /**
-   * Escape a single CSV cell value.
-   *
-   * - `null` / `undefined` become an empty string.
-   * - Values beginning with a formula trigger (`=`, `+`, `-`, `@`, tab, CR)
-   *   are prefixed with a single quote to prevent CSV injection.
-   * - Values containing a comma, double quote, CR, or LF are wrapped in
-   *   double quotes, with embedded quotes doubled.
+   * Escape a CSV value to prevent injection attacks and handle special characters
    */
-  escapeCsvValue(value: unknown): string {
+  private static escapeCsvValue(value: string, guardInjection: boolean = true): string {
     if (value === null || value === undefined) {
       return '';
     }
 
-    let str = String(value);
+    let escaped = String(value);
 
-    // Guard against CSV injection: neutralize leading formula characters.
-    if (/^[=+\-@\t\r]/.test(str)) {
-      str = `'${str}`;
+    // Guard against CSV injection (formula injection)
+    if (guardInjection) {
+      const dangerousChars = ['=', '+', '-', '@', '\t', '\r'];
+      if (dangerousChars.some((char) => escaped.startsWith(char))) {
+        escaped = `'${escaped}`;
+      }
     }
 
-    if (/[",\r\n]/.test(str)) {
-      str = `"${str.replace(/"/g, '""')}"`;
+    // Escape quotes and wrap in quotes if necessary
+    if (escaped.includes('"') || escaped.includes(',') || escaped.includes('\n') || escaped.includes('\r')) {
+      escaped = `"${escaped.replace(/"/g, '""')}"`;
     }
 
-    return str;
-  },
+    return escaped;
+  }
 
   /**
-   * Serialize rows into a CSV string using the provided column definitions.
+   * Generate CSV content from an array of objects
    */
-  toCsv<T>(rows: T[], columns: CSVColumn<T>[]): string {
-    const header = columns
-      .map((col) => CSVExporter.escapeCsvValue(col.header))
-      .join(',');
+  static generateCSV<T extends Record<string, unknown>>(
+    data: T[],
+    columns: CSVColumn<T>[],
+    options: CSVExportOptions = {}
+  ): string {
+    const { includeHeaders = true, delimiter = this.DEFAULT_DELIMITER } = options;
 
-    const body = rows.map((row) =>
-      columns
-        .map((col) => CSVExporter.escapeCsvValue(col.value(row)))
-        .join(','),
-    );
+    if (!data || data.length === 0) {
+      return '';
+    }
 
-    return [header, ...body].join('\n');
-  },
+    const lines: string[] = [];
+
+    // Add headers
+    if (includeHeaders) {
+      const headers = columns.map((col) => this.escapeCsvValue(col.header, true));
+      lines.push(headers.join(delimiter));
+    }
+
+    // Add data rows
+    data.forEach((row) => {
+      const values = columns.map((col) => {
+        const value = row[col.key as keyof T];
+        const formatted = col.formatter ? col.formatter(value, row) : value;
+        return this.escapeCsvValue(String(formatted), true);
+      });
+      lines.push(values.join(delimiter));
+    });
+
+    return lines.join('\n');
+  }
 
   /**
-   * Build a CSV string and trigger a browser download.
+   * Download CSV content as a file
    */
-  download<T>(filename: string, rows: T[], columns: CSVColumn<T>[]): void {
-    const csv = CSVExporter.toCsv(rows, columns);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
+  static downloadCSV(content: string, filename: string = this.DEFAULT_FILENAME): void {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  },
-};
+  }
+
+  /**
+   * Export data directly to CSV file
+   */
+  static exportToCSV<T extends Record<string, unknown>>(
+    data: T[],
+    columns: CSVColumn<T>[],
+    options: CSVExportOptions = {}
+  ): void {
+    const content = this.generateCSV(data, columns, options);
+    const filename = options.filename || this.DEFAULT_FILENAME;
+    this.downloadCSV(content, filename);
+  }
+}

@@ -22,6 +22,8 @@ export interface RetryOperation {
   id: string
   /** Human-readable label shown in the UI, e.g. "GET /transactions" */
   label: string
+  /** Interceptor log entry id this retry is tagged against (#869). */
+  logEntryId?: string
   attempt: number
   maxAttempts: number
   status: RetryStatus
@@ -31,6 +33,11 @@ export interface RetryOperation {
 export interface RetryConfig {
   maxAttempts?: number
   initialDelayMs?: number
+  /**
+   * Explicit interceptor log entry id to tag retry attempts against (#869).
+   * Threaded through from the API layer instead of searching by label.
+   */
+  logEntryId?: string
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -94,12 +101,14 @@ export const useRetryStore = create<RetryStore>((set, get) => ({
     const id = generateId()
     const maxAttempts = Math.max(1, config.maxAttempts ?? 3)
     const initialDelayMs = Math.max(0, config.initialDelayMs ?? 1000)
+    const logEntryId = config.logEntryId
     const controller = new AbortController()
     abortControllers.set(id, controller)
 
     const operation: RetryOperation = {
       id,
       label,
+      logEntryId,
       attempt: 0,
       maxAttempts,
       status: 'pending',
@@ -122,13 +131,9 @@ export const useRetryStore = create<RetryStore>((set, get) => ({
           ),
         }))
 
-        // Log via interceptor store (#597)
-        const logStore = useInterceptorLogStore.getState()
-        const logId = logStore.entries.find(
-          (e) => e.url.includes(label) && e.status === 'error',
-        )?.id
-        if (logId) {
-          logStore.markRetry(logId, attempt)
+        // Log via interceptor store (#597) using the explicit entry id (#869)
+        if (logEntryId) {
+          useInterceptorLogStore.getState().markRetry(logEntryId, attempt)
         }
 
         try {
