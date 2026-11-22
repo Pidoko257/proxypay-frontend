@@ -16,6 +16,7 @@
  * showRetryToast({
  *   message: 'Failed to load transactions.',
  *   label: 'GET /transactions',
+ *   logEntryId: entry.id,
  *   onRetry: () => proxyPayAPI.getTransactions(filters),
  * })
  * ```
@@ -33,6 +34,12 @@ export interface RetryToastOptions<T = unknown> {
   message: string
   /** Short label identifying the operation, e.g. "GET /transactions". */
   label: string
+  /**
+   * ID of the matching `interceptorLogStore` entry, if one exists.
+   * Threaded through explicitly so the retry can be tagged to the correct
+   * log entry without relying on unreliable label-substring matching.
+   */
+  logEntryId?: string
   /** The async function to retry. */
   onRetry: () => Promise<T>
   /** Max retry attempts (default 3). */
@@ -58,6 +65,7 @@ export function showRetryToast<T>(options: RetryToastOptions<T>): void {
   const { id, promise } = enqueue(options.label, options.onRetry, {
     maxAttempts: options.maxAttempts,
     initialDelayMs: options.initialDelayMs,
+    logEntryId: options.logEntryId,
   })
 
   // Show the error toast — the RetryStatusToast component will render live state
