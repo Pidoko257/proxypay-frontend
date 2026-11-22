@@ -90,9 +90,5 @@ export function useSessionExpiration(onExpired: () => void) {
     return () => window.clearInterval(interval)
   }, [session.expiresAt, signOut])
 
-  useEffect(() => {
-    return () => clearAuthorizationSecrets()
-  }, [])
-
   return { ...session, extendSession, signOut }
 }

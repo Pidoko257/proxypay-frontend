@@ -131,7 +131,7 @@ function badgeClass(action: ActionType): string {
 
 function formatTimestamp(ts: string): string {
   try {
-    return new Date(ts).toLocaleString(undefined, {
+    return new Date(ts).toLocaleString('en-GB', {
       month: 'short',
       day: '2-digit',
       hour: '2-digit',

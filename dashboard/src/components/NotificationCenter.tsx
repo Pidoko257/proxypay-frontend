@@ -1,9 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import { Bell, Check, RefreshCw } from 'lucide-react'
 import { useNotificationStore } from '../stores/notificationStore'
 import { getSafeNotificationUrl } from '../utils/safeNavigation'
-
-const SPEC_UPDATE_TITLE = 'Specification updated'
 
 const isSpecUpdateNotification = (title: string): boolean =>
   title.toLowerCase().includes('spec') && title.toLowerCase().includes('update')
@@ -11,7 +9,6 @@ const isSpecUpdateNotification = (title: string): boolean =>
 export const NotificationCenter: React.FC = () => {
   const { notifications, fetchNotifications, markNotificationRead, bulkMarkRead } =
     useNotificationStore()
-  const [reloadStatus, setReloadStatus] = useState<string | null>(null)
 
   useEffect(() => {
     fetchNotifications()
@@ -30,29 +27,8 @@ export const NotificationCenter: React.FC = () => {
   }
 
   const handleReloadSpec = (notificationId: string) => {
-    const previousHash = window.location.hash
-    const previousEndpoint = previousHash.startsWith('#/') ? previousHash.slice(2) : ''
-
     markNotificationRead(notificationId)
     window.location.reload()
-
-    // After reload, restore the endpoint if it still exists in the refreshed spec.
-    window.setTimeout(() => {
-      if (!previousEndpoint) {
-        return
-      }
-      const endpointExists = document.querySelector(
-        `[data-endpoint="${CSS.escape(previousEndpoint)}"]`
-      )
-      if (endpointExists) {
-        window.location.hash = previousHash
-        setReloadStatus(`Restored endpoint: ${previousEndpoint}`)
-      } else {
-        setReloadStatus(
-          `Previously selected endpoint was removed: ${previousEndpoint}`
-        )
-      }
-    }, 0)
   }
 
   return (
@@ -63,7 +39,6 @@ export const NotificationCenter: React.FC = () => {
       </summary>
       <div className="notification-popover">
         <h2>Notifications</h2>
-        {reloadStatus && <p className="notification-status">{reloadStatus}</p>}
         {notifications.length === 0 ? (
           <p className="notification-empty">No notifications</p>
         ) : (
