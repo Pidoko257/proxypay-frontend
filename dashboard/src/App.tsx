@@ -1,4 +1,4 @@
-import { Profiler, useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useTransactionStore } from './stores/transactionStore'
 import { TransactionsTable } from './components/TransactionsTable'
 import { TransactionDrawer } from './components/TransactionDrawer'
