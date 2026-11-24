@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "build:analyze": "BUILD_DIR=dist node ../scripts/analyze-bundle-size.cjs",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },

@@ -256,6 +256,12 @@ export default function App() {
                 Notification Settings
               </button>
             )}
+            <button
+              className={`nav-tab ${currentPage === 'reconciliation' ? 'active' : ''}`}
+              onClick={() => setCurrentPage('reconciliation')}
+            >
+              Reconciliation
+            </button>
             {performanceEnabled && (
               <button
                 className={`nav-tab ${currentPage === 'performance' ? 'active' : ''}`}
@@ -357,7 +363,7 @@ export default function App() {
               <NotificationSettings />
             </div>
           ) : null}
-        </Profiler>
+        </RenderProfiler>
       </main>
 
       {/* Transaction Detail Drawer */}
