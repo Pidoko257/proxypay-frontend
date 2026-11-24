@@ -221,6 +221,8 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                 value={customStart}
                 onChange={handleCustomStartChange}
                 aria-label="Start date"
+                aria-invalid={Boolean(validationError)}
+                aria-describedby={validationError ? 'drp-date-error' : undefined}
               />
             </label>
             <span className="drp-custom-sep" aria-hidden="true">—</span>
@@ -233,6 +235,8 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                 min={customStart || undefined}
                 onChange={handleCustomEndChange}
                 aria-label="End date"
+                aria-invalid={Boolean(validationError)}
+                aria-describedby={validationError ? 'drp-date-error' : undefined}
               />
             </label>
             <button
@@ -244,7 +248,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
             </button>
           </div>
           {validationError && (
-            <p className="drp-validation-error" role="alert">
+            <p id="drp-date-error" className="drp-validation-error" role="alert">
               {validationError}
             </p>
           )}

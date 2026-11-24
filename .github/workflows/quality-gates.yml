@@ -35,6 +35,9 @@ jobs:
       - name: Install dashboard dependencies
         run: npm ci --prefix dashboard
 
+      - name: Type-check dashboard
+        run: npx tsc --noEmit --project dashboard/tsconfig.json
+
       - name: Audit dependencies
         run: npm run audit:dependencies
 
@@ -59,6 +62,9 @@ jobs:
 
       - name: Run accessibility audits
         run: npm run test:accessibility
+
+      - name: Run dashboard accessibility audit
+        run: npm run test:dashboard-accessibility
 
       - name: Run visual regression checks
         env:

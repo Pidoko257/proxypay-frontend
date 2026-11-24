@@ -34,11 +34,41 @@ describe('FeatureFlagSettings', () => {
 
   it('stores user flags under the authenticated user identity', () => {
     localStorage.setItem('auth_user_id', 'merchant-a')
+    localStorage.setItem('auth_token', `header.${btoa(JSON.stringify({ sub: 'merchant-b' }))}.signature`)
     useFeatureFlagStore.getState().initialize()
     useFeatureFlagStore.getState().setEnabled('transaction-row-preview', false)
 
     expect(localStorage.getItem('proxypay.feature-flags.user.merchant-a'))
       .toContain('"transaction-row-preview":false')
+  })
+
+  it('keeps JWT subject overrides across token rotations', () => {
+    const payload = btoa(JSON.stringify({ sub: 'merchant-b' }))
+    const store = useFeatureFlagStore.getState()
+    localStorage.setItem('auth_token', `header.${payload}.first`)
+    store.initialize()
+    store.setEnabled('transaction-row-preview', false)
+
+    localStorage.setItem('auth_token', `header.${payload}.second`)
+    store.initialize()
+    expect(store.isEnabled('transaction-row-preview')).toBe(false)
+  })
+
+  it('keeps user overrides in memory when a token has no usable subject', () => {
+    const store = useFeatureFlagStore.getState()
+    store.setEnabled('transaction-row-preview', false)
+    localStorage.setItem('auth_token', 'opaque-token')
+    store.initialize()
+    expect(store.isEnabled('transaction-row-preview')).toBe(true)
+
+    store.setEnabled('transaction-row-preview', false)
+    expect(store.isEnabled('transaction-row-preview')).toBe(false)
+    store.initialize()
+    expect(store.isEnabled('transaction-row-preview')).toBe(true)
+    expect(Object.keys(localStorage).sort()).toEqual([
+      'auth_token',
+      'proxypay.feature-flags.user.anonymous',
+    ])
   })
 
   it('emits analytics events when a flag is toggled', () => {

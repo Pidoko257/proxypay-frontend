@@ -53,8 +53,8 @@ export default function DashboardPage(): React.JSX.Element {
           />
           <p className="dashboard__hint">{messages.searchHint}</p>
           <div className="dashboard__table-wrap">
-            <table className="dashboard__table">
-              <thead><tr><th>{messages.id}</th><th>{messages.customer}</th><th>{messages.amount}</th><th>{messages.status}</th></tr></thead>
+            <table className="dashboard__table" aria-label={messages.transactions}>
+              <thead><tr><th scope="col">{messages.id}</th><th scope="col">{messages.customer}</th><th scope="col">{messages.amount}</th><th scope="col">{messages.status}</th></tr></thead>
               <tbody>
                 {filteredTransactions.map((transaction) => (
                   <tr key={transaction.id}>

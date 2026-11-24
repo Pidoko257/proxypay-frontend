@@ -36,10 +36,18 @@ import { Skeleton } from './Skeleton'
 
 ### Table Skeleton
 ```tsx
-import { TransactionTableSkeleton } from './TransactionTableSkeleton'
+import { SkeletonTableRow } from './Skeleton'
 
 if (loading) {
-  return <TransactionTableSkeleton rows={5} />
+  return (
+    <table>
+      <tbody>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <SkeletonTableRow key={i} columns={6} />
+        ))}
+      </tbody>
+    </table>
+  )
 }
 ```
 

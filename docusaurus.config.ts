@@ -56,11 +56,11 @@ const config: Config = {
     v4: true,
   },
 
-  url: 'https://Pidoko257.github.io',
-  baseUrl: '/proxypay-frontend/',
+  url: 'https://sublime247.github.io',
+  baseUrl: '/proxypay/',
 
-  organizationName: 'Pidoko257',
-  projectName: 'proxypay-frontend',
+  organizationName: 'sublime247',
+  projectName: 'proxypay',
   deploymentBranch: 'gh-pages',
   trailingSlash: false,
 

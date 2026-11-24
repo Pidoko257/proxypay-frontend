@@ -358,14 +358,18 @@ export const TransactionsTable: React.FC<{
     </tr>
   )
 
-  const handleDateRange = useCallback((range: DateRange) => {
-    setDateRange((prev) => {
+  const rowCellHandlers = (index: number, tx: Transaction) => ({
+    onClick: (event: React.MouseEvent<HTMLTableCellElement>) => {
       if (
-        prev.preset !== range.preset ||
-        prev.startDate !== range.startDate ||
-        prev.endDate !== range.endDate
+        event.target instanceof Element &&
+        !event.target.closest('button')
       ) {
-        resetPagination()
+        if (longPressTriggered.current) {
+          longPressTriggered.current = false
+          return
+        }
+        hidePreview()
+        onRowClick(tx)
       }
     },
     onMouseEnter: (event: React.MouseEvent<HTMLTableCellElement>) => {

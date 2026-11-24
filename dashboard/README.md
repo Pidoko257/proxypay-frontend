@@ -14,7 +14,7 @@ Follow this path in order to go from zero to your first successful API call.
 3. **First API call** — make your first request against the published base URL:
    [First API call](/docs/getting-started/first-api-call).
 4. **Workbench** — explore and try requests interactively:
-   [Workbench](/docs/workbench).
+   [Workbench](/api-tools).
 
 Each link is relative to the published base URL, so the path resolves correctly in
 any deployment environment.

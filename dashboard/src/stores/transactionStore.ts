@@ -16,7 +16,7 @@ interface TransactionStore {
   // Actions
   fetchTransactions: (filters: TransactionFilters) => Promise<void>
   retryTransactions: () => Promise<void>
-  fetchTransactionDetail: (id: string) => Promise<void>
+  fetchTransactionDetail: (id: string, options?: { signal?: AbortSignal }) => Promise<void>
   setSelectedTransaction: (tx: Transaction | null) => void
   setFilters: (filters: Partial<TransactionFilters>) => void
   resetFilters: () => void
@@ -39,6 +39,12 @@ const paginationResetKeys: (keyof TransactionFilters)[] = [
 
 let latestDetailRequest = 0
 let latestListRequest = 0
+let listAbortController: AbortController | null = null
+let detailAbortController: AbortController | null = null
+
+const isAbortError = (error: unknown): boolean =>
+  error instanceof Error &&
+  (error.name === 'AbortError' || error.name === 'CanceledError')
 
 /**
  * Filters that are applied server-side. When any of these are set, the
@@ -61,7 +67,7 @@ export const hasRemoteFilters = (filters: TransactionFilters): boolean =>
     return value !== undefined && value !== null && value !== ''
   })
 
-export const useTransactionStore = create<TransactionStore>((set) => ({
+export const useTransactionStore = create<TransactionStore>((set, get) => ({
   transactions: [],
   selectedTransaction: null,
   loading: false,
@@ -73,11 +79,19 @@ export const useTransactionStore = create<TransactionStore>((set) => ({
   filters: defaultFilters,
 
   fetchTransactions: async (filters: TransactionFilters) => {
+    listAbortController?.abort()
+    const controller = new AbortController()
+    listAbortController = controller
     const requestId = ++latestListRequest
     set({ loading: true, retrying: false, error: null })
     try {
-      const result = await proxyPayAPI.getTransactions(filters)
-      if (requestId !== latestListRequest) return
+      const result = await (
+        proxyPayAPI.getTransactions as (
+          f: TransactionFilters,
+          opts?: { signal?: AbortSignal }
+        ) => Promise<{ data: Transaction[]; total: number }>
+      )(filters, { signal: controller.signal })
+      if (requestId !== latestListRequest || controller.signal.aborted) return
       set({
         transactions: result.data,
         total: result.total,
@@ -85,7 +99,13 @@ export const useTransactionStore = create<TransactionStore>((set) => ({
         loading: false,
       })
     } catch (error) {
-      if (requestId !== latestListRequest) return
+      if (
+        requestId !== latestListRequest ||
+        controller.signal.aborted ||
+        isAbortError(error)
+      ) {
+        return
+      }
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to fetch transactions'
       set({ error: errorMessage, loading: false })
@@ -109,14 +129,22 @@ export const useTransactionStore = create<TransactionStore>((set) => ({
   },
 
   retryTransactions: async () => {
+    listAbortController?.abort()
+    const controller = new AbortController()
+    listAbortController = controller
     const { filters, transactions } = get()
     const requestId = ++latestListRequest
     // Distinguish retry loading from the initial skeleton: keep existing rows
     // visible and only flag `retrying` when there is data already on screen.
     set({ retrying: transactions.length > 0, loading: transactions.length === 0, error: null })
     try {
-      const result = await proxyPayAPI.getTransactions(filters)
-      if (requestId !== latestListRequest) return
+      const result = await (
+        proxyPayAPI.getTransactions as (
+          f: TransactionFilters,
+          opts?: { signal?: AbortSignal }
+        ) => Promise<{ data: Transaction[]; total: number }>
+      )(filters, { signal: controller.signal })
+      if (requestId !== latestListRequest || controller.signal.aborted) return
       set({
         transactions: result.data,
         // `total` is the server-reported count for the current filter set.
@@ -127,7 +155,13 @@ export const useTransactionStore = create<TransactionStore>((set) => ({
         retrying: false,
       })
     } catch (error) {
-      if (requestId !== latestListRequest) return
+      if (
+        requestId !== latestListRequest ||
+        controller.signal.aborted ||
+        isAbortError(error)
+      ) {
+        return
+      }
       // Preserve existing rows when a retry fails and rows are already present.
       set({
         error: error instanceof Error ? error.message : 'Failed to fetch transactions',
@@ -137,26 +171,56 @@ export const useTransactionStore = create<TransactionStore>((set) => ({
     }
   },
 
-  fetchTransactionDetail: async (id: string) => {
+  fetchTransactionDetail: async (id: string, options?: { signal?: AbortSignal }) => {
+    detailAbortController?.abort()
+    const controller = new AbortController()
+    detailAbortController = controller
+    if (options?.signal) {
+      if (options.signal.aborted) {
+        controller.abort()
+      } else {
+        options.signal.addEventListener('abort', () => controller.abort(), {
+          once: true,
+        })
+      }
+    }
+
     const requestId = ++latestDetailRequest
     set({ detailLoading: true, detailError: null })
     try {
-      const transaction = await proxyPayAPI.getTransactionDetail(id)
+      const transaction = await (
+        proxyPayAPI.getTransactionDetail as (
+          txId: string,
+          opts?: { signal?: AbortSignal }
+        ) => Promise<Transaction>
+      )(id, { signal: controller.signal })
       let statusHistory = transaction.statusHistory || []
-      if (statusHistory.length === 0) {
+      if (statusHistory.length === 0 && !controller.signal.aborted) {
         try {
-          statusHistory = await proxyPayAPI.getStatusHistory(id)
-        } catch {
+          statusHistory = await (
+            proxyPayAPI.getStatusHistory as (
+              txId: string,
+              opts?: { signal?: AbortSignal }
+            ) => Promise<Transaction['statusHistory']>
+          )(id, { signal: controller.signal }) ?? []
+        } catch (historyError) {
+          if (controller.signal.aborted || isAbortError(historyError)) return
           statusHistory = transaction.statusHistory || []
         }
       }
-      if (requestId !== latestDetailRequest) return
+      if (requestId !== latestDetailRequest || controller.signal.aborted) return
       set({
         selectedTransaction: { ...transaction, statusHistory },
         detailLoading: false,
       })
     } catch (error) {
-      if (requestId !== latestDetailRequest) return
+      if (
+        requestId !== latestDetailRequest ||
+        controller.signal.aborted ||
+        isAbortError(error)
+      ) {
+        return
+      }
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to fetch transaction details'
       set({ detailError: errorMessage, detailLoading: false })
@@ -175,6 +239,10 @@ export const useTransactionStore = create<TransactionStore>((set) => ({
 
   setSelectedTransaction: (tx: Transaction | null) => {
     latestDetailRequest += 1
+    if (!tx) {
+      detailAbortController?.abort()
+      detailAbortController = null
+    }
     set({ selectedTransaction: tx, detailError: null })
   },
 

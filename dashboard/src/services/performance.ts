@@ -74,6 +74,7 @@ const appendMetric = (metric: PerformanceMetric, persistImmediately: boolean, re
   }
 }
 
+// Consumed by the Axios interceptor in api.ts; keep this export stable.
 export const recordPerformanceMetric = (
   name: string,
   value: number,

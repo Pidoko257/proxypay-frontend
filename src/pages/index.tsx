@@ -1,6 +1,7 @@
 import React from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
+import BrowserOnly from '@docusaurus/BrowserOnly';
 import ThemeCustomizer from '@site/src/components/ThemeCustomizer';
 
 export default function Home(): React.JSX.Element {
@@ -28,7 +29,9 @@ export default function Home(): React.JSX.Element {
           </p>
         </section>
 
-        <ThemeCustomizer />
+        <BrowserOnly fallback={<div style={{ padding: '2rem' }}>Loading theme customizer…</div>}>
+          {() => <ThemeCustomizer />}
+        </BrowserOnly>
       </main>
     </Layout>
   );

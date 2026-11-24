@@ -1,4 +1,4 @@
-import { Profiler, useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useTransactionStore } from './stores/transactionStore'
 import { TransactionsTable } from './components/TransactionsTable'
 import { TransactionDrawer } from './components/TransactionDrawer'
@@ -11,15 +11,17 @@ import { SessionExpirationDialog } from './components/SessionExpirationDialog'
 import { ToastNotifications } from './components/ToastNotifications'
 import { ComponentRenderDebugPanel } from './components/ComponentRenderDebugPanel'
 import { RenderProfiler } from './components/RenderProfiler'
+import { PerformanceDashboard } from './components/PerformanceDashboard'
 import { canAccess } from './auth/access'
 import { useSessionExpiration } from './hooks/useSessionExpiration'
+import { useFeatureFlagStore } from './stores/featureFlagStore'
 import type { Transaction } from './services/api'
 import type { TransactionMergeResult } from './services/duplicateDetection'
 import './App.css'
 
-type Page = 'transactions' | 'reconciliation' | 'settings'
+type Page = 'transactions' | 'reconciliation' | 'settings' | 'performance'
 
-const VALID_PAGES: Page[] = ['transactions', 'reconciliation', 'settings']
+const VALID_PAGES: Page[] = ['transactions', 'reconciliation', 'settings', 'performance']
 
 function readPageFromUrl(): Page {
   if (typeof window === 'undefined') return 'transactions'
@@ -38,6 +40,9 @@ function writePageToUrl(page: Page) {
   const query = params.toString()
   const nextUrl = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`
   window.history.replaceState(null, '', nextUrl)
+  // Issue #945: replaceState does not fire `popstate`, so notify listeners
+  // (e.g. route metadata updates in main.tsx) via a custom event.
+  window.dispatchEvent(new CustomEvent('routechange', { detail: { page } }))
 }
 
 export default function App() {
@@ -55,6 +60,7 @@ export default function App() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [fullPageTransaction, setFullPageTransaction] = useState(false)
   const canManageNotifications = canAccess('notification-settings')
+  const performanceEnabled = useFeatureFlagStore((state) => state.isEnabled('performance-alerts'))
   const handleSessionExpired = useCallback(() => {
     setDrawerOpen(false)
     setSelectedTransaction(null)
@@ -88,8 +94,13 @@ export default function App() {
   const searchInputRef = useRef<HTMLInputElement>(null)
 
   const availableRoutes = useMemo(
-    () => PORTAL_ROUTES.filter((route) => route.page !== 'settings' || canManageNotifications),
-    [canManageNotifications],
+    () =>
+      PORTAL_ROUTES.filter((route) => {
+        if (route.page === 'settings') return canManageNotifications
+        if (route.page === 'performance') return performanceEnabled
+        return true
+      }),
+    [canManageNotifications, performanceEnabled],
   )
 
   const searchResults = useMemo(() => {
@@ -245,6 +256,14 @@ export default function App() {
                 Notification Settings
               </button>
             )}
+            {performanceEnabled && (
+              <button
+                className={`nav-tab ${currentPage === 'performance' ? 'active' : ''}`}
+                onClick={() => setCurrentPage('performance')}
+              >
+                Performance
+              </button>
+            )}
           </nav>
         </div>
       </header>
@@ -327,19 +346,13 @@ export default function App() {
                 <ReconciliationTab />
               </RenderProfiler>
             </div>
-          ) : currentPage === 'reconciliation' ? (
-            <div className="reconciliation-page">
-              <ReconciliationTab />
+          ) : currentPage === 'performance' && performanceEnabled ? (
+            <div className="performance-page">
+              <RenderProfiler id="PerformanceDashboard">
+                <PerformanceDashboard />
+              </RenderProfiler>
             </div>
-          ) : canManageNotifications ? (
-            <div className="settings-page">
-              <NotificationSettings />
-            </div>
-          ) : currentPage === 'reconciliation' ? (
-            <div className="reconciliation-page">
-              <ReconciliationTab />
-            </div>
-          ) : canManageNotifications ? (
+          ) : currentPage === 'settings' && canManageNotifications ? (
             <div className="settings-page">
               <NotificationSettings />
             </div>

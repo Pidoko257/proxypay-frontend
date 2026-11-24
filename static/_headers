@@ -1,5 +1,13 @@
+# NOTE: GitHub Pages does NOT apply this `_headers` file at runtime.
+# The CSP, HSTS, and other security headers below are NOT enforced while the
+# site is deployed to GitHub Pages. This file is kept as the source of truth
+# for the intended headers. To actually enforce them, either:
+#   1. Migrate to a host that supports `_headers` (Netlify, Cloudflare Pages), or
+#   2. Front the GitHub Pages deployment with a Cloudflare Worker / edge
+#      function that injects these headers.
+# See README.md for details.
 /*
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://fonts.googleapis.com; worker-src 'self' blob:; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://fonts.googleapis.com; worker-src 'self' blob:; upgrade-insecure-requests
   Strict-Transport-Security: max-age=63072000; includeSubDomains
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
