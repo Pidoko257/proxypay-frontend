@@ -1,0 +1,253 @@
+.status-timeline-section {
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--color-neutral-200);
+}
+
+.status-timeline-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.status-timeline-heading-row h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-neutral-900);
+}
+
+.timeline-layout-toggle {
+  display: flex;
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+.timeline-layout-toggle button {
+  border: 0;
+  background: white;
+  color: var(--color-neutral-600);
+  padding: 0.35rem 0.5rem;
+  font-size: 0.7rem;
+}
+
+.timeline-layout-toggle button + button {
+  border-left: 1px solid var(--color-neutral-200);
+}
+
+.timeline-layout-toggle button.active {
+  background: var(--color-primary);
+  color: white;
+}
+
+.timeline-layout-toggle button:hover:not(.active) {
+  background: var(--color-neutral-100);
+}
+
+.status-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.status-timeline-vertical {
+  display: flex;
+  flex-direction: column;
+}
+
+.status-timeline-item {
+  position: relative;
+  display: flex;
+  gap: 0.75rem;
+  min-width: 0;
+  animation: statusTimelineIn var(--transition-base) ease-out both;
+}
+
+.status-timeline-vertical .status-timeline-item {
+  padding-bottom: 1.25rem;
+}
+
+.status-timeline-vertical .status-timeline-item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  top: 1.8rem;
+  left: 0.85rem;
+  bottom: -0.15rem;
+  width: 2px;
+  background: var(--color-neutral-200);
+}
+
+.status-timeline-horizontal {
+  display: flex;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.status-timeline-horizontal .status-timeline-item {
+  flex: 1 0 190px;
+  flex-direction: column;
+  padding: 0 0.75rem 0 0;
+}
+
+.status-timeline-horizontal .status-timeline-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 0.85rem;
+  left: 1.8rem;
+  right: -0.25rem;
+  height: 2px;
+  background: var(--color-neutral-200);
+}
+
+.status-timeline-marker {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 1.75rem;
+  border-radius: 50%;
+  background: var(--color-neutral-100);
+  color: var(--color-neutral-600);
+}
+
+.status-timeline-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.status-timeline-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.status-timeline-horizontal .status-timeline-title {
+  min-height: 3.4rem;
+}
+
+.status-transition-label {
+  color: var(--color-neutral-900);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-timeline-item.status-settled .status-timeline-marker,
+.status-timeline-item.status-settled .status-transition-label {
+  color: #15803d;
+}
+
+.status-timeline-item.status-settled .status-timeline-marker {
+  background: #dcfce7;
+}
+
+.status-timeline-item.status-pending .status-timeline-marker,
+.status-timeline-item.status-pending .status-transition-label,
+.status-timeline-item.status-processing .status-timeline-marker,
+.status-timeline-item.status-processing .status-transition-label {
+  color: #a16207;
+}
+
+.status-timeline-item.status-pending .status-timeline-marker,
+.status-timeline-item.status-processing .status-timeline-marker {
+  background: #fef3c7;
+}
+
+.status-timeline-item.status-failed .status-timeline-marker,
+.status-timeline-item.status-failed .status-transition-label,
+.status-timeline-item.status-cancelled .status-timeline-marker,
+.status-timeline-item.status-cancelled .status-transition-label,
+.status-timeline-item.status-refunded .status-timeline-marker,
+.status-timeline-item.status-refunded .status-transition-label {
+  color: #b91c1c;
+}
+
+.status-timeline-item.status-failed .status-timeline-marker,
+.status-timeline-item.status-cancelled .status-timeline-marker,
+.status-timeline-item.status-refunded .status-timeline-marker {
+  background: #fee2e2;
+}
+
+.status-timeline-item.status-duplicate .status-timeline-marker,
+.status-timeline-item.status-duplicate .status-transition-label {
+  color: #7e22ce;
+}
+
+.status-timeline-item.status-duplicate .status-timeline-marker {
+  background: #f3e8ff;
+}
+
+.status-timeline-item time {
+  color: var(--color-neutral-600);
+  font-size: 0.75rem;
+}
+
+.status-timeline-actor,
+.status-timeline-reason {
+  margin-top: 0.25rem;
+  color: var(--color-neutral-600);
+  font-size: 0.78rem;
+}
+
+.status-timeline-actor {
+  font-style: italic;
+}
+
+.status-timeline-reason {
+  color: var(--color-neutral-700);
+  overflow-wrap: anywhere;
+}
+
+@keyframes statusTimelineIn {
+  from {
+    opacity: 0;
+    transform: translateY(0.35rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 600px) {
+  .status-timeline-heading-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .status-timeline-horizontal {
+    flex-direction: column;
+    overflow-x: visible;
+  }
+
+  .status-timeline-horizontal .status-timeline-item {
+    flex: none;
+    flex-direction: row;
+    padding: 0 0 1.25rem;
+  }
+
+  .status-timeline-horizontal .status-timeline-item:not(:last-child)::after {
+    top: 1.8rem;
+    left: 0.85rem;
+    right: auto;
+    bottom: -0.15rem;
+    width: 2px;
+    height: auto;
+  }
+
+  .status-timeline-horizontal .status-timeline-title {
+    min-height: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-timeline-item {
+    animation: none;
+  }
+}

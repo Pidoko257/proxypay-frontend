@@ -1,0 +1,84 @@
+/* ResizableWidget.css */
+
+.resizable-widget {
+  position: relative;
+  box-sizing: border-box;
+  border: 1px solid var(--color-neutral-200, #e2e8f0);
+  border-radius: 8px;
+  background: var(--color-neutral-50, #f8fafc);
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.08));
+  overflow: hidden;
+  /* Smooth width/height transitions while not dragging */
+  transition: box-shadow 0.15s ease;
+}
+
+.resizable-widget:focus-within {
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.12));
+}
+
+/* ── Content area ────────────────────────────────────────────────────────── */
+
+.resizable-widget__content {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  /* Leave room for the resize handle */
+  padding-bottom: 20px;
+  box-sizing: border-box;
+}
+
+/* ── Resize handle ───────────────────────────────────────────────────────── */
+
+.resizable-widget__handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  cursor: nw-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-neutral-400, #94a3b8);
+  border-radius: 0 0 8px 0;
+  transition: color 0.15s ease, background 0.15s ease;
+  /* Ensure it's above content */
+  z-index: 1;
+  user-select: none;
+  touch-action: none;
+}
+
+.resizable-widget__handle:hover {
+  color: var(--color-primary, #2e8555);
+  background: var(--color-neutral-100, #f1f5f9);
+}
+
+.resizable-widget__handle:focus-visible {
+  outline: 2px solid var(--color-primary, #2e8555);
+  outline-offset: -2px;
+}
+
+.resizable-widget__grip {
+  display: block;
+  flex-shrink: 0;
+}
+
+/* ── Responsive: disable resize on mobile, use full width ────────────────── */
+
+@media (max-width: 767px) {
+  .resizable-widget {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 150px;
+  }
+
+  .resizable-widget__handle {
+    display: none;
+  }
+
+  .resizable-widget__content {
+    padding-bottom: 0;
+    height: auto;
+    min-height: 150px;
+  }
+}
