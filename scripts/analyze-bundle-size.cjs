@@ -170,8 +170,17 @@ function analyzeBundle() {
         message: `Vendors bundle ${bundle.file} (${bundle.size_kb}KB) exceeds threshold (${THRESHOLDS.vendors}KB)`,
       });
     }
+    // Any chunk exceeding the documented 500 KB per-chunk limit fails the build.
+    if (bundle.size_kb > THRESHOLDS.total_js) {
+      violations.push({
+        metric: 'chunk_size',
+        threshold: THRESHOLDS.total_js,
+        actual: bundle.size_kb,
+        file: bundle.file,
+        message: `Chunk ${bundle.file} (${bundle.size_kb}KB) exceeds the 500KB per-chunk limit`,
+      });
+    }
   }
-
   // Check individual CSS files
   for (const bundle of report.bundles.css) {
     if (bundle.size_kb > THRESHOLDS.css) {

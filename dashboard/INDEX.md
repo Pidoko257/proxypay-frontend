@@ -43,25 +43,25 @@
 
 ### Components (`src/components/`)
 ```
-TransactionsTable.tsx        (135 lines)
+[TransactionsTable.tsx](src/components/TransactionsTable.tsx)        (135 lines)
   - Transaction list with sorting
   - Click handlers for drawer
   - Status badges with colors
   - Loading/empty states
 
-TransactionDrawer.tsx        (184 lines)
+[TransactionDrawer.tsx](src/components/TransactionDrawer.tsx)        (184 lines)
   - Right-side detail sidebar
   - Stellar hash, fees, audit trail
   - Escape key & click-outside handling
   - Smooth animations
 
-ExportButton.tsx             (126 lines)
+[ExportButton.tsx](src/components/ExportButton.tsx)             (126 lines)
   - CSV export with options menu
   - Progress bar for large exports
   - Audit trail toggle
   - Transaction count display
 
-NotificationSettings.tsx     (154 lines)
+[NotificationSettings.tsx](src/components/NotificationSettings.tsx)     (154 lines)
   - Settings grid layout
   - Email & webhook toggles
   - Optimistic updates with spinners
@@ -70,13 +70,13 @@ NotificationSettings.tsx     (154 lines)
 
 ### Services (`src/services/`)
 ```
-api.ts                       (114 lines)
+[api.ts](src/services/api.ts)                       (114 lines)
   - ProxyPayAPI class
   - All 5 required endpoints
   - TypeScript type definitions
   - Auth token support
 
-csv.ts                       (118 lines)
+[csv.ts](src/services/csv.ts)                       (118 lines)
   - CSVExporter utility class
   - Value escaping for CSV format
   - Progress tracking
@@ -85,13 +85,13 @@ csv.ts                       (118 lines)
 
 ### State Management (`src/stores/`)
 ```
-transactionStore.ts          (82 lines)
+[transactionStore.ts](src/stores/transactionStore.ts)          (82 lines)
   - Transaction list & detail state
   - Filter management
   - Error handling
   - Loading states
 
-notificationStore.ts         (104 lines)
+[notificationStore.ts](src/stores/notificationStore.ts)         (104 lines)
   - Notification settings state
   - Optimistic updates
   - Automatic rollback on failure
@@ -138,15 +138,15 @@ NotificationSettings.css     (261 lines)
 
 ### Application Core
 ```
-App.tsx                      (80 lines)
+[App.tsx](src/App.tsx)                      (80 lines)
   - Main app shell
   - Page navigation
   - Drawer state management
 
-main.tsx                     (10 lines)
+[main.tsx](src/main.tsx)                     (10 lines)
   - React entry point
 
-index.html                   (13 lines)
+[index.html](../dashboard/index.html)                  (13 lines)
   - HTML template
 ```
 
